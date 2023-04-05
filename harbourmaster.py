@@ -123,11 +123,7 @@ class PortMasterV1(BaseSource):
 
             self._data[asset['name']] = result
 
-            if asset['name'] == 'ports.md':
-                continue
-            if asset['name'].endswith('.md5'):
-                continue
-            else:
+            if asset['name'].lower().endswith('.zip'):
                 self._ports.append(asset['name'])
 
         for line in fetch_text(self._data['ports.md']['url']).split('\n'):
@@ -136,6 +132,9 @@ class PortMasterV1(BaseSource):
                 continue
 
             info = self._parse_port_info(line)
+            if info['file'] not in self._ports:
+                print(f'Found port {info["file"]} in `ports.md` but not in github list')
+
             self._info[info['file']] = info
 
         self._config['data']['data']  = self._data
@@ -175,6 +174,9 @@ class PortMasterV1(BaseSource):
             key = keys.get(key.lower(), key.lower())
             if key == 'title':
                 value = value[:-2]
+
+            # Zips with spaces in their names get replaced with '.'
+            value = value.replace('%20', '.')
 
             if key == 'runtype':
                 key, value = 'rtr', True
