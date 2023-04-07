@@ -7,7 +7,7 @@ Harbourmaster is the start of the eventual replacement of the [PortMaster][PortM
 
 The goal is to have a gui frontend that can display text/images and a description about the game, even add sorting by genre or updates available. This is the script backend that will handle listing available ports, downloading and installing/uninstalling ports.
 
-- [ ] `ports.md` generation for `PortMaster.sh`
+- [x] `ports.md` generation for `PortMaster.sh`
   - [ ] List by Genre
   - [ ] List by Updates
   - [ ] List by Ready to Run
@@ -15,7 +15,6 @@ The goal is to have a gui frontend that can display text/images and a descriptio
 - [ ] Install Ports
 - [ ] Multiple Ports repositories
 - [ ] Uninstall Ports
-
 
 
 [PortMaster]: https://github.com/christianhaitian/PortMaster

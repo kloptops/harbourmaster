@@ -105,15 +105,10 @@ def datetime_compare(time_a, time_b=None):
 @contextlib.contextmanager
 def make_temp_directory():
     temp_dir = tempfile.mkdtemp()
-    if DEBUG:
-        print(f"Created temp dir {temp_dir}")
     try:
         yield Path(temp_dir)
 
     finally:
-        if DEBUG:
-            print(f"Cleaning up {temp_dir}")
-
         shutil.rmtree(temp_dir)
 
 
@@ -221,6 +216,7 @@ class PortMasterV1(BaseSource):
             'opengl': False,
             'power': False,
             'rtr': False,
+            'mono': False,
             'genres': [],
             }
 
@@ -243,6 +239,8 @@ class PortMasterV1(BaseSource):
             # Special keys
             if key == 'runtype':
                 key, value = 'rtr', True
+            elif key == 'mono':
+                key, value = 'mono', True
             elif key == 'genres':
                 value = value.split(',')
 
@@ -312,17 +310,19 @@ class PortMasterV1(BaseSource):
         output = []
 
         if info['opengl']:
-            output.append(f'Title_P="{info["title"].replace(" ", "_")} ."')
-        elif info['power']:
             output.append(f'Title_F="{info["title"].replace(" ", "_")} ."')
+        elif info['power']:
+            output.append(f'Title_P="{info["title"].replace(" ", "_")} ."')
         else:
             output.append(f'Title="{info["title"].replace(" ", "_")} ."')
 
         output.append(f'Desc="{info["desc"]}"')
         output.append(f'porter="{info["porter"]}"')
-        output.append(f'locat="{info["file"]}"')
+        output.append(f'locat="{self._prefix}/{info["file"]}"')
         if info['rtr']:
             output.append(f'runtype="rtr"')
+        if info['mono']:
+            output.append(f'mono="y"')
 
         return ' '.join(output)
 
@@ -493,7 +493,7 @@ def do_help(hm, argv):
         return
 
     print(f"{command} <update> [source or all] ")
-    # print(f"{command} <install/upgrade> [source/]<port_name> ")
+    print(f"{command} <install/upgrade> [source/]<port_name> ")
     # print(f"{command} <uninstall> [source/]<port_name> ")
     print(f"{command} <list/portsmd> [source or all] [... filters]")
     print(f"{command} <help> <command>")

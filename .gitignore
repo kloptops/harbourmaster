@@ -160,4 +160,9 @@ cython_debug/
 #.idea/
 
 config/
+
+# General
 .DS_Store
+
+# Thumbnails
+._*
