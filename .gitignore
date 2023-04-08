@@ -166,3 +166,6 @@ config/
 
 # Thumbnails
 ._*
+
+ports_info_cache.*
+ports_info.json

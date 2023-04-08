@@ -17,7 +17,7 @@ from difflib import Differ
 from pathlib import Path
 
 ## Insert our extra modules.
-sys.path.insert(0, str(Path(__file__).parent / 'libs'))
+sys.path.insert(0, str(Path(__file__).parent / 'pylibs.zip'))
 
 import requests
 
@@ -111,13 +111,12 @@ def make_temp_directory():
     finally:
         shutil.rmtree(temp_dir)
 
-
-
-
 ################################################################################
 ## APIS
 
 class BaseSource():
+    VERSION = 0
+
     def __init__(self, hm, file_name, config):
         pass
 
@@ -326,6 +325,7 @@ class PortMasterV1(BaseSource):
 
         return ' '.join(output)
 
+
 SOURCE_APIS = {
     'PortMasterV1': PortMasterV1,
     }
@@ -333,6 +333,13 @@ SOURCE_APIS = {
 ################################################################################
 ## Config loading
 class HarbourMaster():
+    CONFIG_VERSION = 1
+    DEFAULT_CONFIG = {
+        'version': CONFIG_VERSION,
+        'first_run': True,
+        'installed_ports': {},
+        }
+
     def __init__(self, cfg_path=None, ports_path=None, temp_dir=None):
         """
         config = load_config()
@@ -358,6 +365,7 @@ class HarbourMaster():
         self.cfg_path = cfg_path
         self.ports_path = ports_path
         self.sources = {}
+        self.config = {}
         self.ports = []
         self.utils = []
 
@@ -368,7 +376,10 @@ class HarbourMaster():
                 fh.write(SOURCE_DEFAULT_PORTMASTER)
 
             with (cfg_path / 'config.json').open('w') as fh:
-                fh.write('{"first_run": true}')
+                fh.write('{"version": "first_run": true}')
+
+        with (cfg_path / 'config.json').open('r') as fh:
+            self.config = json.load(fh)
 
         self.load_sources()
 
@@ -376,20 +387,42 @@ class HarbourMaster():
         source_files = list(self.cfg_path.glob('*.source.json'))
         source_files.sort()
 
+        check_keys = {'version': None, 'prefix': None, 'api': SOURCE_APIS, 'name': None, 'last_checked': None, 'data': None}
         for source_file in source_files:
             with source_file.open() as fh:
                 source_data = json.load(fh)
 
-                assert 'prefix' in source_data, f'Missing key "prefix" in {source_file}.'
-                assert 'api' in source_data, f'Missing key "api" in {source_file}.'
-                assert 'name' in source_data, f'Missing key "name" in {source_file}.'
-                assert 'last_checked' in source_data, f'Missing key "last_checked" in {source_file}.'
-                assert 'data' in source_data, f'Missing key "data" in {source_file}.'
-                assert source_data['api'] in SOURCE_APIS, f'Unknown api {source_data["api"]}.'
+                fail = False
+                for check_key, check_value in check_keys.items():
+                    if check_key not in source_data:
+                        print(f'Missing key "{check_key}" in {source_file}.')
+                        fail = True
+                        break
+
+                    if check_value is not None and source_data[check_key] not in check_value:
+                        print(f"Unknown {check_key} {source_file}: {source_data[check_key]}.")
+                        fail = True
+                        break
+
+                if fail:
+                    continue
 
             source = SOURCE_APIS[source_data['api']](self, source_file, source_data)
 
             self.sources[source_data['prefix']] = source
+
+    def ports_installed(self):
+        """
+        Find all installed ports, because ports can be installed by zips we need to recheck every time.
+        """
+
+    def install_port(self, source, port_name, zip_file):
+        """
+        Installs a port.
+        """
+
+        hm.ports_path
+
 
 ################################################################################
 ## Commands
@@ -470,6 +503,8 @@ def do_install(hm, argv):
                 continue
 
             file_name = source.download(source.clean_name(port_name))
+
+            hm.install(source, port_name, file_name)
 
     return 0
 
