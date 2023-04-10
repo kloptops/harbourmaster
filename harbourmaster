@@ -481,6 +481,7 @@ def do_install(hm, argv):
     Install a port
 
     {command} install Half-Life.zip               # Install from highest priority repo
+    {command} install */Half-Life.zip             # Same as above.
     {command} install pm/Half-Life.zip            # Install specifically from portmaster repo
     {command} install kloptops/Half-Life.zip      # Install specifically from kloptops repo
     """
