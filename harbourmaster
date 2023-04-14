@@ -43,9 +43,9 @@ SOURCE_DEFAULT_PORTMASTER = """
 ## Default CONFIG_PATH
 
 if CONFIG_PATH is None:
-    CONFIG_PATH = Path(__file__).parent / 'config'
+    CONFIG_PATH = Path(__file__).parent.resolve() / 'config'
 elif isinstance(CONFIG_PATH, str):
-    CONFIG_PATH = Path(CONFIG_PATH)
+    CONFIG_PATH = Path(CONFIG_PATH).resolve()
 elif isinstance(CONFIG_PATH, pathlib.PurePath):
     # This is good.
     pass
@@ -55,15 +55,18 @@ else:
 
 ## Default PORTS_PATH
 if PORTS_PATH is None:
-    PORTS_PATH = Path(__file__).parent.parent
+    PORTS_PATH = Path(__file__).parent.resolve().parent
 elif isinstance(PORTS_PATH, str):
-    PORTS_PATH = Path(PORTS_PATH)
+    PORTS_PATH = Path(PORTS_PATH).resolve()
 elif isinstance(PORTS_PATH, pathlib.PurePath):
     # This is good.
     pass
 else:
     print(f"Error: {PORTS_PATH!r} is set to something weird.")
     exit(255)
+
+# print(PORTS_PATH)
+# print(CONFIG_PATH)
 
 ################################################################################
 ## Utils
@@ -511,7 +514,7 @@ class HarbourMaster():
 
             self.installed_ports.append(port_info)
 
-        print(f"Installed ports {self.installed_ports}")
+        # print(f"Installed ports {self.installed_ports}")
 
 
     def install_port(self, download_info):
@@ -583,8 +586,8 @@ class HarbourMaster():
         else:
             port_info = PortInfo({})
 
-        print(f"Port Info: {port_info}")
-        print(f"Download Info: {download_info}")
+        # print(f"Port Info: {port_info}")
+        # print(f"Download Info: {download_info}")
 
         port_info.merge_info(download_info)
 
@@ -595,7 +598,7 @@ class HarbourMaster():
         if port_info_file is None:
             port_info_file = self.ports_path / dirs[0] / (download_info.zip_file.stem + '.port.json')
 
-        print(f"Merged Info: {download_info}")
+        # print(f"Merged Info: {port_info}")
 
         with open(port_info_file, 'w') as fh:
             json.dump(port_info.to_dict(), fh, indent=4)
