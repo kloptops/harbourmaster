@@ -39,16 +39,14 @@ SOURCE_DEFAULT_PORTMASTER = """
 }
 """.strip()
 
-DEBUG=True
-
 ################################################################################
 ## Default CONFIG_PATH
 
 if CONFIG_PATH is None:
     CONFIG_PATH = Path(__file__).parent / 'config'
 elif isinstance(CONFIG_PATH, str):
-    CONFIG_PATH = Path(__file__)
-elif isinstance(config_dir, pathlib.PurePath):
+    CONFIG_PATH = Path(CONFIG_PATH)
+elif isinstance(CONFIG_PATH, pathlib.PurePath):
     # This is good.
     pass
 else:
@@ -58,9 +56,9 @@ else:
 ## Default PORTS_PATH
 if PORTS_PATH is None:
     PORTS_PATH = Path(__file__).parent.parent
-elif isinstance(CONFIG_PATH, str):
-    PORTS_PATH = Path(__file__)
-elif isinstance(config_dir, pathlib.PurePath):
+elif isinstance(PORTS_PATH, str):
+    PORTS_PATH = Path(PORTS_PATH)
+elif isinstance(PORTS_PATH, pathlib.PurePath):
     # This is good.
     pass
 else:
@@ -68,7 +66,7 @@ else:
     exit(255)
 
 ################################################################################
-## 
+## Utils
 def fetch(url):
     r = requests.get(url)
     if r.status_code != 200:
@@ -255,6 +253,10 @@ class PortMasterV1(BaseSource):
 
 
     def download(self, port_name):
+        if port_name not in self._data:
+            print(f"Unable to find port {port_name}")
+            return None
+
         zip_file = self._hm.temp_dir / port_name
 
         md5_source = fetch_text(self._data[port_name + '.md5']['url'])
@@ -297,11 +299,21 @@ class PortMasterV1(BaseSource):
 
         if md5_file != md5_source:
             zip_file.unlink()
-            print(f"Port file doesn't mate the md5 file: {md5_file} != {md5_source}")
+            print(f"Port file doesn't match the md5 file: {md5_file} != {md5_source}")
             return None
 
+        zip_info = PortInfo({})
+
+        zip_info.md5 = md5_file
+        zip_info.source = f"{self._prefix}/{port_name}"
+        zip_info.attr['porter'] = self._info[port_name]['porter']
+        zip_info.attr['desc']   = self._info[port_name]['desc']
+        zip_info.attr['mono']   = self._info[port_name]['mono']
+        zip_info.attr['rtr']    = self._info[port_name]['rtr']
+        zip_info.zip_file = zip_file
+
         print("Success!")
-        return zip_file
+        return zip_info
 
 
     def portmd(self, port_name):
@@ -331,13 +343,75 @@ SOURCE_APIS = {
     }
 
 ################################################################################
+## Port Information
+class PortInfo():
+    __attrs__ = (
+        'source', 'items', 'items', 'items_opt', 'md5', 'attr')
+
+    def __init__(self, info):
+        if isinstance(info, pathlib.PurePath):
+            with info.open('r') as fh:
+                self.from_dict(json.load(fh))
+
+        elif isinstance(info, dict):
+            self.from_dict(info)
+
+        else:
+            raise ValueError(str(info))
+
+    def from_dict(self, info):
+        self.source = info.get('source', None)
+        self.items = info.get('items', None)
+        self.items_opt = info.get('items_opt', None)
+        self.md5 = info.get('md5', None)
+        self.attr = info.get('attr', {})
+        self.attr.setdefault('porter', None)
+
+    def merge_info(self, other):
+        if isinstance(other, (str, dict)):
+            info = PortInfo(other)
+
+        elif isinstance(other, PortInfo):
+            pass
+
+        else:
+            raise ValueError(str(info))
+
+        for attr in self.__attrs__:
+            value_a = getattr(self, attr)
+            value_b = getattr(other, attr)
+
+            if value_a is None and value_b is not None:
+                setattr(self, attr, value_b)
+
+            if attr == 'attr':
+                for key in value_b.keys():
+                    if value_b[key] is None:
+                        continue
+
+                    if key not in value_a or value_a[key] is None:
+                        value_a[key] = value_b[key]
+
+    def to_dict(self):
+        return {
+            attr: getattr(self, attr)
+            for attr in self.__attrs__
+            }
+
+    def __str__(self):
+        return str(self.to_dict())
+
+    def __repr__(self):
+        return str(self.to_dict())
+
+
+################################################################################
 ## Config loading
 class HarbourMaster():
     CONFIG_VERSION = 1
     DEFAULT_CONFIG = {
         'version': CONFIG_VERSION,
         'first_run': True,
-        'installed_ports': {},
         }
 
     def __init__(self, cfg_path=None, ports_path=None, temp_dir=None):
@@ -376,12 +450,15 @@ class HarbourMaster():
                 fh.write(SOURCE_DEFAULT_PORTMASTER)
 
             with (cfg_path / 'config.json').open('w') as fh:
-                fh.write('{"version": "first_run": true}')
+                json.dump(fh, self.DEFAULT_CONFIG)
 
         with (cfg_path / 'config.json').open('r') as fh:
             self.config = json.load(fh)
 
         self.load_sources()
+
+        self.load_ports()
+
 
     def load_sources(self):
         source_files = list(self.cfg_path.glob('*.source.json'))
@@ -411,18 +488,119 @@ class HarbourMaster():
 
             self.sources[source_data['prefix']] = source
 
-    def ports_installed(self):
+
+    def load_ports(self):
         """
         Find all installed ports, because ports can be installed by zips we need to recheck every time.
         """
+        port_files = list(self.ports_path.glob('*/*.port.json'))
+        port_files.sort()
 
-    def install_port(self, source, port_name, zip_file):
+        self.installed_ports = []
+        all_scripts = {}
+        all_directories = {}
+
+        for port_file in port_files:
+            port_info = PortInfo(port_file)
+
+            # for items in port_info.scripts:
+            #     all_scripts.setdefault(script, []).append(port_info)
+
+            # for directory in port_info.directories:
+            #     all_directories.setdefault(directory, []).append(port_info)
+
+            self.installed_ports.append(port_info)
+
+        print(f"Installed ports {self.installed_ports}")
+
+
+    def install_port(self, download_info):
         """
         Installs a port.
         """
 
-        hm.ports_path
+        port_info_file = None
+        items = []
+        dirs = []
+        scripts = []
 
+        with zipfile.ZipFile(download_info.zip_file, 'r') as zf:
+            for file_info in zf.infolist():
+                if file_info.filename.startswith('/'):
+                    ## Sneaky
+                    print(f"Port {download_info.source} has an illegal file {file_info.filename!r}, aborting.")
+                    return 255
+
+                if file_info.filename.startswith('../'):
+                    ## Little
+                    print(f"Port {download_info.source} has an illegal file {file_info.filename!r}, aborting.")
+                    return 255
+
+                if '/../' in file_info.filename:
+                    ## Shits
+                    print(f"Port {download_info.source} has an illegal file {file_info.filename!r}, aborting.")
+                    return 255
+
+                if '/' in file_info.filename:
+                    parts = file_info.filename.split('/')
+
+                    if parts[0] not in dirs:
+                        items.append(parts[0] + '/')
+                        dirs.append(parts[0])
+
+                    if len(parts) == 2:
+                        if parts[1].lower().endswith('.port.json'):
+                            ## TODO: add the ability for multiple port folders to have multiple port.json files. ?
+                            if port_info_file is not None:
+                                print(f"Port {download_info.source} has multiple port.json files.")
+                                print(f"- Before: {port_info_file.relative_to(self.ports_path)!r}")
+                                print(f"- Now:    {file_info.filename!r}")
+
+                            port_info_file = self.ports_path / file_info.filename
+
+                else:
+                    if file_info.filename.lower().endswith('.sh'):
+                        scripts.append(file_info.filename)
+                        items.append(file_info.filename)
+                    else:
+                        print(f"Port {download_info.source} contains {file_info.filename} at the top level, but it is not a shell script.")
+
+            if len(dirs) == 0:
+                print(f"Port {download_info.source} has no directories, aborting.")
+                return 255
+
+            if len(scripts) == 0:
+                print(f"Port {download_info.source} has no scripts, aborting.")
+                return 255
+
+            ## TODO: keep a list of installed files for uninstalling?
+            # At this point the port will be installed
+            # Extract all the files to the specified directory
+            zf.extractall(self.ports_path)
+
+        if port_info_file is not None:
+            port_info = PortInfo(port_info_file)
+        else:
+            port_info = PortInfo({})
+
+        print(f"Port Info: {port_info}")
+        print(f"Download Info: {download_info}")
+
+        port_info.merge_info(download_info)
+
+        ## These two are always overriden.
+        port_info.items = items
+        port_info.md5 = download_info.md5
+
+        if port_info_file is None:
+            port_info_file = self.ports_path / dirs[0] / (download_info.zip_file.stem + '.port.json')
+
+        print(f"Merged Info: {download_info}")
+
+        with open(port_info_file, 'w') as fh:
+            json.dump(port_info.to_dict(), fh, indent=4)
+
+        return 0
 
 ################################################################################
 ## Commands
@@ -452,6 +630,8 @@ def do_update(hm, argv):
 def do_list(hm, argv):
     """
     List available ports
+
+    {command} list [filters]
     """
     print("Available ports:")
     for source_prefix, source in hm.sources.items():
@@ -466,7 +646,9 @@ def do_list(hm, argv):
 
 def do_portsmd(hm, argv):
     """
-    List available ports
+    List available ports in a format portmaster can use.
+
+    {command} portsmd
     """
     for source_prefix, source in hm.sources.items():
         for port in source.ports:
@@ -503,9 +685,12 @@ def do_install(hm, argv):
             if source.clean_name(port_name) not in source.ports:
                 continue
 
-            file_name = source.download(source.clean_name(port_name))
+            download_info = source.download(source.clean_name(port_name))
 
-            hm.install(source, port_name, file_name)
+            if download_info is None:
+                return 255
+
+            return hm.install_port(download_info)
 
     return 0
 

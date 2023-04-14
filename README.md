@@ -17,4 +17,14 @@ The goal is to have a gui frontend that can display text/images and a descriptio
 - [ ] Uninstall Ports
 
 
+
+# Ports Installed Check
+
+Look at root scripts
+
+- check file size / md5
+- check associated directories exist
+- determines which zip it comes from.
+
+
 [PortMaster]: https://github.com/christianhaitian/PortMaster
