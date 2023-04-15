@@ -5,6 +5,7 @@ import datetime
 import fnmatch
 import hashlib
 import json
+import os
 import pathlib
 import re
 import shutil
@@ -22,9 +23,9 @@ sys.path.insert(0, str(Path(__file__).parent / 'pylibs.zip'))
 import requests
 
 ################################################################################
-## Override this for custom config folder, otherwise it will reside in `SCRIPT_DIRECTORY/config`
-CONFIG_PATH=None
-PORTS_PATH=None
+## Override this for custom tools/ports directories
+TOOLS_DIR=None
+PORTS_DIR=None
 UPDATE_FREQUENCY=(60 * 60 * 22) # Only check automatically once a day.
 
 SOURCE_DEFAULT_PORTMASTER = """
@@ -40,33 +41,52 @@ SOURCE_DEFAULT_PORTMASTER = """
 """.strip()
 
 ################################################################################
-## Default CONFIG_PATH
+## The following code is a simplification of the PortMaster toolsloc and whichsd code.
+DEFAULT_PORTS_DIR = Path("/roms/ports")
 
-if CONFIG_PATH is None:
-    CONFIG_PATH = Path(__file__).parent.resolve() / 'config'
-elif isinstance(CONFIG_PATH, str):
-    CONFIG_PATH = Path(CONFIG_PATH).resolve()
-elif isinstance(CONFIG_PATH, pathlib.PurePath):
+if Path("/opt/tools/PortMaster/").is_dir():
+    DEFAULT_TOOLS_DIR = Path("/opt/tools")
+elif Path("/opt/system/Tools/PortMaster/").is_dir():
+    DEFAULT_TOOLS_DIR = Path("/opt/system/Tools")
+elif Path("/storage/roms/ports").is_dir():
+    DEFAULT_TOOLS_DIR = Path("/storage/roms/ports")
+    DEFAULT_PORTS_DIR = Path("/storage/roms/ports")
+else:
+    DEFAULT_TOOLS_DIR = Path("/roms/ports")
+
+if Path("/roms2/ports").is_dir():
+    DEFAULT_PORTS_DIR = Path("/roms2/ports")
+
+## Default TOOLS_DIR
+if TOOLS_DIR is None:
+    if 'TOOLS_DIR' in os.environ:
+        TOOLS_DIR = Path(os.environ['TOOLS_DIR'])
+    else:
+        TOOLS_DIR = DEFAULT_TOOLS_DIR
+elif isinstance(TOOLS_DIR, str):
+    TOOLS_DIR = Path(TOOLS_DIR).resolve()
+elif isinstance(TOOLS_DIR, pathlib.PurePath):
     # This is good.
     pass
 else:
-    print(f"Error: {CONFIG_PATH!r} is set to something weird.")
+    print(f"Error: {TOOLS_DIR!r} is set to something weird.")
     exit(255)
 
-## Default PORTS_PATH
-if PORTS_PATH is None:
-    PORTS_PATH = Path(__file__).parent.resolve().parent
-elif isinstance(PORTS_PATH, str):
-    PORTS_PATH = Path(PORTS_PATH).resolve()
-elif isinstance(PORTS_PATH, pathlib.PurePath):
+## Default PORTS_DIR
+if PORTS_DIR is None:
+    if 'PORTS_DIR' in os.environ:
+        PORTS_DIR = Path(os.environ['PORTS_DIR']).resolve()
+    else:
+        PORTS_DIR = DEFAULT_PORTS_DIR
+    PORTS_DIR = Path(__file__).parent.resolve().parent
+elif isinstance(ports_dir, str):
+    PORTS_DIR = Path(PORTS_DIR).resolve()
+elif isinstance(PORTS_DIR, pathlib.PurePath):
     # This is good.
     pass
 else:
-    print(f"Error: {PORTS_PATH!r} is set to something weird.")
+    print(f"Error: {PORTS_DIR!r} is set to something weird.")
     exit(255)
-
-# print(PORTS_PATH)
-# print(CONFIG_PATH)
 
 ################################################################################
 ## Utils
@@ -130,6 +150,7 @@ class PortMasterV1(BaseSource):
         self._file_name = file_name
         self._config = config
         self._prefix = config['prefix']
+        self._did_update = False
 
         if config['version'] != self.VERSION:
             print("Cache out of date.")
@@ -150,6 +171,9 @@ class PortMasterV1(BaseSource):
         return text.lower()
 
     def update(self, force=False):
+        if self._did_update:
+            return
+
         print(f"{self._config['name']}: Fetching latest ports")
         data = fetch_json(self._config['url'])
 
@@ -194,6 +218,7 @@ class PortMasterV1(BaseSource):
         self._config['last_checked'] = datetime.datetime.now().isoformat()
 
         self._save()
+        self._did_update = True
         print(f"{self._config['name']}: Done.")
 
     def _save(self):
@@ -417,45 +442,47 @@ class HarbourMaster():
         'first_run': True,
         }
 
-    def __init__(self, cfg_path=None, ports_path=None, temp_dir=None):
+    def __init__(self, tools_dir=None, ports_dir=None, temp_dir=None):
         """
         config = load_config()
         """
 
-        if cfg_path is None:
-            cfg_path = CONFIG_PATH
+        if tools_dir is None:
+            tools_dir = TOOLS_DIR
 
-        if ports_path is None:
-            ports_path = PORTS_PATH
+        if ports_dir is None:
+            ports_dir = PORTS_DIR
 
-        if isinstance(cfg_path, str):
-            cfg_path = Path(cfg_path)
-        elif not isinstance(cfg_path, pathlib.PurePath):
-            raise ValueError('cfg_path')
+        if isinstance(tools_dir, str):
+            tools_dir = Path(tools_dir)
+        elif not isinstance(tools_dir, pathlib.PurePath):
+            raise ValueError('tools_dir')
 
-        if isinstance(ports_path, str):
-            ports_path = Path(ports_path)
-        elif not isinstance(ports_path, pathlib.PurePath):
-            raise ValueError('ports_path')
+        if isinstance(ports_dir, str):
+            ports_dir = Path(ports_dir)
+        elif not isinstance(ports_dir, pathlib.PurePath):
+            raise ValueError('ports_dir')
 
-        self.temp_dir = temp_dir
-        self.cfg_path = cfg_path
-        self.ports_path = ports_path
+
+        self.temp_dir  = temp_dir
+        self.tools_dir = tools_dir
+        self.cfg_dir   = tools_dir / "PortMaster" / "config"
+        self.ports_dir = ports_dir
         self.sources = {}
         self.config = {}
         self.ports = []
         self.utils = []
 
-        if not cfg_path.is_dir():
-            cfg_path.mkdir(0o755)
+        if not self.cfg_dir.is_dir():
+            self.cfg_dir.mkdir(0o755, parents=True)
 
-            with (cfg_path / '000_portmaster.source.json').open('w') as fh:
+            with (self.cfg_dir / '000_portmaster.source.json').open('w') as fh:
                 fh.write(SOURCE_DEFAULT_PORTMASTER)
 
-            with (cfg_path / 'config.json').open('w') as fh:
-                json.dump(fh, self.DEFAULT_CONFIG)
+            with (self.cfg_dir / 'config.json').open('w') as fh:
+                json.dump(self.DEFAULT_CONFIG, fh, indent=4)
 
-        with (cfg_path / 'config.json').open('r') as fh:
+        with (self.cfg_dir / 'config.json').open('r') as fh:
             self.config = json.load(fh)
 
         self.load_sources()
@@ -464,7 +491,7 @@ class HarbourMaster():
 
 
     def load_sources(self):
-        source_files = list(self.cfg_path.glob('*.source.json'))
+        source_files = list(self.cfg_dir.glob('*.source.json'))
         source_files.sort()
 
         check_keys = {'version': None, 'prefix': None, 'api': SOURCE_APIS, 'name': None, 'last_checked': None, 'data': None}
@@ -496,7 +523,7 @@ class HarbourMaster():
         """
         Find all installed ports, because ports can be installed by zips we need to recheck every time.
         """
-        port_files = list(self.ports_path.glob('*/*.port.json'))
+        port_files = list(self.ports_dir.glob('*/*.port.json'))
         port_files.sort()
 
         self.installed_ports = []
@@ -520,6 +547,8 @@ class HarbourMaster():
     def install_port(self, download_info):
         """
         Installs a port.
+
+        We collect a list of top level scripts/directories, this is added to the port.json file.
         """
 
         port_info_file = None
@@ -556,10 +585,10 @@ class HarbourMaster():
                             ## TODO: add the ability for multiple port folders to have multiple port.json files. ?
                             if port_info_file is not None:
                                 print(f"Port {download_info.source} has multiple port.json files.")
-                                print(f"- Before: {port_info_file.relative_to(self.ports_path)!r}")
+                                print(f"- Before: {port_info_file.relative_to(self.ports_dir)!r}")
                                 print(f"- Now:    {file_info.filename!r}")
 
-                            port_info_file = self.ports_path / file_info.filename
+                            port_info_file = self.ports_dir / file_info.filename
 
                 else:
                     if file_info.filename.lower().endswith('.sh'):
@@ -579,7 +608,7 @@ class HarbourMaster():
             ## TODO: keep a list of installed files for uninstalling?
             # At this point the port will be installed
             # Extract all the files to the specified directory
-            zf.extractall(self.ports_path)
+            zf.extractall(self.ports_dir)
 
         if port_info_file is not None:
             port_info = PortInfo(port_info_file)
@@ -596,10 +625,10 @@ class HarbourMaster():
         port_info.md5 = download_info.md5
 
         if port_info_file is None:
-            port_info_file = self.ports_path / dirs[0] / (download_info.zip_file.stem + '.port.json')
+            port_info_file = self.ports_dir / dirs[0] / (download_info.zip_file.stem + '.port.json')
 
         # print(f"Merged Info: {port_info}")
-
+ 
         with open(port_info_file, 'w') as fh:
             json.dump(port_info.to_dict(), fh, indent=4)
 
