@@ -99,6 +99,7 @@ def fetch(url):
 
     return r
 
+
 def fetch_json(url):
     r = fetch(url)
     if r is None:
@@ -106,12 +107,14 @@ def fetch_json(url):
 
     return r.json()
 
+
 def fetch_text(url):
     r = fetch(url)
     if r is None:
         return None
 
     return r.text
+
 
 def datetime_compare(time_a, time_b=None):
     if isinstance(time_a, str):
@@ -123,6 +126,38 @@ def datetime_compare(time_a, time_b=None):
         time_b = datetime.datetime.fromisoformat(time_b)
 
     return (time_b - time_a).seconds
+
+
+def add_unique(base_list, value):
+    if value not in base_list:
+        base_list.append(value)
+
+
+def add_unique_list(base_dict, key, value):
+    if key not in base_dict:
+        base_dict[key] = value
+        return
+
+    if isinstance(base_dict[key], str):
+        if base_dict[key] == value:
+            return
+
+        base_dict[key] = [base_dict[key]]
+
+    if value not in base_dict[key]:
+        base_dict[key].append(value)
+
+
+def get_list(base_dict, key):
+    if key not in base_dict:
+        return []
+
+    result = base_dict[key]
+    if isinstance(result, str):
+        return [result]
+
+    return result
+
 
 @contextlib.contextmanager
 def make_temp_directory():
@@ -535,22 +570,67 @@ class HarbourMaster():
         port_files.sort()
 
         self.installed_ports = []
-        all_scripts = {}
-        all_directories = {}
+        self.unknown_ports = []
+        all_items = {}
+        unknown_files = []
 
+        ## Load all the known ports with port.json files
         for port_file in port_files:
             port_info = PortInfo(port_file)
 
-            # for items in port_info.scripts:
-            #     all_scripts.setdefault(script, []).append(port_info)
+            for item in port_info.items:
+                add_unique_list(all_items, item, port_info.source)
 
-            # for directory in port_info.directories:
-            #     all_directories.setdefault(directory, []).append(port_info)
+                ## TODO: check these files exist, possibly mark the port for deletion if the scripts for it are missing.
+
+            if port_info.items_opt is not None:
+                for item in port_info.items_opt:
+                    add_unique_list(all_items, item, port_info.source)
 
             self.installed_ports.append(port_info)
 
-        # print(f"Installed ports {self.installed_ports}")
+        ## Check all files
+        for file_item in self.ports_dir.iterdir():
+            ## Skip these
+            if file_item.name.lower() in (
+                'portmaster', 'portmaster.sh',
+                'thememaster', 'thememaster.sh',
+                'harbourmaster',
+                'images', 'videos', 'manuals',
+                'gamelist.xml', 'gamelist.xml.old'):
+                continue
 
+            file_name = file_item.name
+            if file_item.is_dir():
+                file_name += '/'
+
+            port_owners = get_list(all_items, file_name)
+
+            if len(port_owners) == 0:
+                if file_name.lower().endswith('.sh'):
+                    unknown_files.append(file_name)
+
+        ## Find any ports that match the files we couldnt find matchting a port.json file
+        new_ports = []
+        for unknown_file in unknown_files:
+            port_owners = get_list(ports_info['items'], unknown_file)
+            if len(port_owners) == 1:
+                add_unique(new_ports, port_owners[0])
+            elif len(port_owners) == 0:
+                if unknown_file.endswith('.sh'):
+                    ## Keep track of unknown bash scripts.
+                    self.unknown_ports.append(unknown_file)
+
+        ## Create new port.json files for any new ports, these only contain the most basic of information.
+        for new_port in new_ports:
+            port_info_raw = ports_info['ports'][new_port]
+
+            port_info = PortInfo(port_info_raw)
+
+            with open(port_info_raw['file'], 'w') as fh:
+                json.dump(port_info.to_dict(), fh, indent=4)
+
+            self.installed_ports.append(port_info)
 
     def install_port(self, download_info):
         """
@@ -684,6 +764,27 @@ def do_list(hm, argv):
     return 0
 
 
+def do_ports(hm, argv):
+    """
+    List installed ports
+
+    {command} ports [filters]
+    """
+    print("Installed Ports:")
+    for port_info in hm.installed_ports:
+        print(f"- {port_info.source}")
+
+    print()
+
+    print("Unknown Ports:")
+    for file_name in hm.unknown_ports:
+        print(f"- {file_name}")
+
+    print()
+
+    return 0
+
+
 def do_portsmd(hm, argv):
     """
     List available ports in a format portmaster can use.
@@ -757,6 +858,7 @@ def do_help(hm, argv):
     print(f"{command} <install/upgrade> [source/]<port_name> ")
     # print(f"{command} <uninstall> [source/]<port_name> ")
     print(f"{command} <list/portsmd> [source or all] [... filters]")
+    print(f"{command} <ports>")
     print(f"{command} <help> <command>")
     print()
     print("All available commands: " + (', '.join(all_commands.keys())))
@@ -765,6 +867,7 @@ def do_help(hm, argv):
 all_commands = {
     'update': do_update,
     'portsmd': do_portsmd,
+    'ports': do_ports,
     'list': do_list,
     'install': do_install,
     'help': do_help,
