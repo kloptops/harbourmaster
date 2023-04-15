@@ -16,6 +16,7 @@ import zipfile
 
 from difflib import Differ
 from pathlib import Path
+from urllib.parse import urlparse
 
 ## Insert our extra modules.
 sys.path.insert(0, str(Path(__file__).parent / 'pylibs.zip'))
@@ -114,6 +115,65 @@ def fetch_text(url):
         return None
 
     return r.text
+
+
+def raw_download(save_path, file_url):
+    url_info = urlparse(file_url)
+
+    file_name = url_info.path.rsplit('/', 1)[1]
+
+    if not file_name.endswith('.zip'):
+        print(f"Unable to download file: {file_url!r}")
+        return None
+
+    file_name = file_name.replace('%20', '.').replace('+', '.').replace('..', '.')
+
+    zip_file = save_path / file_name
+
+    r = requests.get(file_url, stream=True)
+
+    if r.status_code != 200:
+        print(f"Unable to download file: {file_url!r}")
+        return None
+
+    total_length = r.headers.get('content-length')
+    if total_length is None:
+        total_length = None
+        total_length_mb = "Unknown"
+    else:
+        total_length = int(total_length)
+        total_length_mb = f"{total_length / 1024 / 1024:.02f} MB"
+
+    md5 = hashlib.md5()
+
+    print(f"Downloading {file_url!r} - {total_length_mb}")
+
+    length = 0
+    with zip_file.open('wb') as fh:
+        for data in r.iter_content(chunk_size=(104096), decode_unicode=False):
+            md5.update(data)
+            fh.write(data)
+            length += len(data)
+
+            if total_length is None:
+                sys.stdout.write(f"\r[{'?' * 50}] - {length // 1024 // 1024:3d} / {total_length_mb}")
+            else:
+                amount = int(length / total_length * 50)
+                sys.stdout.write(f"\r[{'.' * amount}{' ' * (50 - amount)}] - {length // 1024 // 1024:3d} / {total_length_mb}")
+            sys.stdout.flush()
+
+        print("\n")
+
+    md5_file = md5.hexdigest()
+
+    zip_info = PortInfo({})
+
+    zip_info.md5 = md5_file
+    zip_info.source = file_url
+    zip_info.zip_file = zip_file
+
+    print("Success!")
+    return zip_info
 
 
 def datetime_compare(time_a, time_b=None):
@@ -807,12 +867,25 @@ def do_install(hm, argv):
     {command} install */Half-Life.zip             # Same as above.
     {command} install pm/Half-Life.zip            # Install specifically from portmaster repo
     {command} install kloptops/Half-Life.zip      # Install specifically from kloptops repo
+    {command} install https://example.com/example_port.zip # Download a port from a url
     """
     if len(argv) == 0:
         print("Missing arguments.")
         return do_help(hm, ['install'])
 
     for arg in argv:
+        if arg.startswith('http'):
+            download_info = raw_download(hm.temp_dir, arg)
+
+            if download_info is None:
+                return 255
+
+            result = hm.install_port(download_info)
+            if result != 0:
+                return result
+
+            continue
+
         if '/' in arg:
             repo, port_name = arg.split('/', 1)
         else:
@@ -831,7 +904,9 @@ def do_install(hm, argv):
             if download_info is None:
                 return 255
 
-            return hm.install_port(download_info)
+            result = hm.install_port(download_info)
+            if result != 0:
+                return result
 
     return 0
 
