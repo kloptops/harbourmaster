@@ -21,6 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / 'pylibs.zip'))
 
 import requests
+from ports_info import ports_info
 
 ################################################################################
 ## Override this for custom tools/ports directories
@@ -153,13 +154,13 @@ class PortMasterV1(BaseSource):
         self._did_update = False
 
         if config['version'] != self.VERSION:
-            print("Cache out of date.")
+            print(f"{self._config['name']}: Cache out of date.")
             self.update()
         elif self._config['last_checked'] is None:
-            print("First check.")
+            print(f"{self._config['name']}: First check.")
             self.update()
         elif datetime_compare(self._config['last_checked']) > UPDATE_FREQUENCY:
-            print("Auto Update.")
+            print(f"{self._config['name']}: Auto Update.")
             self.update()
         else:
             self._data = self._config['data']['data']
@@ -170,8 +171,9 @@ class PortMasterV1(BaseSource):
     def clean_name(self, text):
         return text.lower()
 
-    def update(self, force=False):
+    def update(self):
         if self._did_update:
+            print(f"{self._config['name']}: up to date already.")
             return
 
         print(f"{self._config['name']}: Fetching latest ports")
@@ -327,8 +329,13 @@ class PortMasterV1(BaseSource):
 
         if md5_file != md5_source:
             zip_file.unlink()
-            print(f"Port file doesn't match the md5 file: {md5_file} != {md5_source}")
+            print(f"File doesn't match the md5 file: {md5_file} != {md5_source}")
             return None
+
+        if port_name not in self.utils:
+            ## Utils
+            print("Success!")
+            return zip_file
 
         zip_info = PortInfo({})
 
@@ -467,6 +474,7 @@ class HarbourMaster():
         self.temp_dir  = temp_dir
         self.tools_dir = tools_dir
         self.cfg_dir   = tools_dir / "PortMaster" / "config"
+        self.libs_dir  = tools_dir / "PortMaster" / "libs"
         self.ports_dir = ports_dir
         self.sources = {}
         self.config = {}
