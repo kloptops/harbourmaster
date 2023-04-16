@@ -786,7 +786,12 @@ class HarbourMaster():
             # zf.extractall(self.ports_dir)
             print("Extracting port.")
             for file_info in zf.infolist():
-                print(f"- {file_info.filename!r} [{file_info.file_size / 1024 / 1204:.02f} MB ({file_info.compress_size / file_info.file_size * 100:.0f}%)]")
+                if file_info.file_size == 0:
+                    compress_saving = 100
+                else:
+                    compress_saving = file_info.compress_size / file_info.file_size * 100
+
+                print(f"- {file_info.filename!r} [{file_info.file_size / 1024 / 1204:.02f} MB ({compress_saving:.0f}%)]")
                 zf.extract(file_info, path=self.ports_dir)
 
         if port_info_file is not None:
