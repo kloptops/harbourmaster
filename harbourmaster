@@ -437,7 +437,7 @@ class PortMasterV1(BaseSource):
             print(f"File doesn't match the md5 file: {md5_file} != {md5_source}")
             return None
 
-        if port_name not in self.utils:
+        if port_name in self.utils:
             ## Utils
             print("Success!")
             return zip_file
@@ -783,7 +783,11 @@ class HarbourMaster():
             ## TODO: keep a list of installed files for uninstalling?
             # At this point the port will be installed
             # Extract all the files to the specified directory
-            zf.extractall(self.ports_dir)
+            # zf.extractall(self.ports_dir)
+            print("Extracting port.")
+            for file_info in zf.infolist():
+                print(f"- {file_info.filename!r} [{file_info.file_size / 1024 / 1204:.02f} MB ({file_info.compress_size / file_info.file_size * 100:.0f}%)]")
+                zf.extract(file_info, path=self.ports_dir)
 
         if port_info_file is not None:
             port_info = PortInfo(port_info_file)
