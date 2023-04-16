@@ -241,15 +241,23 @@ def analyse_port(file_name, all_data):
         for file_info in zf.infolist():
             if file_info.filename.startswith('/'):
                 ## Sneaky
-                print(f"Port {zip_name} has an illegal file {file_info.filename!r}.")
+                print(f"- illegal file {file_info.filename!r}.")
+                continue
 
             if file_info.filename.startswith('../'):
                 ## Little
-                print(f"Port {zip_name} has an illegal file {file_info.filename!r}.")
+                print(f"- illegal file {file_info.filename!r}.")
+                continue
 
             if '/../' in file_info.filename:
                 ## Shits
-                print(f"Port {zip_name} has an illegal file {file_info.filename!r}.")
+                print(f"- illegal file {file_info.filename!r}.")
+                continue
+
+            if '/./' in file_info.filename:
+                ## Not too bad I suppose.
+                print(f"- illegal file {file_info.filename!r}.")
+                continue
 
             if '/' in file_info.filename:
                 parts = file_info.filename.split('/')
@@ -262,18 +270,21 @@ def analyse_port(file_name, all_data):
                     if parts[1].lower().endswith('.port.json'):
                         ## TODO: add the ability for multiple port folders to have multiple port.json files. ?
                         if port_info_file is not None:
-                            print(f"Port {zip_name} has multiple port.json files.")
-                            print(f"- Before: {port_info_file!r}")
-                            print(f"- Now:    {file_info.filename!r}")
+                            print(f"- multiple port.json files.")
+                            print(f"  - Before: {port_info_file!r}")
+                            print(f"  - Now:    {file_info.filename!r}")
 
                         port_info_file = file_info.filename
+
+                if file_info.filename.lower().endswith('.sh'):
+                    print(f"- extra script {file_info.filename!r}, this can cause issues.")
 
             else:
                 if file_info.filename.lower().endswith('.sh'):
                     scripts.append(file_info.filename)
                     items.append(file_info.filename)
                 else:
-                    print(f"Port {zip_name} contains {file_info.filename} at the top level, but it is not a shell script.")
+                    print(f"- extra file at root level thats not a script: {file_info.filename!r}")
 
         if port_info_file is not None:
             with zf.open(port_info_file, "r") as fh:

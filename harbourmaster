@@ -95,10 +95,18 @@ else:
 def fetch(url):
     r = requests.get(url)
     if r.status_code != 200:
-        print(f"Failed to download {r.status_code}")
+        print(f"Failed to download {url!r}: [{r.status_code}]")
         return None
 
     return r
+
+
+def fetch_data(url):
+    r = fetch(url)
+    if r is None:
+        return None
+
+    return r.content
 
 
 def fetch_json(url):
@@ -228,6 +236,13 @@ def make_temp_directory():
 
     finally:
         shutil.rmtree(temp_dir)
+
+################################################################################
+## Self updater url
+HM_UPDATE_URLS = {
+    "harbourmaster": "https://github.com/kloptops/harbourmaster/raw/main/harbourmaster.md5",
+    "pylibs.zip": "https://github.com/kloptops/harbourmaster/raw/main/pylibs.zip.md5",
+    }
 
 ################################################################################
 ## APIS
@@ -753,6 +768,9 @@ class HarbourMaster():
 
                             port_info_file = self.ports_dir / file_info.filename
 
+                    if file_info.filename.lower().endswith('.sh'):
+                        print(f"Port {download_info.source} has a shell script inside, this can cause issues.")
+
                 else:
                     if file_info.filename.lower().endswith('.sh'):
                         scripts.append(file_info.filename)
@@ -799,6 +817,47 @@ class HarbourMaster():
 
 ################################################################################
 ## Commands
+def do_self_upgrade():
+    self_path = Path(__file__).parent
+    print(self_path)
+
+    if not self_path.is_absolute():
+        self_path = self_path.absolute()
+
+    results = []
+    for file_name, file_url_md5 in HM_UPDATE_URLS.items():
+        if not file_url_md5.endswith('.md5'):
+            print("Self Upgrade: Something is funky, quitting.")
+            return 255
+
+        file_url = file_url_md5.rsplit('.', 1)[0]
+        print(file_name, file_url, file_url_md5)
+
+        file_md5_result = fetch_text(file_url_md5)
+        if file_md5_result is None:
+            print(f"Self Upgrade: File download failed. [{file_url_md5}]")
+            return 255
+
+        file_md5_result = file_md5_result.strip()
+
+        file_data = fetch_data(file_url)
+        if file_data is None:
+            print(f"Self Upgrade: File download failed. [{file_url}]")
+            return 255
+
+        md5 = hashlib.md5()
+        md5.update(file_data)
+        file_md5_check = md5.hexdigest()
+
+        if file_md5_check != file_md5_result:
+            print(f"Self Upgrade: MD5 sum doesn't match. [{file_md5_check} vs {file_md5_result}]")
+            return 255
+
+        results.append((file_name, file_data))
+
+    print("Succesfully fetched files, updating.")
+
+
 def do_update(hm, argv):
     """
     Update available ports, checks for new releases.
@@ -845,17 +904,24 @@ def do_ports(hm, argv):
 
     {command} ports [filters]
     """
-    print("Installed Ports:")
-    for port_info in hm.installed_ports:
-        print(f"- {port_info.source}")
+    if len(hm.installed_ports) > 0:
+        print("Installed Ports:")
+        for port_info in hm.installed_ports:
+            print(f"- {port_info.source}")
 
-    print()
+        print()
 
-    print("Unknown Ports:")
-    for file_name in hm.unknown_ports:
-        print(f"- {file_name}")
+    if len(hm.unknown_ports) > 0:
+        print("Unknown Ports:")
+        for file_name in hm.unknown_ports:
+            print(f"- {file_name}")
 
-    print()
+        print()
+
+    if len(hm.installed_ports) == 0 and len(hm.unknown_ports) == 0:
+        print("No ports found.")
+
+        print()
 
     return 0
 
@@ -930,6 +996,28 @@ def do_install(hm, argv):
     return 0
 
 
+def do_upgrade(hm, argv):
+    """
+    Upgrade a port
+
+    {command} upgrade Half-Life.zip               # Update from highest priority repo
+    {command} upgrade */Half-Life.zip             # Same as above.
+    {command} upgrade pm/Half-Life.zip            # Update specifically from portmaster repo
+    """
+
+    if len(argv) == 0:
+        print("Missing arguments.")
+        return do_help(hm, ['upgrade'])
+
+    if len(argv) == 1 and argv[0] == 'harbourmaster':
+        ## SPECIAL CASE!
+
+        return do_self_upgrade()
+
+    print("Error: Not yet implemented.")
+    return 255
+
+
 def do_help(hm, argv):
     """
     Shows general help or help for a particular command.
@@ -966,8 +1054,10 @@ all_commands = {
     'ports': do_ports,
     'list': do_list,
     'install': do_install,
+    'upgrade': do_upgrade,
     'help': do_help,
     }
+
 
 def main(argv):
 
