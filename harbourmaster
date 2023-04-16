@@ -169,8 +169,9 @@ def raw_download(save_path, file_url):
     zip_info = PortInfo({})
 
     zip_info.md5 = md5_file
-    zip_info.source = file_url
+    zip_info.source = f"url/{zip_file.name}"
     zip_info.zip_file = zip_file
+    zip_info.attr['url'] = file_url
 
     print("Success!")
     return zip_info
@@ -919,6 +920,8 @@ def do_help(hm, argv):
     {command} help list
     """
     command = sys.argv[0]
+    if '/' in command:
+        command = command.rsplit('/', 1)[1]
 
     if len(argv) > 0:
         if argv[0].lower() not in all_commands:
