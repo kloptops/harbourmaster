@@ -11,20 +11,24 @@ The goal is to have a gui frontend that can display text/images and a descriptio
   - [ ] List by Genre
   - [ ] List by Updates
   - [ ] List by Ready to Run
-- [ ] Download Ports
-- [ ] Install Ports
+- [x] Download Ports
+- [x] Install Ports
+- [x] List ports
+- [x] Detect ports installed by zip
+  - [x] Have a builtin list of known ports to figure out older ports and ports installed manually.
 - [ ] Multiple Ports repositories
 - [ ] Uninstall Ports
 
+## commands available:
 
-
-# Ports Installed Check
-
-Look at root scripts
-
-- check file size / md5
-- check associated directories exist
-- determines which zip it comes from.
-
+| Command                                                  | Effect                                                  |
+|  ------------------------------------------------------- | ------------------------------------------------------- |
+| `harbourmaster update`                                   | downloads the latest ports information                  |
+| `harbourmaster portsmd`                                  | generate a ports.md file compatible with PortMaster.sh  |
+| `harbourmaster list`                                     | list available ports                                    |
+| `harbourmaster ports`                                    | list installed ports, and unknown ports.                |
+| `harbourmaster install <source>/<zipname>.zip`           | downloads and installs the port from available sources. |
+| `harbourmaster install http[s]://<url>.zip[.md5/md5sum]` | downloads a port from the specified url. If the url ends with md5/md5sum it assumes the url without the md5 is the ports zipfile. It will check the md5 against what is downloaded. |
+| `harbourmaster upgrade harbourmaster`                    | Updates harbourmaster against the latest version on github |
 
 [PortMaster]: https://github.com/christianhaitian/PortMaster
