@@ -132,6 +132,19 @@ def fetch_text(url):
 
     return r.text
 
+def nice_size(size):
+    suffixes = ('B', 'KB', 'MB', 'GB')
+    for suffix in suffixes:
+        if size < 768:
+            break
+
+        size /= 1024
+
+    if suffix == 'B':
+        return f"{size:.0f} {suffix}"
+
+    return f"{size:.03f} {suffix}"
+
 
 def raw_download(save_path, file_url):
     original_url = file_url
@@ -168,10 +181,10 @@ def raw_download(save_path, file_url):
     total_length = r.headers.get('content-length')
     if total_length is None:
         total_length = None
-        total_length_mb = "Unknown"
+        total_length_mb = "???? MB"
     else:
         total_length = int(total_length)
-        total_length_mb = f"{total_length / 1024 / 1024:.02f} MB"
+        total_length_mb = nice_size(total_length)
 
     md5 = hashlib.md5()
 
@@ -185,10 +198,10 @@ def raw_download(save_path, file_url):
             length += len(data)
 
             if total_length is None:
-                sys.stdout.write(f"\r[{'?' * 50}] - {length // 1024 // 1024:3d} / {total_length_mb}")
+                sys.stdout.write(f"\r[{'?' * 50}] - {nice_size(length)} / {total_length_mb}")
             else:
                 amount = int(length / total_length * 50)
-                sys.stdout.write(f"\r[{'.' * amount}{' ' * (50 - amount)}] - {length // 1024 // 1024:3d} / {total_length_mb}")
+                sys.stdout.write(f"\r[{'.' * amount}{' ' * (50 - amount)}] - {nice_size(length)} / {total_length_mb}")
             sys.stdout.flush()
 
         print("\n")
@@ -445,7 +458,7 @@ class PortMasterV1(BaseSource):
 
         md5 = hashlib.md5()
 
-        print(f"Downloading {self._data[port_name]['url']!r} - {total_length / 1024 / 1024:.02f} MB")
+        print(f"Downloading {self._data[port_name]['url']!r} - {nice_size(total_length)}")
 
         length = 0
         with zip_file.open('wb') as fh:
@@ -455,7 +468,7 @@ class PortMasterV1(BaseSource):
                 length += len(data)
 
                 amount = int(length / total_length * 50)
-                sys.stdout.write(f"\r[{'.' * amount}{' ' * (50 - amount)}] - {length // 1024 // 1024:3d} / {total_length // 1024 // 1024:3d} MB")
+                sys.stdout.write(f"\r[{'.' * amount}{' ' * (50 - amount)}] - {nice_size(length)} / {nice_size(total_length)}")
                 sys.stdout.flush()
 
             print("\n")
@@ -822,7 +835,7 @@ class HarbourMaster():
                 else:
                     compress_saving = file_info.compress_size / file_info.file_size * 100
 
-                print(f"- {file_info.filename!r} [{file_info.file_size / 1024 / 1204:.02f} MB ({compress_saving:.0f}%)]")
+                print(f"- {file_info.filename!r} [{nice_size(file_info.file_size)} ({compress_saving:.0f}%)]")
                 zf.extract(file_info, path=self.ports_dir)
 
         if port_info_file is not None:
