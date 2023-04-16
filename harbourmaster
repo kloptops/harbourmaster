@@ -687,7 +687,7 @@ class HarbourMaster():
 
             port_info = PortInfo(port_info_raw)
 
-            with open(port_info_raw['file'], 'w') as fh:
+            with open(self.ports_dir / port_info_raw['file'], 'w') as fh:
                 json.dump(port_info.to_dict(), fh, indent=4)
 
             self.installed_ports.append(port_info)
