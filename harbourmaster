@@ -842,6 +842,15 @@ def self_upgrade():
 
         file_md5_result = file_md5_result.strip()
 
+        if (self_path / file_name).is_file():
+            md5 = hashlib.md5()
+            with open(self_path / file_name, 'rb') as fh:
+                md5.update(fh.read())
+
+            if md5.hexdigest() == file_md5_result:
+                print(f"- skipping {file_name!r}, already up to date.")
+                continue
+
         file_data = fetch_data(file_url)
         if file_data is None:
             print(f"Self Upgrade: File download failed. [{file_url}]")
@@ -857,14 +866,18 @@ def self_upgrade():
 
         results.append((file_name, file_data))
 
-    print("Succesfully fetched files, updating.")
-    for file_name, file_data in results:
-        print(f"- updating {file_name!r}")
-        with open(self_path / file_name, 'wb') as fh:
-            fh.write(file_data)
-        print( "  done.")
+    if len(results) == 0:
+        print("Skipping, harbourmaster is already up to date.")
 
-    print("All Done!")
+    else:
+        print("Succesfully fetched files, updating.")
+        for file_name, file_data in results:
+            print(f"- updating {file_name!r}")
+            with open(self_path / file_name, 'wb') as fh:
+                fh.write(file_data)
+            print( "  done.")
+
+        print("All Done!")
 
 
 ################################################################################
