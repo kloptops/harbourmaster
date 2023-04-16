@@ -510,7 +510,7 @@ class PortInfo():
 
         for attr in self.__attrs__:
             value_a = getattr(self, attr)
-            value_b = getattr(other, attr)
+            value_b = getattr(other, attr, None)
 
             if value_a is None and value_b is not None:
                 setattr(self, attr, value_b)
@@ -522,6 +522,20 @@ class PortInfo():
 
                     if key not in value_a or value_a[key] is None:
                         value_a[key] = value_b[key]
+
+    @property
+    def dirs(self):
+        return [
+            item[:-1]
+            for item in self.items
+            if item.endswith('/')]
+
+    @property
+    def files(self):
+        return [
+            item
+            for item in self.items
+            if not item.endswith('/')]
 
     def to_dict(self):
         return {
@@ -908,6 +922,10 @@ def do_install(hm, argv):
             result = hm.install_port(download_info)
             if result != 0:
                 return result
+
+            break
+        else:
+            print(f"Unable to find a source for {port_name!r}")
 
     return 0
 
