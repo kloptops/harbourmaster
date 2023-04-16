@@ -10,7 +10,13 @@
     /* extra attributes */
     "attr": {
         /* who ported this */
-        "porter": "kloptops"
+        "porter": "kloptops",
+        /* Description of the game. */
+        "desc": "Half-Life is Valve's debut title which blends blends action and adventure with award-winning technology to create a frighteningly realistic world where players must think to survive. You need to have your own copy of the game. You need to copy the steam valve directory from your steam installation into ports/Half-Life/valve directory. You can also run Half-Life Blue Shift/Opposing Forces by copying the contents of the bshift/gearbox steam files into their respective ports/Half-Life/ directory.",
+        /* What runtime do we require? currently support "mono-6.12.0.122" */
+        "runtime": null,
+        /* If the source starts with url, this is the url of which the port was fetched from. */
+        "url": ""
         /* TODO: add extra attributes? maybe use ports.md attributes */
     }
 }

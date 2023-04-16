@@ -95,6 +95,9 @@ def hash_text(text):
 ################################################################################
 ## Port Information
 class PortInfo():
+    """
+    Similar to the one in harbourmaster, but more streamlined.
+    """
     __attrs__ = (
         'file', 'source', 'items', 'items_opt')
 

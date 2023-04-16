@@ -16,7 +16,7 @@ import zipfile
 
 from difflib import Differ
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 ## Insert our extra modules.
 sys.path.insert(0, str(Path(__file__).parent / 'pylibs.zip'))
@@ -42,11 +42,17 @@ SOURCE_DEFAULT_PORTMASTER = """
 }
 """.strip()
 
+TESTING=False
 ################################################################################
 ## The following code is a simplification of the PortMaster toolsloc and whichsd code.
 DEFAULT_PORTS_DIR = Path("/roms/ports")
 
-if Path("/opt/tools/PortMaster/").is_dir():
+## For testing on MAC OS X.
+if Path("/Volumes").is_dir():
+    DEFAULT_TOOLS_DIR = Path('.').absolute()
+    DEFAULT_PORTS_DIR = Path('ports/').absolute()
+    TESTING=True
+elif Path("/opt/tools/PortMaster/").is_dir():
     DEFAULT_TOOLS_DIR = Path("/opt/tools")
 elif Path("/opt/system/Tools/PortMaster/").is_dir():
     DEFAULT_TOOLS_DIR = Path("/opt/system/Tools")
@@ -80,7 +86,6 @@ if PORTS_DIR is None:
         PORTS_DIR = Path(os.environ['PORTS_DIR']).resolve()
     else:
         PORTS_DIR = DEFAULT_PORTS_DIR
-    PORTS_DIR = Path(__file__).parent.resolve().parent
 elif isinstance(ports_dir, str):
     PORTS_DIR = Path(PORTS_DIR).resolve()
 elif isinstance(PORTS_DIR, pathlib.PurePath):
@@ -89,6 +94,9 @@ elif isinstance(PORTS_DIR, pathlib.PurePath):
 else:
     print(f"Error: {PORTS_DIR!r} is set to something weird.")
     exit(255)
+
+# print(f"PORTS_DIR: {PORTS_DIR}")
+# print(f"TOOLS_DIR: {TOOLS_DIR}")
 
 ################################################################################
 ## Utils
@@ -126,9 +134,22 @@ def fetch_text(url):
 
 
 def raw_download(save_path, file_url):
+    original_url = file_url
     url_info = urlparse(file_url)
-
     file_name = url_info.path.rsplit('/', 1)[1]
+
+    if file_name.endswith('.md5') or file_name.endswith('.md5sum'):
+        ## If it is an md5 file, we assume the actual zip is sans the md5/md5sum
+        md5_source = fetch_text(file_url)
+        if md5_source is None:
+            print(f"Unable to download file: {file_url!r} [{r.status_code}]")
+
+        md5_source = md5_source.strip().split(' ', 1)[0]
+
+        file_name = file_name.rsplit('.', 1)[0]
+        file_url = urlunparse(url_info._replace(path=url_info.path.rsplit('.', 1)[0]))
+    else:
+        md5_source = None
 
     if not file_name.endswith('.zip'):
         print(f"Unable to download file: {file_url!r} [doesn't end with '.zip']")
@@ -173,13 +194,22 @@ def raw_download(save_path, file_url):
         print("\n")
 
     md5_file = md5.hexdigest()
+    if md5_source is not None:
+        if md5_file != md5_source:
+            zip_file.unlink()
+            print(f"File doesn't match the md5 file: {md5_file} != {md5_source}")
+            return None
+        else:
+            print(f"Passed md5 check.")
+    else:
+        print(f"No md5 to check against: {md5_file}")
 
     zip_info = PortInfo({})
 
     zip_info.md5 = md5_file
     zip_info.source = f"url/{zip_file.name}"
     zip_info.zip_file = zip_file
-    zip_info.attr['url'] = file_url
+    zip_info.attr['url'] = original_url
 
     print("Success!")
     return zip_info
@@ -448,7 +478,8 @@ class PortMasterV1(BaseSource):
         zip_info.source = f"{self._prefix}/{port_name}"
         zip_info.attr['porter'] = self._info[port_name]['porter']
         zip_info.attr['desc']   = self._info[port_name]['desc']
-        zip_info.attr['mono']   = self._info[port_name]['mono']
+        if self._info[port_name]['mono'] is True:
+            zip_info.attr['mono'] = "mono-6.12.0.122"
         zip_info.attr['rtr']    = self._info[port_name]['rtr']
         zip_info.zip_file = zip_file
 
@@ -829,6 +860,10 @@ def self_upgrade():
     """
     Self-upgrading code.
     """
+    if TESTING:
+        print("Unable to update in test environment.")
+        return 255
+
     self_path = Path(__file__).parent
 
     if not self_path.is_absolute():
