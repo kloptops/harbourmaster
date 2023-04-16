@@ -237,12 +237,6 @@ def make_temp_directory():
     finally:
         shutil.rmtree(temp_dir)
 
-################################################################################
-## Self updater url
-HM_UPDATE_URLS = {
-    "harbourmaster": "https://github.com/kloptops/harbourmaster/raw/main/harbourmaster.md5",
-    "pylibs.zip": "https://github.com/kloptops/harbourmaster/raw/main/pylibs.zip.md5",
-    }
 
 ################################################################################
 ## APIS
@@ -816,22 +810,30 @@ class HarbourMaster():
         return 0
 
 ################################################################################
-## Commands
-def do_self_upgrade():
+## Self updater url
+HM_UPDATE_URLS = {
+    "harbourmaster": "https://github.com/kloptops/harbourmaster/raw/main/harbourmaster.md5",
+    "pylibs.zip": "https://github.com/kloptops/harbourmaster/raw/main/pylibs.zip.md5",
+    }
+
+def self_upgrade():
+    """
+    Self-upgrading code.
+    """
     self_path = Path(__file__).parent
-    print(self_path)
 
     if not self_path.is_absolute():
         self_path = self_path.absolute()
 
     results = []
+
+    print("Performing Self Upgrade.")
     for file_name, file_url_md5 in HM_UPDATE_URLS.items():
         if not file_url_md5.endswith('.md5'):
             print("Self Upgrade: Something is funky, quitting.")
             return 255
 
         file_url = file_url_md5.rsplit('.', 1)[0]
-        print(file_name, file_url, file_url_md5)
 
         file_md5_result = fetch_text(file_url_md5)
         if file_md5_result is None:
@@ -856,7 +858,17 @@ def do_self_upgrade():
         results.append((file_name, file_data))
 
     print("Succesfully fetched files, updating.")
+    for file_name, file_data in results:
+        print(f"- updating {file_name!r}")
+        with open(self_path / file_name, 'wb') as fh:
+            fh.write(file_data)
+        print( "  done.")
 
+    print("All Done!")
+
+
+################################################################################
+## Commands
 
 def do_update(hm, argv):
     """
@@ -1012,7 +1024,7 @@ def do_upgrade(hm, argv):
     if len(argv) == 1 and argv[0] == 'harbourmaster':
         ## SPECIAL CASE!
 
-        return do_self_upgrade()
+        return self_upgrade()
 
     print("Error: Not yet implemented.")
     return 255
