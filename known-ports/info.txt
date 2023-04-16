@@ -1,0 +1,1 @@
+These are common ports that aren't on Portmaster

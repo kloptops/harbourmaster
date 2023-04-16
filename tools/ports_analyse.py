@@ -22,6 +22,11 @@ from difflib import Differ
 from pathlib import Path
 
 def custom_json_indent(obj, level=0, indent=4, sort_keys=True, max_length=80):
+    if sort_keys is True:
+        sort_fnc = lambda x: sorted(x, key=lambda y: y[0].lower())
+    else:
+        sort_fnc = lambda x: x
+
     """
     Custom function to indent JSON structure, but combine lines for elements with only a few or short items.
     """
@@ -41,7 +46,7 @@ def custom_json_indent(obj, level=0, indent=4, sort_keys=True, max_length=80):
         # If obj is a dict, indent its keys and values and join them with commas and newlines
         items = ",".join([
             f"{json.dumps(k)}: {custom_json_indent(v, level=level + 1, indent=indent, sort_keys=sort_keys, max_length=max_length)}"
-            for k, v in obj.items()
+            for k, v in sort_fnc(obj.items())
             ])
         # If the dict fits on a single line, return it on one line
         if len(items) <= (max_length - (indent * level) - 2):
@@ -51,7 +56,7 @@ def custom_json_indent(obj, level=0, indent=4, sort_keys=True, max_length=80):
             indent_str = "\n" + (" " * (level * indent))
             items = ("," + indent_str).join([
                 f"{json.dumps(k, sort_keys=sort_keys)}: {custom_json_indent(v, level=level + 1, indent=indent, sort_keys=sort_keys, max_length=max_length)}"
-                for k, v in obj.items()
+                for k, v in sort_fnc(obj.items())
                 ])
             return f"{{{indent_str}{items}{indent_str[:-indent]}}}"
     else:
@@ -134,6 +139,20 @@ class PortInfo():
             if getattr(self, attr) is not None
             }
 
+    @property
+    def dirs(self):
+        return [
+            item[:-1]
+            for item in self.items
+            if item.endswith('/')]
+
+    @property
+    def files(self):
+        return [
+            item
+            for item in self.items
+            if not item.endswith('/')]
+
     def __str__(self):
         return str(self.to_dict())
 
@@ -144,7 +163,9 @@ def clean_name(file_name, attr='name'):
     if attr == 'name':
         name = file_name.name
     elif attr == 'stem':
-        name = file_name.stem
+        name = file_name.name
+        if '.' in name:
+            name = name.split('.', 1)[0]
     else:
         name = str(file_name)
 
@@ -163,6 +184,49 @@ def add_nicely(base_dict, key, value):
 
     if value not in base_dict[key]:
         base_dict[key].append(value)
+
+
+def analyse_known_port(file_name, all_data):
+    """
+    These are for special ports. Which won't ever be on PortMaster, but we know about.
+    """
+
+    with file_name.open('r') as fh:
+        port_data = json.load(fh)
+
+
+    port_info = PortInfo(port_data)
+    zip_name = f"{clean_name(file_name, 'stem')}.zip"
+
+    ## These two are always overriden.
+    port_info.source = f"*/{zip_name}"
+
+    port_info.file = f"{port_info.dirs[0]}/{(clean_name(file_name, 'stem') + '.port.json')}"
+
+    if port_info.items_opt is not None:
+        for item in port_info.items_opt:
+            add_nicely(all_data['items'], item, zip_name)
+
+    for item in port_info.items:
+        add_nicely(all_data['items'], item, zip_name)
+
+    all_data['ports'][zip_name] = port_info.to_dict()
+
+
+def analyse_known_ports(root_path, all_data):
+    # print(f"Checking {root_path}")
+    for sub_file in root_path.glob('*.port.json'):
+        zip_name = clean_name(sub_file, 'stem') + '.zip'
+
+        if zip_name in ('portmaster.zip', 'fallout.1.zip', 'alephone.zip'):
+            continue
+
+        if zip_name in all_data['ports']:
+            continue
+
+        print(f"Scanning {zip_name}")
+        analyse_known_port(sub_file, all_data)
+
 
 def analyse_port(file_name, all_data):
     # When we analyse a port, we want to look at the root directories, and the rooth scripts.
@@ -237,16 +301,8 @@ def analyse_port(file_name, all_data):
 
 
 def analyse_ports(root_path, all_data):
-    zip_files = {}
     # print(f"Checking {root_path}")
-    for sub_file in root_path.iterdir():
-        if not sub_file.is_file():
-            continue
-
-        # print(sub_file, sub_file.suffix)
-        if sub_file.suffix not in ('.zip', ):
-            continue
-
+    for sub_file in root_path.glob('*.zip'):
         zip_name = clean_name(sub_file)
 
         if zip_name in ('portmaster.zip', 'fallout.1.zip', 'alephone.zip'):
@@ -257,8 +313,6 @@ def analyse_ports(root_path, all_data):
 
         print(f"Scanning {zip_name}")
         analyse_port(sub_file, all_data)
-
-    return zip_files
 
 
 def git_rewind(root_path, all_data):
@@ -281,7 +335,8 @@ def git_rewind(root_path, all_data):
             analyse_ports(root_path, all_data)
             print(f"Done: {i:3d} / {len(commit_ids):3d}")
 
-            if i > 5:
+            ## This seems to work well enough.
+            if i > 10:
                 break
 
     except KeyboardInterrupt:
@@ -290,14 +345,21 @@ def git_rewind(root_path, all_data):
     subprocess.check_output(['git', 'checkout', 'main'])
 
 def main():
-    root_path = Path('../Portmaster/').absolute()
-    host_path = Path('../Portmaster-Hosting/').absolute()
-    info_file = Path('pylibs/ports_info.py').absolute()
+    ## The local portmaster repo
+    root_path   = Path('../Portmaster/').absolute()
+    ## Portmaster-Hosting folder, download as new large files are added.
+    host_path   = Path('../Portmaster-Hosting/').absolute()
+    ## Special ports.
+    known_ports = Path('known-ports/').absolute()
+
+    info_file   = Path('pylibs/ports_info.py').absolute()
 
     all_data = {
         'items': {},
         'ports': {},
         }
+
+    analyse_known_ports(known_ports, all_data)
 
     analyse_ports(host_path, all_data)
 
