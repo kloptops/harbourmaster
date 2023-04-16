@@ -430,12 +430,15 @@ class PortMasterV1(BaseSource):
         return self._info[port_name]
 
 
-    def download(self, port_name):
+    def download(self, port_name, temp_dir=None):
         if port_name not in self._data:
             print(f"Unable to find port {port_name}")
             return None
 
-        zip_file = self._hm.temp_dir / port_name
+        if temp_dir is None:
+            temp_dir = self._hm.temp_dir
+
+        zip_file = temp_dir / port_name
 
         md5_source = fetch_text(self._data[port_name + '.md5']['url'])
         if md5_source is None:
@@ -491,9 +494,12 @@ class PortMasterV1(BaseSource):
         zip_info.source = f"{self._prefix}/{port_name}"
         zip_info.attr['porter'] = self._info[port_name]['porter']
         zip_info.attr['desc']   = self._info[port_name]['desc']
+
+        ## TODO: fix this. :(
         if self._info[port_name]['mono'] is True:
-            zip_info.attr['mono'] = "mono-6.12.0.122"
-        zip_info.attr['rtr']    = self._info[port_name]['rtr']
+            zip_info.attr['runtime'] = "mono-6.12.0.122-aarch64.squashfs"
+
+        zip_info.attr['rtr'] = self._info[port_name]['rtr']
         zip_info.zip_file = zip_file
 
         print("Success!")
@@ -1066,6 +1072,20 @@ def do_install(hm, argv):
 
             if download_info is None:
                 return 255
+
+            runtime = download_info.attr.get('runtime', None)
+            if runtime is not None and not (hm.libs_dir / runtime).is_file():
+                print(f"Downloading required runtime {runtime}.")
+                try:
+                    runtime_download = source.download(runtime, temp_dir=hm.libs_dir)
+
+                except Exception as err:
+                    ## We need to catch any errors and delete the file if it fails,
+                    ## here we are not using the temp file auto deletion.
+                    if (hm.libs_dir / runtime).is_file():
+                        (hm.libs_dir / runtime).unlink()
+
+                    raise err
 
             result = hm.install_port(download_info)
             if result != 0:
