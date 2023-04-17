@@ -705,6 +705,7 @@ class HarbourMaster():
 
         self.installed_ports = []
         self.unknown_ports = []
+        self.broken_ports = []
         all_items = {}
         unknown_files = []
 
@@ -715,13 +716,25 @@ class HarbourMaster():
             for item in port_info.items:
                 add_unique_list(all_items, item, port_info.source)
 
-                ## TODO: check these files exist, possibly mark the port for deletion if the scripts for it are missing.
-
             if port_info.items_opt is not None:
                 for item in port_info.items_opt:
                     add_unique_list(all_items, item, port_info.source)
 
-            self.installed_ports.append(port_info)
+            bad = False
+            for script_name in port_info.scripts:
+                if not (self.ports_dir / script_name).is_file():
+                    bad = True
+                    break
+
+            for dir_name in port_info.dirs:
+                if not (self.ports_dir / dir_name).is_isdir():
+                    bad = True
+                    break
+
+            if bad:
+                self.broken_ports.append(port_info)
+            else:
+                self.installed_ports.append(port_info)
 
         ## Check all files
         for file_item in self.ports_dir.iterdir():
@@ -748,6 +761,7 @@ class HarbourMaster():
         new_ports = []
         for unknown_file in unknown_files:
             port_owners = get_list(ports_info['items'], unknown_file)
+
             if len(port_owners) == 1:
                 add_unique(new_ports, port_owners[0])
             elif len(port_owners) == 0:
@@ -761,7 +775,13 @@ class HarbourMaster():
 
             port_info = PortInfo(port_info_raw)
 
-            with open(self.ports_dir / port_info_raw['file'], 'w') as fh:
+            port_json = self.ports_dir / port_info_raw['file']
+            if not port_json.parent.is_dir():
+                ## CEBION WAS HERE!
+                self.broken_ports.append(port_info)
+                continue
+
+            with open(, 'w') as fh:
                 json.dump(port_info.to_dict(), fh, indent=4)
 
             self.installed_ports.append(port_info)
@@ -1006,7 +1026,14 @@ def do_ports(hm, argv):
 
         print()
 
-    if len(hm.installed_ports) == 0 and len(hm.unknown_ports) == 0:
+    if len(hm.broken_ports) > 0:
+        print("Broken Ports:")
+        for file_name in hm.broken_ports:
+            print(f"- {port_info.source}")
+
+        print()
+
+    if sum((len(hm.installed_ports), len(hm.unknown_ports), len(hm.broken_ports))) == 0:
         print("No ports found.")
 
         print()
