@@ -132,6 +132,7 @@ def fetch_text(url):
 
     return r.text
 
+
 def nice_size(size):
     suffixes = ('B', 'KB', 'MB', 'GB')
     for suffix in suffixes:
@@ -146,31 +147,12 @@ def nice_size(size):
     return f"{size:.03f} {suffix}"
 
 
-def raw_download(save_path, file_url):
-    original_url = file_url
-    url_info = urlparse(file_url)
-    file_name = url_info.path.rsplit('/', 1)[1]
+def download(file_name, file_url, md5_source=None):
+    """
+    Download a file from file_url into file_name, checks the md5sum of the file against md5_source if given.
 
-    if file_name.endswith('.md5') or file_name.endswith('.md5sum'):
-        ## If it is an md5 file, we assume the actual zip is sans the md5/md5sum
-        md5_source = fetch_text(file_url)
-        if md5_source is None:
-            print(f"Unable to download file: {file_url!r} [{r.status_code}]")
-
-        md5_source = md5_source.strip().split(' ', 1)[0]
-
-        file_name = file_name.rsplit('.', 1)[0]
-        file_url = urlunparse(url_info._replace(path=url_info.path.rsplit('.', 1)[0]))
-    else:
-        md5_source = None
-
-    if not file_name.endswith('.zip'):
-        print(f"Unable to download file: {file_url!r} [doesn't end with '.zip']")
-        return None
-
-    file_name = file_name.replace('%20', '.').replace('+', '.').replace('..', '.')
-
-    zip_file = save_path / file_name
+    returns file_name if successful, otherwise None.
+    """
 
     r = requests.get(file_url, stream=True)
 
@@ -191,17 +173,17 @@ def raw_download(save_path, file_url):
     print(f"Downloading {file_url!r} - {total_length_mb}")
 
     length = 0
-    with zip_file.open('wb') as fh:
+    with file_name.open('wb') as fh:
         for data in r.iter_content(chunk_size=104096, decode_unicode=False):
             md5.update(data)
             fh.write(data)
             length += len(data)
 
             if total_length is None:
-                sys.stdout.write(f"\r[{'?' * 50}] - {nice_size(length)} / {total_length_mb}")
+                sys.stdout.write(f"\r[{'?' * 50}] - {nice_size(length)} / {total_length_mb}    ")
             else:
                 amount = int(length / total_length * 50)
-                sys.stdout.write(f"\r[{'.' * amount}{' ' * (50 - amount)}] - {nice_size(length)} / {total_length_mb}")
+                sys.stdout.write(f"\r[{'.' * amount}{' ' * (50 - amount)}] - {nice_size(length)} / {total_length_mb}    ")
             sys.stdout.flush()
 
         print("\n")
@@ -217,15 +199,7 @@ def raw_download(save_path, file_url):
     else:
         print(f"No md5 to check against: {md5_file}")
 
-    zip_info = PortInfo({})
-
-    zip_info.md5 = md5_file
-    zip_info.source = f"url/{zip_file.name}"
-    zip_info.zip_file = zip_file
-    zip_info.attr['url'] = original_url
-
-    print("Success!")
-    return zip_info
+    return file_name
 
 
 def datetime_compare(time_a, time_b=None):
@@ -282,8 +256,51 @@ def make_temp_directory():
 
 
 ################################################################################
-## APIS
+## Raw Downloader
 
+def raw_download(save_path, file_url):
+    """
+    This is a bit of a hack, this acts as a source of ports, but for raw urls.
+    This only supports downloading so not bothering to add it as a full blown source.
+    """
+    original_url = file_url
+    url_info = urlparse(file_url)
+    file_name = url_info.path.rsplit('/', 1)[1]
+
+    if file_name.endswith('.md5') or file_name.endswith('.md5sum'):
+        ## If it is an md5 file, we assume the actual zip is sans the md5/md5sum
+        md5_source = fetch_text(file_url)
+        if md5_source is None:
+            print(f"Unable to download file: {file_url!r} [{r.status_code}]")
+
+        md5_source = md5_source.strip().split(' ', 1)[0]
+
+        file_name = file_name.rsplit('.', 1)[0]
+        file_url = urlunparse(url_info._replace(path=url_info.path.rsplit('.', 1)[0]))
+    else:
+        md5_source = None
+
+    if not file_name.endswith('.zip'):
+        print(f"Unable to download file: {file_url!r} [doesn't end with '.zip']")
+        return None
+
+    file_name = file_name.replace('%20', '.').replace('+', '.').replace('..', '.')
+
+    zip_file = download(save_path / file_name, file_url, md5_source)
+
+    zip_info = PortInfo({})
+
+    zip_info.md5 = md5_source
+    zip_info.source = f"url/{zip_file.name}"
+    zip_info.zip_file = zip_file
+    zip_info.attr['url'] = original_url
+
+    print("Success!")
+    return zip_info
+
+
+################################################################################
+## APIS
 class BaseSource():
     VERSION = 0
 
@@ -438,8 +455,6 @@ class PortMasterV1(BaseSource):
         if temp_dir is None:
             temp_dir = self._hm.temp_dir
 
-        zip_file = temp_dir / port_name
-
         md5_source = fetch_text(self._data[port_name + '.md5']['url'])
         if md5_source is None:
             print(f"Unable to download md5 file: {self._data[port_name + '.md5']['url']!r}")
@@ -447,50 +462,15 @@ class PortMasterV1(BaseSource):
 
         md5_source = md5_source.strip()
 
-        r = requests.get(self._data[port_name]['url'], stream=True)
-
-        if r.status_code != 200:
-            print(f"Unable to download port file: {self._data[port_name]['url']!r} [{r.status_code}]")
-            return None
-
-        total_length = r.headers.get('content-length')
-        if total_length is None:
-            total_length = self._data[port_name]['size']
-        else:
-            total_length = int(total_length)
-
-        md5 = hashlib.md5()
-
-        print(f"Downloading {self._data[port_name]['url']!r} - {nice_size(total_length)}")
-
-        length = 0
-        with zip_file.open('wb') as fh:
-            for data in r.iter_content(chunk_size=104096, decode_unicode=False):
-                md5.update(data)
-                fh.write(data)
-                length += len(data)
-
-                amount = int(length / total_length * 50)
-                sys.stdout.write(f"\r[{'.' * amount}{' ' * (50 - amount)}] - {nice_size(length)} / {nice_size(total_length)}")
-                sys.stdout.flush()
-
-            print("\n")
-
-        md5_file = md5.hexdigest()
-
-        if md5_file != md5_source:
-            zip_file.unlink()
-            print(f"File doesn't match the md5 file: {md5_file} != {md5_source}")
-            return None
+        zip_file = download(temp_dir / port_name, self._data[port_name]['url'], md5_source)
 
         if port_name in self.utils:
             ## Utils
-            print("Success!")
             return zip_file
 
         zip_info = PortInfo({})
 
-        zip_info.md5 = md5_file
+        zip_info.md5 = md5_source
         zip_info.source = f"{self._prefix}/{port_name}"
         zip_info.attr['porter'] = self._info[port_name]['porter']
         zip_info.attr['desc']   = self._info[port_name]['desc']
@@ -535,8 +515,9 @@ SOURCE_APIS = {
 ################################################################################
 ## Port Information
 class PortInfo():
+    VERSION = 1
     __attrs__ = (
-        'source', 'items', 'items', 'items_opt', 'md5', 'attr')
+        'version', 'source', 'items', 'items', 'items_opt', 'md5', 'attr')
 
     def __init__(self, info):
         if isinstance(info, pathlib.PurePath):
@@ -550,6 +531,7 @@ class PortInfo():
             raise ValueError(str(info))
 
     def from_dict(self, info):
+        self.version = info.get('source', self.VERSION)
         self.source = info.get('source', None)
         self.items = info.get('items', None)
         self.items_opt = info.get('items_opt', None)
