@@ -590,7 +590,7 @@ class PortInfo():
             if item.endswith('/')]
 
     @property
-    def files(self):
+    def scripts(self):
         return [
             item
             for item in self.items
@@ -727,7 +727,7 @@ class HarbourMaster():
                     break
 
             for dir_name in port_info.dirs:
-                if not (self.ports_dir / dir_name).is_isdir():
+                if not (self.ports_dir / dir_name).is_dir():
                     bad = True
                     break
 
@@ -781,7 +781,7 @@ class HarbourMaster():
                 self.broken_ports.append(port_info)
                 continue
 
-            with open(, 'w') as fh:
+            with port_json.open('w') as fh:
                 json.dump(port_info.to_dict(), fh, indent=4)
 
             self.installed_ports.append(port_info)
@@ -1028,7 +1028,7 @@ def do_ports(hm, argv):
 
     if len(hm.broken_ports) > 0:
         print("Broken Ports:")
-        for file_name in hm.broken_ports:
+        for port_info in hm.broken_ports:
             print(f"- {port_info.source}")
 
         print()
