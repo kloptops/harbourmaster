@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Generate JSON</title>
+  <style>
+    form {
+      max-width: 800px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-gap: 10px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    input[type="text"],
+    select,
+    textarea,
+    input[type="number"] {
+      width: 100%;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+
+    select[multiple] {
+      height: 120px;
+    }
+
+    button {
+      margin-top: 10px;
+      width: 100%;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #3e8e41;
+    }
+
+    #json {
+      margin-top: 20px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: monospace;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <form>
+    <label for="port-title">Port Title:</label>
+    <input type="text" id="port-title" name="port-title" required>
+
+    <label for="script-name">Script Name:</label>
+    <input type="text" id="script-name" name="script-name" required>
+
+    <label for="directory-name">Directory Name:</label>
+    <input type="text" id="directory-name" name="directory-name" required>
+
+    <label for="genres">Genres:</label>
+    <select id="genres" name="genres" multiple>
+      <option value="action">Action</option>
+      <option value="adventure">Adventure</option>
+      <option value="rpg">Role-playing game (RPG)</option>
+      <option value="strategy">Strategy</option>
+      <option value="simulation">Simulation</option>
+      <option value="sports">Sports</option>
+      <option value="fps">First Person Shooter (FPS)</option>
+    </select>
+
+    <label for="description">Description:</label>
+    <textarea id="description" name="description" required></textarea>
+
+    <label for="porter">Porter:</label>
+    <input type="text" id="porter" name="porter" required>
+
+    <label for="blank">&nbsp;</label>
+    <label for="ready-to-run">
+      <input type="checkbox" id="ready-to-run" name="ready-to-run">
+      Ready to Run
+    </label>
+
+    <label for="runtime">Runtime:</label>
+    <select id="runtime" name="runtime">
+      <option value="blank">None (the usual option)</option>
+      <optgroup label="Mono">
+        <option value="mono-6.12.0.122-aarch64.squashfs">Mono (6.12.0.112)</option>
+      </optgroup>
+      <optgroup label="GoDot / FRT">
+        <option value="godot-1.0.squashfs">GoDot / FRT 1.0</option>
+        <option value="godot-1.1.squashfs">GoDot / FRT 1.1</option>
+        <option value="godot-1.2.squashfs">GoDot / FRT 1.2</option>
+        <option value="godot-1.3.squashfs">GoDot / FRT 1.3</option>
+        <option value="godot-1.4.squashfs">GoDot / FRT 1.4</option>
+        <option value="godot-2.0.squashfs">GoDot / FRT 2.0</option>
+        <option value="godot-2.1.squashfs">GoDot / FRT 2.1</option>
+        <option value="godot-2.2.squashfs">GoDot / FRT 2.2</option>
+        <option value="godot-2.3.squashfs">GoDot / FRT 2.3</option>
+      </optgroup>
+    </select>
+
+    <label for="blank">&nbsp;</label>
+    <button type="button" id="generate-json">Generate JSON</button>
+  </form>
+
+  <div id="json"></div>
+
+  <script>
+    function validateInputs() {
+      // TODO: fix validation :(
+
+      return true;
+
+      // return scriptNameValid && directoryNameValid;
+    }
+
+    document.getElementById("generate-json").addEventListener("click", function() {
+      if (validateInputs()) {
+        generateJSON();
+      }
+    });
+
+    function generateJSON() {
+      var portTitle = document.getElementById("port-title").value;
+      var scriptName = document.getElementById("script-name").value;
+      var directoryName = document.getElementById("directory-name").value;
+      var genres = Array.from(document.getElementById("genres").selectedOptions).map(o => o.value);
+      var description = document.getElementById("description").value;
+      var porter = document.getElementById("porter").value;
+      var runtime = document.getElementById("runtime").value;
+      var readyToRun = document.getElementById("ready-to-run").checked;
+
+      runtime = runtime.length === 0 ? null : runtime;
+
+      var data = {
+          "items": [
+            scriptName,
+            directoryName
+          ],
+          "attr": {
+              "porter": porter,
+              "desc": description,
+              "genres": genres,
+              "rtr": readyToRun,
+              "runtime": runtime
+          }
+      }
+
+      document.getElementById("json").innerHTML = JSON.stringify(data, null, 2);
+    }
+  </script>
+</body>
+</html>
