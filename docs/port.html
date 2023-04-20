@@ -87,6 +87,9 @@
     <label for="description">Description:</label>
     <textarea id="description" name="description" required></textarea>
 
+    <label for="instructions">Instructions:</label>
+    <textarea id="instructions" name="instructions" required></textarea>
+
     <label for="porter">Porter:</label>
     <input type="text" id="porter" name="porter" required>
 
@@ -142,6 +145,7 @@
       var directoryName = document.getElementById("directory-name").value;
       var genres = Array.from(document.getElementById("genres").selectedOptions).map(o => o.value);
       var description = document.getElementById("description").value;
+      var instructions = document.getElementById("instructions").value;
       var porter = document.getElementById("porter").value;
       var runtime = document.getElementById("runtime").value;
       var readyToRun = document.getElementById("ready-to-run").checked;
@@ -156,6 +160,7 @@
           "attr": {
               "porter": porter,
               "desc": description,
+              "inst": instructions,
               "genres": genres,
               "rtr": readyToRun,
               "runtime": runtime
