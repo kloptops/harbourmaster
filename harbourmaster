@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).parent / 'pylibs.zip'))
 
 import requests
 from ports_info import ports_info
+from utility import cprint, in_terminal
 
 ################################################################################
 ## Override this for custom tools/ports directories
@@ -77,7 +78,7 @@ elif isinstance(TOOLS_DIR, pathlib.PurePath):
     # This is good.
     pass
 else:
-    print(f"Error: {TOOLS_DIR!r} is set to something weird.")
+    cprint(f"<error>Error:</error> {TOOLS_DIR!r} is set to something weird.")
     exit(255)
 
 ## Default PORTS_DIR
@@ -92,7 +93,7 @@ elif isinstance(PORTS_DIR, pathlib.PurePath):
     # This is good.
     pass
 else:
-    print(f"Error: {PORTS_DIR!r} is set to something weird.")
+    cprint(f"<error>Error:</error> {PORTS_DIR!r} is set to something weird.")
     exit(255)
 
 # print(f"PORTS_DIR: {PORTS_DIR}")
@@ -103,7 +104,7 @@ else:
 def fetch(url):
     r = requests.get(url)
     if r.status_code != 200:
-        print(f"Failed to download {url!r}: [{r.status_code}]")
+        cprint(f"<error>Error</error>: Failed to download <b>{url!r}</b>: <b>{r.status_code}</b>")
         return None
 
     return r
@@ -147,17 +148,19 @@ def nice_size(size):
     return f"{size:.03f} {suffix}"
 
 
-def download(file_name, file_url, md5_source=None):
+def download(file_name, file_url, md5_source=None, md5_result=None):
     """
     Download a file from file_url into file_name, checks the md5sum of the file against md5_source if given.
 
     returns file_name if successful, otherwise None.
     """
+    if md5_result is None:
+        md5_result = [None]
 
     r = requests.get(file_url, stream=True)
 
     if r.status_code != 200:
-        print(f"Unable to download file: {file_url!r} [{r.status_code}]")
+        cprint(f"<error>Error:</error> Unable to download file: {file_url!r} [{r.status_code}]")
         return None
 
     total_length = r.headers.get('content-length')
@@ -170,7 +173,7 @@ def download(file_name, file_url, md5_source=None):
 
     md5 = hashlib.md5()
 
-    print(f"Downloading {file_url!r} - {total_length_mb}")
+    cprint(f"Downloading <b>{file_url!r}</b> - <b>{total_length_mb}</b>")
 
     length = 0
     with file_name.open('wb') as fh:
@@ -186,18 +189,20 @@ def download(file_name, file_url, md5_source=None):
                 sys.stdout.write(f"\r[{'.' * amount}{' ' * (50 - amount)}] - {nice_size(length)} / {total_length_mb}    ")
             sys.stdout.flush()
 
-        print("\n")
+        cprint("\n")
 
     md5_file = md5.hexdigest()
     if md5_source is not None:
         if md5_file != md5_source:
             zip_file.unlink()
-            print(f"File doesn't match the md5 file: {md5_file} != {md5_source}")
+            cprint(f"<error>Error:</error> File doesn't match the md5 file: {md5_file} != {md5_source}")
             return None
         else:
-            print(f"Passed md5 check.")
+            cprint(f"<b,g,> Passed md5 check. </b,g,>")
     else:
-        print(f"No md5 to check against: {md5_file}")
+        cprint(f"<warn>Warning:</warn> No md5 to check against: <b>{md5_file}</b>")
+
+    md5_result[0] = md5_file
 
     return file_name
 
@@ -271,7 +276,7 @@ def raw_download(save_path, file_url):
         ## If it is an md5 file, we assume the actual zip is sans the md5/md5sum
         md5_source = fetch_text(file_url)
         if md5_source is None:
-            print(f"Unable to download file: {file_url!r} [{r.status_code}]")
+            cprint(f"<error>Error:</error> Unable to download file: {file_url!r} [{r.status_code}]")
 
         md5_source = md5_source.strip().split(' ', 1)[0]
 
@@ -281,21 +286,24 @@ def raw_download(save_path, file_url):
         md5_source = None
 
     if not file_name.endswith('.zip'):
-        print(f"Unable to download file: {file_url!r} [doesn't end with '.zip']")
+        cprint(f"<error>Error:</error> Unable to download file: {file_url!r} [doesn't end with '.zip']")
         return None
 
     file_name = file_name.replace('%20', '.').replace('+', '.').replace('..', '.')
 
-    zip_file = download(save_path / file_name, file_url, md5_source)
+    md5_result = [None]
+    zip_file = download(save_path / file_name, file_url, md5_source, md5_result)
 
     zip_info = PortInfo({})
 
-    zip_info.md5 = md5_source
+    zip_info.md5 = md5_result[0]
     zip_info.source = f"url/{zip_file.name}"
     zip_info.zip_file = zip_file
     zip_info.attr['url'] = original_url
 
-    print("Success!")
+    # print(f"-- {zip_info} --")
+
+    cprint("<b,g,>Success!</b,g,>")
     return zip_info
 
 
@@ -319,13 +327,13 @@ class PortMasterV1(BaseSource):
         self._did_update = False
 
         if config['version'] != self.VERSION:
-            print(f"{self._config['name']}: Cache out of date.")
+            cprint(f"{self._config['name']}: Cache out of date.")
             self.update()
         elif self._config['last_checked'] is None:
-            print(f"{self._config['name']}: First check.")
+            cprint(f"{self._config['name']}: First check.")
             self.update()
         elif datetime_compare(self._config['last_checked']) > UPDATE_FREQUENCY:
-            print(f"{self._config['name']}: Auto Update.")
+            cprint(f"{self._config['name']}: Auto Update.")
             self.update()
         else:
             self._data = self._config['data']['data']
@@ -338,10 +346,10 @@ class PortMasterV1(BaseSource):
 
     def update(self):
         if self._did_update:
-            print(f"{self._config['name']}: up to date already.")
+            cprint(f"- <b>{self._config['name']}</b>: up to date already.")
             return
 
-        print(f"{self._config['name']}: Fetching latest ports")
+        cprint(f"- <b>{self._config['name']}</b>: Fetching latest ports")
         data = fetch_json(self._config['url'])
 
         self._data = {}
@@ -362,7 +370,7 @@ class PortMasterV1(BaseSource):
             if asset['name'].lower().endswith('.squashfs'):
                 self.utils.append(self.clean_name(asset['name']))
 
-        print(f"{self._config['name']}: Fetching info")
+        cprint(f"- <b>{self._config['name']}</b>: Fetching info")
         for line in fetch_text(self._data['ports.md']['url']).split('\n'):
             line = line.strip()
             if line == '':
@@ -482,7 +490,7 @@ class PortMasterV1(BaseSource):
         zip_info.attr['rtr'] = self._info[port_name]['rtr']
         zip_info.zip_file = zip_file
 
-        print("Success!")
+        print("<b,g,>Success!</b,g,>")
         return zip_info
 
 
@@ -491,19 +499,19 @@ class PortMasterV1(BaseSource):
         output = []
 
         if info['opengl']:
-            output.append(f'Title_F="{info["title"].replace(" ", "_")} ."')
+            output.append(f'<r>Title_F</r>="<y>{info["title"].replace(" ", "_")} .</y>"')
         elif info['power']:
-            output.append(f'Title_P="{info["title"].replace(" ", "_")} ."')
+            output.append(f'<r>Title_P</r>="<y>{info["title"].replace(" ", "_")} .</y>"')
         else:
-            output.append(f'Title="{info["title"].replace(" ", "_")} ."')
+            output.append(f'<r>Title</r>="<y>{info["title"].replace(" ", "_")} .</y>"')
 
-        output.append(f'Desc="{info["desc"]}"')
-        output.append(f'porter="{info["porter"]}"')
-        output.append(f'locat="{self._prefix}/{info["file"]}"')
+        output.append(f'<r>Desc</r>="<y>{info["desc"]}</y>"')
+        output.append(f'<r>porter</r>="<y>{info["porter"]}</y>"')
+        output.append(f'<r>locat</r>="<y>{self._prefix}/{info["file"]}</y>"')
         if info['rtr']:
-            output.append(f'runtype="rtr"')
+            output.append(f'<r>runtype</r>="<e>rtr</e>"')
         if info['mono']:
-            output.append(f'mono="y"')
+            output.append(f'<r>mono</r>="<e>y</e>"')
 
         return ' '.join(output)
 
@@ -784,17 +792,17 @@ class HarbourMaster():
             for file_info in zf.infolist():
                 if file_info.filename.startswith('/'):
                     ## Sneaky
-                    print(f"Port {download_info.source} has an illegal file {file_info.filename!r}, aborting.")
+                    cprint(f"<error>Error:</error> Port <b>{download_info.source}</b> has an illegal file {file_info.filename!r}, aborting.")
                     return 255
 
                 if file_info.filename.startswith('../'):
                     ## Little
-                    print(f"Port {download_info.source} has an illegal file {file_info.filename!r}, aborting.")
+                    cprint(f"<error>Error:</error> Port <b>{download_info.source}</b> has an illegal file {file_info.filename!r}, aborting.")
                     return 255
 
                 if '/../' in file_info.filename:
                     ## Shits
-                    print(f"Port {download_info.source} has an illegal file {file_info.filename!r}, aborting.")
+                    cprint(f"<error>Error:</error> Port <b>{download_info.source}</b> has an illegal file {file_info.filename!r}, aborting.")
                     return 255
 
                 if '/' in file_info.filename:
@@ -808,42 +816,42 @@ class HarbourMaster():
                         if parts[1].lower().endswith('.port.json'):
                             ## TODO: add the ability for multiple port folders to have multiple port.json files. ?
                             if port_info_file is not None:
-                                print(f"Port {download_info.source} has multiple port.json files.")
-                                print(f"- Before: {port_info_file.relative_to(self.ports_dir)!r}")
-                                print(f"- Now:    {file_info.filename!r}")
+                                cprint(f"<warn>Warning:</warn> Port <b>{download_info.source}</b> has multiple port.json files.")
+                                cprint(f"- Before: <b>{port_info_file.relative_to(self.ports_dir)!r}</b>")
+                                cprint(f"- Now:    <b>{file_info.filename!r}</b>")
 
                             port_info_file = self.ports_dir / file_info.filename
 
                     if file_info.filename.lower().endswith('.sh'):
-                        print(f"Port {download_info.source} has a shell script inside, this can cause issues.")
+                        cprint(f"<warn>Warning:</warn> Port <b>{download_info.source}</b> has <b>{file_info.filename}</b> inside, this can cause issues.")
 
                 else:
                     if file_info.filename.lower().endswith('.sh'):
                         scripts.append(file_info.filename)
                         items.append(file_info.filename)
                     else:
-                        print(f"Port {download_info.source} contains {file_info.filename} at the top level, but it is not a shell script.")
+                        cprint(f"<warn>Warning:</warn> Port <b>{download_info.source}</b> contains <b>{file_info.filename}</b> at the top level, but it is not a shell script.")
 
             if len(dirs) == 0:
-                print(f"Port {download_info.source} has no directories, aborting.")
+                cprint(f"<error>Error:</error> Port <b>{download_info.source}</b> has no directories, aborting.")
                 return 255
 
             if len(scripts) == 0:
-                print(f"Port {download_info.source} has no scripts, aborting.")
+                cprint(f"<error>Error:</error> Port <b>{download_info.source}</b> has no scripts, aborting.")
                 return 255
 
             ## TODO: keep a list of installed files for uninstalling?
             # At this point the port will be installed
             # Extract all the files to the specified directory
             # zf.extractall(self.ports_dir)
-            print("Extracting port.")
+            cprint("<b>Extracting port.</b>")
             for file_info in zf.infolist():
                 if file_info.file_size == 0:
                     compress_saving = 100
                 else:
                     compress_saving = file_info.compress_size / file_info.file_size * 100
 
-                print(f"- {file_info.filename!r} [{nice_size(file_info.file_size)} ({compress_saving:.0f}%)]")
+                cprint(f"- <b>{file_info.filename!r}</b> <d>[{nice_size(file_info.file_size)} ({compress_saving:.0f}%)]</d>")
                 zf.extract(file_info, path=self.ports_dir)
 
         if port_info_file is not None:
@@ -882,7 +890,7 @@ def self_upgrade():
     Self-upgrading code.
     """
     if TESTING:
-        print("Unable to update in test environment.")
+        cprint("<error>Unable to update in test environment.</error>")
         return 255
 
     self_path = Path(__file__).parent
@@ -892,17 +900,17 @@ def self_upgrade():
 
     results = []
 
-    print("Performing Self Upgrade.")
+    cprint("<b>Performing Self Upgrade.</b>")
     for file_name, file_url_md5 in HM_UPDATE_URLS.items():
         if not file_url_md5.endswith('.md5'):
-            print("Self Upgrade: Something is funky, quitting.")
+            cprint("<error>Self Upgrade</error>: Something is funky, quitting.")
             return 255
 
         file_url = file_url_md5.rsplit('.', 1)[0]
 
         file_md5_result = fetch_text(file_url_md5)
         if file_md5_result is None:
-            print(f"Self Upgrade: File download failed. [{file_url_md5}]")
+            cprint(f"<error>Self Upgrade</error>: File download failed. [<b>{file_url_md5}</b>]")
             return 255
 
         file_md5_result = file_md5_result.strip()
@@ -913,12 +921,12 @@ def self_upgrade():
                 md5.update(fh.read())
 
             if md5.hexdigest() == file_md5_result:
-                print(f"- skipping {file_name!r}, already up to date.")
+                cprint(f"- skipping <b>{file_name!r}</b>, already up to date.")
                 continue
 
         file_data = fetch_data(file_url)
         if file_data is None:
-            print(f"Self Upgrade: File download failed. [{file_url}]")
+            cprint(f"<error>Self Upgrade</error>: File download failed. [<b>{file_url}</b>]")
             return 255
 
         md5 = hashlib.md5()
@@ -926,23 +934,23 @@ def self_upgrade():
         file_md5_check = md5.hexdigest()
 
         if file_md5_check != file_md5_result:
-            print(f"Self Upgrade: MD5 sum doesn't match. [{file_md5_check} vs {file_md5_result}]")
+            cprint(f"<error>Self Upgrade</error>: MD5 sum doesn't match. [<b>{file_md5_check}</b> vs <b>{file_md5_result}</b>]")
             return 255
 
         results.append((file_name, file_data))
 
     if len(results) == 0:
-        print("Skipping, harbourmaster is already up to date.")
+        cprint("<b>Skipping, harbourmaster is already up to date.</b>")
 
     else:
-        print("Succesfully fetched files, updating.")
+        print("<b,g,>Succesfully fetched files, updating.</b,g,>")
         for file_name, file_data in results:
-            print(f"- updating {file_name!r}")
+            cprint(f"- updating <b>{file_name!r}</b>")
             with open(self_path / file_name, 'wb') as fh:
                 fh.write(file_data)
-            print( "  done.")
+            cprint( "  done.")
 
-        print("All Done!")
+        cprint("<b>All Done!</b>")
 
 
 ################################################################################
@@ -956,16 +964,16 @@ def do_update(hm, argv):
         argv = ('all', )
 
     if argv[0].lower() == 'all':
-        print('Updating all port sources:')
+        cprint('<b>Updating all port sources:</b>')
         for source in hm.sources:
             hm.sources[source].update()
     else:
         for arg in argv:
             if arg not in hm.sources:
-                print(f'Unknown source {arg}')
+                cprint(f'<warn>Unknown source {arg}</warn>')
                 continue
 
-            print(f'Updating {arg}:')
+            print(f'<b>Updating {arg}:<b/>')
             hm.sources[arg].update()
 
     return 0
@@ -981,9 +989,11 @@ def do_list(hm, argv):
     for source_prefix, source in hm.sources.items():
         for port in source.ports:
             port_info = source.port_info(port)
-            print(f"- {source_prefix}/{port}: {port_info['title']}")
-            print(f"      {port_info['desc']}")
-            print()
+            cprint(f"- <d>{source_prefix}</d>/<b>{port}<b>: <b,g,>{port_info['title']}</b,g,>")
+            cprint()
+            cprint('\n'.join(textwrap.wrap(port_info['desc'], width=70, initial_indent='    ', subsequent_indent='    ')))
+            cprint()
+            cprint()
 
     return 0
 
@@ -995,30 +1005,30 @@ def do_ports(hm, argv):
     {command} ports [filters]
     """
     if len(hm.installed_ports) > 0:
-        print("Installed Ports:")
+        cprint("<b,g,>Installed Ports:</b,g,>")
         for port_info in hm.installed_ports:
-            print(f"- {port_info.source}")
+            cprint(f"- <b>{port_info.source}</b>")
 
-        print()
+        cprint()
 
     if len(hm.unknown_ports) > 0:
-        print("Unknown Ports:")
+        cprint("<warn>Unknown Ports:</warn>")
         for file_name in hm.unknown_ports:
-            print(f"- {file_name}")
+            cprint(f"- <b>{file_name}</b>")
 
-        print()
+        cprint()
 
     if len(hm.broken_ports) > 0:
-        print("Broken Ports:")
+        cprint("<error>Broken Ports:</error>")
         for port_info in hm.broken_ports:
-            print(f"- {port_info.source}")
+            cprint(f"- <b>{port_info.source}</b>")
 
-        print()
+        cprint()
 
     if sum((len(hm.installed_ports), len(hm.unknown_ports), len(hm.broken_ports))) == 0:
-        print("No ports found.")
+        cprint("No ports found.")
 
-        print()
+        cprint()
 
     return 0
 
@@ -1031,8 +1041,8 @@ def do_portsmd(hm, argv):
     """
     for source_prefix, source in hm.sources.items():
         for port in source.ports:
-            print(source.portmd(port))
-            print()
+            cprint(source.portmd(port))
+            cprint()
 
     return 0
 
@@ -1084,7 +1094,7 @@ def do_install(hm, argv):
 
             runtime = download_info.attr.get('runtime', None)
             if runtime is not None and not (hm.libs_dir / runtime).is_file():
-                print(f"Downloading required runtime {runtime}.")
+                cprint(f"Downloading required runtime {runtime}.")
                 try:
                     runtime_download = source.download(runtime, temp_dir=hm.libs_dir)
 
@@ -1149,14 +1159,14 @@ def do_help(hm, argv):
         print(textwrap.dedent(all_commands[argv[0].lower()].__doc__.format(command=command)).strip())
         return
 
-    print(f"{command} <update> [source or all] ")
-    print(f"{command} <install/upgrade> [source/]<port_name> ")
+    cprint(f"{command} <b><update></b> <d>[source or all]</d> ")
+    cprint(f"{command} <b><install/upgrade></b> <d>[source/]</d><port_name>.zip ")
     # print(f"{command} <uninstall> [source/]<port_name> ")
-    print(f"{command} <list/portsmd> [source or all] [... filters]")
-    print(f"{command} <ports>")
-    print(f"{command} <help> <command>")
-    print()
-    print("All available commands: " + (', '.join(all_commands.keys())))
+    cprint(f"{command} <b><list/portsmd></b> <d>[source or all]</d> <d>[... filters]</d>")
+    cprint(f"{command} <b><ports></b>")
+    cprint(f"{command} <b><help></b> <command>")
+    cprint()
+    cprint("All available commands: <b>" + ('</b>, <b>'.join(all_commands.keys())) + "</b>")
 
 
 all_commands = {
