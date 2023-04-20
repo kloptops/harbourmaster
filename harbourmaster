@@ -31,17 +31,30 @@ TOOLS_DIR=None
 PORTS_DIR=None
 UPDATE_FREQUENCY=(60 * 60 * 22) # Only check automatically once a day.
 
-SOURCE_DEFAULT_PORTMASTER = """
-{
-    "prefix": "pm",
-    "api": "PortMasterV1",
-    "name": "PortMaster",
-    "url": "https://api.github.com/repos/PortsMaster/PortMaster-Releases/releases/latest",
-    "last_checked": null,
-    "version": 1,
-    "data": {}
-}
-""".strip()
+SOURCE_DEFAULTS = {
+    "000_portmaster.source.json": textwrap.dedent("""
+    {
+        "prefix": "pm",
+        "api": "PortMasterV1",
+        "name": "PortMaster",
+        "url": "https://api.github.com/repos/PortsMaster/PortMaster-Releases/releases/latest",
+        "last_checked": null,
+        "version": 1,
+        "data": {}
+    }
+    """),
+    "001_runtimes.source.json": textwrap.dedent("""
+    {
+        "prefix": "pr",
+        "api": "GitHubRawReleaseV1",
+        "name": "PortMaster Runtime",
+        "url": "https://api.github.com/repos/PortsMaster/PortMaster-Runtime/releases/latest",
+        "last_checked": null,
+        "version": 1,
+        "data": {}
+    }
+    """),
+    }
 
 TESTING=False
 ################################################################################
@@ -247,6 +260,9 @@ def get_list(base_dict, key):
     if isinstance(result, str):
         return [result]
 
+    if result is None:
+        return []
+
     return result
 
 
@@ -316,7 +332,7 @@ class BaseSource():
         pass
 
 
-class PortMasterV1(BaseSource):
+class GitHubRawReleaseV1(BaseSource):
     VERSION = 2
 
     def __init__(self, hm, file_name, config):
@@ -327,35 +343,62 @@ class PortMasterV1(BaseSource):
         self._did_update = False
 
         if config['version'] != self.VERSION:
-            cprint(f"{self._config['name']}: Cache out of date.")
+            cprint(f"<b>{self._config['name']}</b>: Cache out of date.")
             self.update()
         elif self._config['last_checked'] is None:
-            cprint(f"{self._config['name']}: First check.")
+            cprint(f"<b>{self._config['name']}</b>: First check.")
             self.update()
         elif datetime_compare(self._config['last_checked']) > UPDATE_FREQUENCY:
-            cprint(f"{self._config['name']}: Auto Update.")
+            cprint(f"<b>{self._config['name']}</b>: Auto Update.")
             self.update()
         else:
-            self._data = self._config['data']['data']
-            self._info = self._config['data']['info']
-            self.ports = self._config['data']['ports']
-            self.utils = self._config['data']['utils']
+            self.load()
+
+    def load(self):
+        self._data = self._config['data']['data']
+        self.ports = self._config['data']['ports']
+        self.utils = self._config['data']['utils']
+        self._load()
+
+    def save(self):
+        with self._file_name.open('w') as fh:
+            json.dump(self._config, fh, indent=4)
 
     def clean_name(self, text):
-        return text.lower()
+        return text.casefold()
+
+    def _load(self):
+        """
+        Overload to add additional loading.
+        """
+        ...
+
+    def _update(self):
+        """
+        Overload to add additional loading.
+        """
+        ...
+
+    def _clear(self):
+        """
+        Overload to add additional loading.
+        """
+        ...
 
     def update(self):
+        self._clear()
+        self._data = {}
+        self.ports = []
+        self.utils = []
+
         if self._did_update:
             cprint(f"- <b>{self._config['name']}</b>: up to date already.")
             return
 
         cprint(f"- <b>{self._config['name']}</b>: Fetching latest ports")
         data = fetch_json(self._config['url'])
-
-        self._data = {}
-        self._info = {}
-        self.ports = []
-        self.utils = []
+        if data is None:
+            return
 
         ## Load data from the assets.
         for asset in data['assets']:
@@ -370,6 +413,54 @@ class PortMasterV1(BaseSource):
             if asset['name'].lower().endswith('.squashfs'):
                 self.utils.append(self.clean_name(asset['name']))
 
+        self._update()
+
+        self._config['version'] = self.VERSION
+
+        self._config['data']['ports'] = self.ports
+        self._config['data']['utils'] = self.utils
+        self._config['data']['data']  = self._data
+
+        self._config['last_checked'] = datetime.datetime.now().isoformat()
+
+        self.save()
+        self._did_update = True
+        cprint(f"<b>{self._config['name']}:</b> Done.")
+
+    def download(self, port_name, temp_dir=None):
+        if port_name not in self._data:
+            cprint(f"<error>Error:</error> Unable to find port <b>{port_name}</b>")
+            return None
+
+        if temp_dir is None:
+            temp_dir = self._hm.temp_dir
+
+        md5_source = fetch_text(self._data[port_name + '.md5']['url'])
+        if md5_source is None:
+            cprint(f"<error>Error:</error> Unable to download md5 file: {self._data[port_name + '.md5']['url']!r}")
+            return None
+
+        md5_source = md5_source.strip()
+
+        zip_file = download(temp_dir / port_name, self._data[port_name]['url'], md5_source)
+
+        if zip_file is not None:
+            cprint("<b,g,>Success!</b,g,>")
+
+        return zip_file
+
+
+class PortMasterV1(GitHubRawReleaseV1):
+    VERSION = 2
+
+    def _load(self):
+        self._info = self._config['data']['info']
+
+    def _clear(self):
+        self._info = {}
+
+    def _update(self):
+
         cprint(f"- <b>{self._config['name']}</b>: Fetching info")
         for line in fetch_text(self._data['ports.md']['url']).split('\n'):
             line = line.strip()
@@ -383,22 +474,7 @@ class PortMasterV1(BaseSource):
 
             self.ports.append(info_key)
 
-        self._config['version'] = self.VERSION
-
-        self._config['data']['ports'] = self.ports
-        self._config['data']['utils'] = self.utils
         self._config['data']['info']  = self._info
-        self._config['data']['data']  = self._data
-
-        self._config['last_checked'] = datetime.datetime.now().isoformat()
-
-        self._save()
-        self._did_update = True
-        print(f"{self._config['name']}: Done.")
-
-    def _save(self):
-        with self._file_name.open('w') as fh:
-            json.dump(self._config, fh, indent=4)
 
     def _parse_port_info(self, text):
         # Super jank
@@ -450,14 +526,15 @@ class PortMasterV1(BaseSource):
 
 
     def port_info(self, port_name):
-        assert port_name in self.ports, f"{port_name} not found."
+        if port_name not in self.ports:
+            return None
 
         return self._info[port_name]
 
 
     def download(self, port_name, temp_dir=None):
         if port_name not in self._data:
-            print(f"Unable to find port {port_name}")
+            cprint(f"<error>Error:</error> Unable to find port <b>{port_name}</b>")
             return None
 
         if temp_dir is None:
@@ -490,7 +567,7 @@ class PortMasterV1(BaseSource):
         zip_info.attr['rtr'] = self._info[port_name]['rtr']
         zip_info.zip_file = zip_file
 
-        print("<b,g,>Success!</b,g,>")
+        cprint("<b,g,>Success!</b,g,>")
         return zip_info
 
 
@@ -517,6 +594,7 @@ class PortMasterV1(BaseSource):
 
 
 SOURCE_APIS = {
+    'GitHubRawReleaseV1': GitHubRawReleaseV1,
     'PortMasterV1': PortMasterV1,
     }
 
@@ -643,8 +721,9 @@ class HarbourMaster():
         if not self.cfg_dir.is_dir():
             self.cfg_dir.mkdir(0o755, parents=True)
 
-            with (self.cfg_dir / '000_portmaster.source.json').open('w') as fh:
-                fh.write(SOURCE_DEFAULT_PORTMASTER)
+            for source_name in SOURCE_DEFAULTS:
+                with (self.cfg_dir / source_name).open('w') as fh:
+                    fh.write(SOURCE_DEFAULTS[source_name])
 
             with (self.cfg_dir / 'config.json').open('w') as fh:
                 json.dump(self.DEFAULT_CONFIG, fh, indent=4)
@@ -669,12 +748,12 @@ class HarbourMaster():
                 fail = False
                 for check_key, check_value in check_keys.items():
                     if check_key not in source_data:
-                        print(f'Missing key "{check_key}" in {source_file}.')
+                        cprint(f"<error>Error:</error> Missing key {check_key!r} in <b>{source_file}</b>.")
                         fail = True
                         break
 
                     if check_value is not None and source_data[check_key] not in check_value:
-                        print(f"Unknown {check_key} {source_file}: {source_data[check_key]}.")
+                        cprint(f"<error>Error:</error> Unknown {check_key!r} in <b>{source_file}</b>: {source_data[check_key]}.")
                         fail = True
                         break
 
@@ -876,7 +955,38 @@ class HarbourMaster():
         with open(port_info_file, 'w') as fh:
             json.dump(port_info.to_dict(), fh, indent=4)
 
-        return 0
+        return self.check_runtime(port_info)
+
+    def check_runtime(self, port_info):
+        runtime = port_info.attr.get('runtime', None)
+        if isinstance(runtime, str):
+            if '/' in runtime:
+                cprint(f"<error>Error:</error> Bad runtime <b>{runtime}</b>")
+                return 255
+
+            runtime_file = (self.libs_dir / runtime)
+            if not runtime_file.is_file():
+                for source_prefix, source in self.sources.items():
+                    if runtime in source.utils:
+                        cprint(f"Downloading required runtime <b>{runtime}</b>.")
+
+                        try:
+                            runtime_download = source.download(runtime, temp_dir=self.libs_dir)
+
+                        except Exception as err:
+                            ## We need to catch any errors and delete the file if it fails,
+                            ## here we are not using the temp file auto deletion.
+                            if runtime_file.is_file():
+                                runtime_file.unlink()
+
+                            raise err
+
+                        return 0
+                else:
+                    cprint(f"<error>Error:</error> Unable to find suitable source for {runtime}.")
+                    return 0
+                    # return 255
+
 
 ################################################################################
 ## Self updater url
@@ -1091,20 +1201,6 @@ def do_install(hm, argv):
 
             if download_info is None:
                 return 255
-
-            runtime = download_info.attr.get('runtime', None)
-            if runtime is not None and not (hm.libs_dir / runtime).is_file():
-                cprint(f"Downloading required runtime {runtime}.")
-                try:
-                    runtime_download = source.download(runtime, temp_dir=hm.libs_dir)
-
-                except Exception as err:
-                    ## We need to catch any errors and delete the file if it fails,
-                    ## here we are not using the temp file auto deletion.
-                    if (hm.libs_dir / runtime).is_file():
-                        (hm.libs_dir / runtime).unlink()
-
-                    raise err
 
             result = hm.install_port(download_info)
             if result != 0:
