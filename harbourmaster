@@ -1333,9 +1333,9 @@ def main(argv):
             i += 1
 
         if config['quiet']:
-            logger.level = Log.WARNING
+            logger.configure(handlers=[{"sink": sys.stderr, "level": "ERROR"}])
         elif config['debug']:
-            Log.level = Log.DEBUG
+            logger.configure(handlers=[{"sink": sys.stderr, "level": "DEBUG"}])
 
         if config['no-colour']:
             utility.do_color(False)
