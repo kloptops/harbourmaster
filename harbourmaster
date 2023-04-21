@@ -21,9 +21,14 @@ from urllib.parse import urlparse, urlunparse
 ## Insert our extra modules.
 sys.path.insert(0, str(Path(__file__).parent / 'pylibs.zip'))
 
+import loguru
 import requests
+import utility
+
 from ports_info import ports_info
-from utility import cprint, in_terminal
+from utility import cprint, cstrip
+
+logger = loguru.logger.opt(colors=True)
 
 ################################################################################
 ## Override this for custom tools/ports directories
@@ -91,7 +96,7 @@ elif isinstance(TOOLS_DIR, pathlib.PurePath):
     # This is good.
     pass
 else:
-    cprint(f"<error>Error:</error> {TOOLS_DIR!r} is set to something weird.")
+    logger.error(f"{TOOLS_DIR!r} is set to something weird.")
     exit(255)
 
 ## Default PORTS_DIR
@@ -106,8 +111,12 @@ elif isinstance(PORTS_DIR, pathlib.PurePath):
     # This is good.
     pass
 else:
-    cprint(f"<error>Error:</error> {PORTS_DIR!r} is set to something weird.")
+    logger.error(f"{PORTS_DIR!r} is set to something weird.")
     exit(255)
+
+LOG_FILE = TOOLS_DIR / "PortMaster" / "harbourmaster.txt"
+if LOG_FILE.parent.is_dir():
+    logger.add(LOG_FILE, backtrace=True, diagnose=True)
 
 # print(f"PORTS_DIR: {PORTS_DIR}")
 # print(f"TOOLS_DIR: {TOOLS_DIR}")
@@ -117,7 +126,7 @@ else:
 def fetch(url):
     r = requests.get(url)
     if r.status_code != 200:
-        cprint(f"<error>Error</error>: Failed to download <b>{url!r}</b>: <b>{r.status_code}</b>")
+        logger.error(f"Failed to download <b>{url!r}</b>: <b>{r.status_code}</b>")
         return None
 
     return r
@@ -173,7 +182,7 @@ def download(file_name, file_url, md5_source=None, md5_result=None):
     r = requests.get(file_url, stream=True)
 
     if r.status_code != 200:
-        cprint(f"<error>Error:</error> Unable to download file: {file_url!r} [{r.status_code}]")
+        logger.error(f"Unable to download file: {file_url!r} [{r.status_code}]")
         return None
 
     total_length = r.headers.get('content-length')
@@ -208,12 +217,12 @@ def download(file_name, file_url, md5_source=None, md5_result=None):
     if md5_source is not None:
         if md5_file != md5_source:
             zip_file.unlink()
-            cprint(f"<error>Error:</error> File doesn't match the md5 file: {md5_file} != {md5_source}")
+            logger.error(f"File doesn't match the md5 file: {md5_file} != {md5_source}")
             return None
         else:
-            cprint(f"<b,g,> Passed md5 check. </b,g,>")
+            cprint(f"<b,g,>Passed md5 check.</b,g,>")
     else:
-        cprint(f"<warn>Warning:</warn> No md5 to check against: <b>{md5_file}</b>")
+        logger.warning(f"No md5 to check against: <b>{md5_file}</b>")
 
     md5_result[0] = md5_file
 
@@ -261,6 +270,7 @@ def get_list(base_dict, key):
         return [result]
 
     if result is None:
+        ## CEBION STRIKES AGAIN
         return []
 
     return result
@@ -292,7 +302,7 @@ def raw_download(save_path, file_url):
         ## If it is an md5 file, we assume the actual zip is sans the md5/md5sum
         md5_source = fetch_text(file_url)
         if md5_source is None:
-            cprint(f"<error>Error:</error> Unable to download file: {file_url!r} [{r.status_code}]")
+            logger.error(f"Unable to download file: {file_url!r} [{r.status_code}]")
 
         md5_source = md5_source.strip().split(' ', 1)[0]
 
@@ -302,7 +312,7 @@ def raw_download(save_path, file_url):
         md5_source = None
 
     if not file_name.endswith('.zip'):
-        cprint(f"<error>Error:</error> Unable to download file: {file_url!r} [doesn't end with '.zip']")
+        logger.error(f"Unable to download file: {file_url!r} [doesn't end with '.zip']")
         return None
 
     file_name = file_name.replace('%20', '.').replace('+', '.').replace('..', '.')
@@ -342,7 +352,10 @@ class GitHubRawReleaseV1(BaseSource):
         self._prefix = config['prefix']
         self._did_update = False
 
-        if config['version'] != self.VERSION:
+
+        if hm.config['no-check']:
+            self.load()
+        elif config['version'] != self.VERSION:
             cprint(f"<b>{self._config['name']}</b>: Cache out of date.")
             self.update()
         elif self._config['last_checked'] is None:
@@ -355,9 +368,9 @@ class GitHubRawReleaseV1(BaseSource):
             self.load()
 
     def load(self):
-        self._data = self._config['data']['data']
-        self.ports = self._config['data']['ports']
-        self.utils = self._config['data']['utils']
+        self._data = self._config.setdefault('data', {}).setdefault('data', {})
+        self.ports = self._config.setdefault('data', {}).setdefault('ports', [])
+        self.utils = self._config.setdefault('data', {}).setdefault('utils', [])
         self._load()
 
     def save(self):
@@ -429,7 +442,7 @@ class GitHubRawReleaseV1(BaseSource):
 
     def download(self, port_name, temp_dir=None):
         if port_name not in self._data:
-            cprint(f"<error>Error:</error> Unable to find port <b>{port_name}</b>")
+            logger.error(f"Unable to find port <b>{port_name}</b>")
             return None
 
         if temp_dir is None:
@@ -437,7 +450,7 @@ class GitHubRawReleaseV1(BaseSource):
 
         md5_source = fetch_text(self._data[port_name + '.md5']['url'])
         if md5_source is None:
-            cprint(f"<error>Error:</error> Unable to download md5 file: {self._data[port_name + '.md5']['url']!r}")
+            logger.error(f"Unable to download md5 file: {self._data[port_name + '.md5']['url']!r}")
             return None
 
         md5_source = md5_source.strip()
@@ -454,7 +467,7 @@ class PortMasterV1(GitHubRawReleaseV1):
     VERSION = 2
 
     def _load(self):
-        self._info = self._config['data']['info']
+        self._info = self._config.setdefault('data', {}).setdefault('info', [])
 
     def _clear(self):
         self._info = {}
@@ -534,7 +547,7 @@ class PortMasterV1(GitHubRawReleaseV1):
 
     def download(self, port_name, temp_dir=None):
         if port_name not in self._data:
-            cprint(f"<error>Error:</error> Unable to find port <b>{port_name}</b>")
+            logger.error(f"Unable to find port <b>{port_name}</b>")
             return None
 
         if temp_dir is None:
@@ -542,7 +555,7 @@ class PortMasterV1(GitHubRawReleaseV1):
 
         md5_source = fetch_text(self._data[port_name + '.md5']['url'])
         if md5_source is None:
-            print(f"Unable to download md5 file: {self._data[port_name + '.md5']['url']!r}")
+            logger.error(f"Unable to download md5 file: {self._data[port_name + '.md5']['url']!r}")
             return None
 
         md5_source = md5_source.strip()
@@ -686,7 +699,7 @@ class HarbourMaster():
         'first_run': True,
         }
 
-    def __init__(self, tools_dir=None, ports_dir=None, temp_dir=None):
+    def __init__(self, config, *, tools_dir=None, ports_dir=None, temp_dir=None):
         """
         config = load_config()
         """
@@ -714,7 +727,12 @@ class HarbourMaster():
         self.libs_dir  = tools_dir / "PortMaster" / "libs"
         self.ports_dir = ports_dir
         self.sources = {}
-        self.config = {}
+        self.config = {
+            'no-check': config.get('no-check', False),
+            'quiet': config.get('quiet', False),
+            'debug': config.get('debug', False),
+            }
+
         self.ports = []
         self.utils = []
 
@@ -724,12 +742,6 @@ class HarbourMaster():
             for source_name in SOURCE_DEFAULTS:
                 with (self.cfg_dir / source_name).open('w') as fh:
                     fh.write(SOURCE_DEFAULTS[source_name])
-
-            with (self.cfg_dir / 'config.json').open('w') as fh:
-                json.dump(self.DEFAULT_CONFIG, fh, indent=4)
-
-        with (self.cfg_dir / 'config.json').open('r') as fh:
-            self.config = json.load(fh)
 
         self.load_sources()
 
@@ -748,12 +760,12 @@ class HarbourMaster():
                 fail = False
                 for check_key, check_value in check_keys.items():
                     if check_key not in source_data:
-                        cprint(f"<error>Error:</error> Missing key {check_key!r} in <b>{source_file}</b>.")
+                        logger.error(f"Missing key {check_key!r} in <b>{source_file}</b>.")
                         fail = True
                         break
 
                     if check_value is not None and source_data[check_key] not in check_value:
-                        cprint(f"<error>Error:</error> Unknown {check_key!r} in <b>{source_file}</b>: {source_data[check_key]}.")
+                        logger.error(f"Unknown {check_key!r} in <b>{source_file}</b>: {source_data[check_key]}.")
                         fail = True
                         break
 
@@ -836,6 +848,7 @@ class HarbourMaster():
             elif len(port_owners) == 0:
                 if unknown_file.endswith('.sh'):
                     ## Keep track of unknown bash scripts.
+                    logger.info(f"Unknown port: {unknown_file}")
                     self.unknown_ports.append(unknown_file)
 
         ## Create new port.json files for any new ports, these only contain the most basic of information.
@@ -847,6 +860,7 @@ class HarbourMaster():
             port_json = self.ports_dir / port_info_raw['file']
             if not port_json.parent.is_dir():
                 ## CEBION WAS HERE!
+                logger.info(f"Broken port: {port_info}")
                 self.broken_ports.append(port_info)
                 continue
 
@@ -871,17 +885,17 @@ class HarbourMaster():
             for file_info in zf.infolist():
                 if file_info.filename.startswith('/'):
                     ## Sneaky
-                    cprint(f"<error>Error:</error> Port <b>{download_info.source}</b> has an illegal file {file_info.filename!r}, aborting.")
+                    logger.error(f"Port <b>{download_info.source}</b> has an illegal file {file_info.filename!r}, aborting.")
                     return 255
 
                 if file_info.filename.startswith('../'):
                     ## Little
-                    cprint(f"<error>Error:</error> Port <b>{download_info.source}</b> has an illegal file {file_info.filename!r}, aborting.")
+                    logger.error(f"Port <b>{download_info.source}</b> has an illegal file {file_info.filename!r}, aborting.")
                     return 255
 
                 if '/../' in file_info.filename:
                     ## Shits
-                    cprint(f"<error>Error:</error> Port <b>{download_info.source}</b> has an illegal file {file_info.filename!r}, aborting.")
+                    logger.error(f"Port <b>{download_info.source}</b> has an illegal file {file_info.filename!r}, aborting.")
                     return 255
 
                 if '/' in file_info.filename:
@@ -895,28 +909,28 @@ class HarbourMaster():
                         if parts[1].lower().endswith('.port.json'):
                             ## TODO: add the ability for multiple port folders to have multiple port.json files. ?
                             if port_info_file is not None:
-                                cprint(f"<warn>Warning:</warn> Port <b>{download_info.source}</b> has multiple port.json files.")
-                                cprint(f"- Before: <b>{port_info_file.relative_to(self.ports_dir)!r}</b>")
-                                cprint(f"- Now:    <b>{file_info.filename!r}</b>")
+                                logger.warning(f"Port <b>{download_info.source}</b> has multiple port.json files.")
+                                logger.warning(f"- Before: <b>{port_info_file.relative_to(self.ports_dir)!r}</b>")
+                                logger.warning(f"- Now:    <b>{file_info.filename!r}</b>")
 
                             port_info_file = self.ports_dir / file_info.filename
 
                     if file_info.filename.lower().endswith('.sh'):
-                        cprint(f"<warn>Warning:</warn> Port <b>{download_info.source}</b> has <b>{file_info.filename}</b> inside, this can cause issues.")
+                        logger.warning(f"Port <b>{download_info.source}</b> has <b>{file_info.filename}</b> inside, this can cause issues.")
 
                 else:
                     if file_info.filename.lower().endswith('.sh'):
                         scripts.append(file_info.filename)
                         items.append(file_info.filename)
                     else:
-                        cprint(f"<warn>Warning:</warn> Port <b>{download_info.source}</b> contains <b>{file_info.filename}</b> at the top level, but it is not a shell script.")
+                        logger.warning(f"Port <b>{download_info.source}</b> contains <b>{file_info.filename}</b> at the top level, but it is not a shell script.")
 
             if len(dirs) == 0:
-                cprint(f"<error>Error:</error> Port <b>{download_info.source}</b> has no directories, aborting.")
+                logger.error(f"Port <b>{download_info.source}</b> has no directories, aborting.")
                 return 255
 
             if len(scripts) == 0:
-                cprint(f"<error>Error:</error> Port <b>{download_info.source}</b> has no scripts, aborting.")
+                logger.error(f"Port <b>{download_info.source}</b> has no scripts, aborting.")
                 return 255
 
             ## TODO: keep a list of installed files for uninstalling?
@@ -961,7 +975,7 @@ class HarbourMaster():
         runtime = port_info.attr.get('runtime', None)
         if isinstance(runtime, str):
             if '/' in runtime:
-                cprint(f"<error>Error:</error> Bad runtime <b>{runtime}</b>")
+                logger.error(f"Bad runtime <b>{runtime}</b>")
                 return 255
 
             runtime_file = (self.libs_dir / runtime)
@@ -983,7 +997,7 @@ class HarbourMaster():
 
                         return 0
                 else:
-                    cprint(f"<error>Error:</error> Unable to find suitable source for {runtime}.")
+                    logger.error(f"Unable to find suitable source for {runtime}.")
                     return 0
                     # return 255
 
@@ -1013,14 +1027,14 @@ def self_upgrade():
     cprint("<b>Performing Self Upgrade.</b>")
     for file_name, file_url_md5 in HM_UPDATE_URLS.items():
         if not file_url_md5.endswith('.md5'):
-            cprint("<error>Self Upgrade</error>: Something is funky, quitting.")
+            logger.error("Self Upgrade: Something is funky, quitting.")
             return 255
 
         file_url = file_url_md5.rsplit('.', 1)[0]
 
         file_md5_result = fetch_text(file_url_md5)
         if file_md5_result is None:
-            cprint(f"<error>Self Upgrade</error>: File download failed. [<b>{file_url_md5}</b>]")
+            logger.error("Self Upgrade: File download failed. [<b>{file_url_md5}</b>]")
             return 255
 
         file_md5_result = file_md5_result.strip()
@@ -1036,7 +1050,7 @@ def self_upgrade():
 
         file_data = fetch_data(file_url)
         if file_data is None:
-            cprint(f"<error>Self Upgrade</error>: File download failed. [<b>{file_url}</b>]")
+            logger.error("Self Upgrade: File download failed. [<b>{file_url}</b>]")
             return 255
 
         md5 = hashlib.md5()
@@ -1044,7 +1058,7 @@ def self_upgrade():
         file_md5_check = md5.hexdigest()
 
         if file_md5_check != file_md5_result:
-            cprint(f"<error>Self Upgrade</error>: MD5 sum doesn't match. [<b>{file_md5_check}</b> vs <b>{file_md5_result}</b>]")
+            logger.error("Self Upgrade: MD5 sum doesn't match. [<b>{file_md5_check}</b> vs <b>{file_md5_result}</b>]")
             return 255
 
         results.append((file_name, file_data))
@@ -1053,7 +1067,7 @@ def self_upgrade():
         cprint("<b>Skipping, harbourmaster is already up to date.</b>")
 
     else:
-        print("<b,g,>Succesfully fetched files, updating.</b,g,>")
+        cprint("<b,g,>Succesfully fetched files, updating.</b,g,>")
         for file_name, file_data in results:
             cprint(f"- updating <b>{file_name!r}</b>")
             with open(self_path / file_name, 'wb') as fh:
@@ -1083,7 +1097,7 @@ def do_update(hm, argv):
                 cprint(f'<warn>Unknown source {arg}</warn>')
                 continue
 
-            print(f'<b>Updating {arg}:<b/>')
+            cprint(f'<b>Updating {arg}:<b/>')
             hm.sources[arg].update()
 
     return 0
@@ -1095,15 +1109,15 @@ def do_list(hm, argv):
 
     {command} list [filters]
     """
-    print("Available ports:")
+    cprint("Available ports:")
     for source_prefix, source in hm.sources.items():
         for port in source.ports:
             port_info = source.port_info(port)
             cprint(f"- <d>{source_prefix}</d>/<b>{port}<b>: <b,g,>{port_info['title']}</b,g,>")
-            cprint()
+            cprint("")
             cprint('\n'.join(textwrap.wrap(port_info['desc'], width=70, initial_indent='    ', subsequent_indent='    ')))
-            cprint()
-            cprint()
+            cprint("")
+            cprint("")
 
     return 0
 
@@ -1168,7 +1182,7 @@ def do_install(hm, argv):
     {command} install https://example.com/example_port.zip # Download a port from a url
     """
     if len(argv) == 0:
-        print("Missing arguments.")
+        cprint("Missing arguments.")
         return do_help(hm, ['install'])
 
     for arg in argv:
@@ -1208,7 +1222,7 @@ def do_install(hm, argv):
 
             break
         else:
-            print(f"Unable to find a source for {port_name!r}")
+            cprint(f"Unable to find a source for <b>{port_name}</b>")
 
     return 0
 
@@ -1223,7 +1237,7 @@ def do_upgrade(hm, argv):
     """
 
     if len(argv) == 0:
-        print("Missing arguments.")
+        cprint("Missing arguments.")
         return do_help(hm, ['upgrade'])
 
     if len(argv) == 1 and argv[0] == 'harbourmaster':
@@ -1231,7 +1245,7 @@ def do_upgrade(hm, argv):
 
         return self_upgrade()
 
-    print("Error: Not yet implemented.")
+    logger.error("Error: Not yet implemented.")
     return 255
 
 
@@ -1248,21 +1262,30 @@ def do_help(hm, argv):
 
     if len(argv) > 0:
         if argv[0].lower() not in all_commands:
-            print(f"Error: unknown help command {argv[0]!r}")
+            cprint(f"Error: unknown help command <b>{argv[0]}</b>")
             do_help(hm, build_configs, [])
             return
 
-        print(textwrap.dedent(all_commands[argv[0].lower()].__doc__.format(command=command)).strip())
+        cprint(textwrap.dedent(all_commands[argv[0].lower()].__doc__.format(command=command)).strip())
         return
 
-    cprint(f"{command} <b><update></b> <d>[source or all]</d> ")
-    cprint(f"{command} <b><install/upgrade></b> <d>[source/]</d><port_name>.zip ")
-    # print(f"{command} <uninstall> [source/]<port_name> ")
-    cprint(f"{command} <b><list/portsmd></b> <d>[source or all]</d> <d>[... filters]</d>")
-    cprint(f"{command} <b><ports></b>")
-    cprint(f"{command} <b><help></b> <command>")
+    cprint(f"{command} <d>[flags]</d> <b><update></b> <d>[source or all]</d> ")
+    cprint(f"{command} <d>[flags]</d> <b><install/upgrade></b> <d>[source/]</d><port_name>.zip ")
+    # print(f"{command} <d>[flags]</d> <uninstall> [source/]<port_name> ")
+    cprint(f"{command} <d>[flags]</d> <b><list/portsmd></b> <d>[source or all]</d> <d>[... filters]</d>")
+    cprint(f"{command} <d>[flags]</d> <b><ports></b>")
+    cprint(f"{command} <d>[flags]</d> <b><help></b> <command>")
+    cprint()
+    cprint("Flags:")
+    cprint("  --quiet        - less text")
+    cprint("  --debug        - more text")
+    cprint("  --no-check     - dont check for ports updates unless you run <b>update</b>")
+    cprint("  --force-colour - force colour output")
+    cprint("  --no-colour    - force no colour output")
+    cprint("  --no-log       - do not log to harbourmaster.txt")
     cprint()
     cprint("All available commands: <b>" + ('</b>, <b>'.join(all_commands.keys())) + "</b>")
+    cprint()
 
 
 all_commands = {
@@ -1275,12 +1298,55 @@ all_commands = {
     'help': do_help,
     }
 
-
+@logger.catch
 def main(argv):
 
     with make_temp_directory() as temp_dir:
+        argv = argv[:]
 
-        hm = HarbourMaster(temp_dir=temp_dir)
+        config = {
+            'quiet': False,
+            'no-check': False,
+            'debug': False,
+            'no-colour': False,
+            'force-colour': False,
+            'no-log': False,
+            'help': False,
+            }
+
+        i = 1
+        while i < len(argv):
+            if argv[i] == '--':
+                del argv[i]
+                break
+
+            if argv[i].startswith('--'):
+                if argv[i][2:] in config:
+                    config[argv[i][2:]] = True
+                else:
+                    if not config['quiet']:
+                        logger.error(f"unknown argument <b>{argv}</b>")
+
+                del argv[i]
+                continue
+
+            i += 1
+
+        if config['quiet']:
+            logger.level = Log.WARNING
+        elif config['debug']:
+            Log.level = Log.DEBUG
+
+        if config['no-colour']:
+            utility.do_color(False)
+        elif config['force-colour']:
+            utility.do_color(True)
+
+        hm = HarbourMaster(config, temp_dir=temp_dir)
+
+        if config['help']:
+            all_commands['help'](hm, argv[1:])
+            return 1
 
         if len(argv) == 1:
             all_commands['help'](hm, [])
