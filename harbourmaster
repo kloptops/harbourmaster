@@ -116,7 +116,8 @@ else:
 
 LOG_FILE = TOOLS_DIR / "PortMaster" / "harbourmaster.txt"
 if LOG_FILE.parent.is_dir():
-    logger.add(LOG_FILE, backtrace=True, diagnose=True)
+    LOG_FILE_HANDLE = logger.add(LOG_FILE, backtrace=True, diagnose=True)
+    print(LOG_FILE_HANDLE)
 
 # print(f"PORTS_DIR: {PORTS_DIR}")
 # print(f"TOOLS_DIR: {TOOLS_DIR}")
@@ -467,7 +468,7 @@ class PortMasterV1(GitHubRawReleaseV1):
     VERSION = 2
 
     def _load(self):
-        self._info = self._config.setdefault('data', {}).setdefault('info', [])
+        self._info = self._config.setdefault('data', {}).setdefault('info', {})
 
     def _clear(self):
         self._info = {}
@@ -605,10 +606,99 @@ class PortMasterV1(GitHubRawReleaseV1):
 
         return ' '.join(output)
 
+class GitHubRepoV1(GitHubRawReleaseV1):
+    VERSION = 2
+
+    def _load(self):
+        """
+        Overload to add additional loading.
+        """
+        self._info = self._config.setdefault('data', {}).setdefault('info', {})
+
+    def update(self):
+        if self._did_update:
+            cprint(f"- <b>{self._config['name']}</b>: up to date already.")
+            return
+
+        self._clear()
+        self._data = {}
+        self._info = {}
+        self.ports = []
+        self.utils = []
+
+        user_name = self._config['config']['user_name']
+        repo_name = self._config['config']['repo_name']
+        branch_name = self._config['config']['branch_name']
+        sub_folder = self._config['config']['sub_folder']
+
+        git_url = f"https://api.github.com/repos/{user_name}/{repo_name}/git/trees/{branch_name}?recursive=true"
+
+        cprint(f"- <b>{self._config['name']}</b>: Fetching latest ports")
+        git_info = fetch_json(git_url)
+        if git_info is None:
+            return None
+
+        ports_json_file = None
+
+        for item in git_info['tree']:
+            path = item["path"]
+            if not path.startswith(sub_folder):
+                continue
+
+            name = path.rsplit('/', 1)[1]
+
+            if not (
+                    path.endswith('.zip') or
+                    path.endswith('.md5') or
+                    path.endswith('.squashfs') or
+                    path.endswith('.md5sum') or
+                    name == 'ports.json'):
+                continue
+
+            result = {
+                'name': name,
+                'size': item['size'],
+                'url': f"https://github.com/{user_name}/{repo_name}/raw/{branch_name}/{path}",
+                }
+
+            name = self.clean_name(name)
+            self._data[name] = result
+
+            if name.endswith('.squashfs'):
+                self.utils.append(self.clean_name(asset['name']))
+
+            if name == 'ports.json':
+                ports_json_file = name
+
+        if ports_json_file is not None:
+            cprint(f"- <b>{self._config['name']}:</b> Fetching info.")
+            ports_json = fetch_json(self._data[ports_json_file]['url'])
+
+            for port_info in ports_json['ports']:
+                ## TODO Load port.json info.
+                port_name = self.clean_name(port_info['source'].rsplit('/', 1)[1])
+                self._info[port_name] = port_info
+
+                self.ports.append(port_name)
+
+        self._config['version'] = self.VERSION
+
+        self._config['data']['ports'] = self.ports
+        self._config['data']['utils'] = self.utils
+        self._config['data']['data']  = self._data
+        self._config['data']['info']  = self._info
+
+        self._config['last_checked'] = datetime.datetime.now().isoformat()
+
+        self.save()
+        self._did_update = True
+        cprint(f"- <b>{self._config['name']}:</b> Done.")
+
 
 SOURCE_APIS = {
     'GitHubRawReleaseV1': GitHubRawReleaseV1,
     'PortMasterV1': PortMasterV1,
+    'GitHubRepoV1': GitHubRepoV1,
     }
 
 ################################################################################
@@ -631,12 +721,18 @@ class PortInfo():
 
     def from_dict(self, info):
         self.version = info.get('source', self.VERSION)
-        self.source = info.get('source', None)
-        self.items = info.get('items', None)
+        self.source  = info.get('source', None)
+        self.items   = info.get('items', None)
         self.items_opt = info.get('items_opt', None)
-        self.md5 = info.get('md5', None)
+        self.md5  = info.get('md5', None)
         self.attr = info.get('attr', {})
         self.attr.setdefault('porter', None)
+        self.attr.setdefault('desc', None)
+        self.attr.setdefault('inst', None)
+        self.attr.setdefault('genres', None)
+        self.attr.setdefault('images', None)
+        self.attr.setdefault('rtr', None)
+        self.attr.setdefault('runtime', None)
 
     def merge_info(self, other):
         if isinstance(other, (str, dict)):
@@ -1300,6 +1396,7 @@ all_commands = {
 
 @logger.catch
 def main(argv):
+    global LOG_FILE_HANDLE
 
     with make_temp_directory() as temp_dir:
         argv = argv[:]
@@ -1336,6 +1433,10 @@ def main(argv):
             logger.configure(handlers=[{"sink": sys.stderr, "level": "ERROR"}])
         elif config['debug']:
             logger.configure(handlers=[{"sink": sys.stderr, "level": "DEBUG"}])
+
+        if config['no-log']:
+            logger.remove(LOG_FILE_HANDLE)
+            LOG_FILE_HANDLE = None
 
         if config['no-colour']:
             utility.do_color(False)

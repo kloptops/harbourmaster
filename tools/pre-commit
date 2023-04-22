@@ -1,0 +1,315 @@
+#!/usr/bin/env python3
+
+"""
+GitHubV1 Source
+
+Place in your .git/hooks folder, this will build all the files necessary for GitHubRepoV1 to work.
+
+On commit this will make sure each zip file has a .md5/.md5sum file, and ports.json is up to date.
+
+
+"""
+
+import datetime
+import fnmatch
+import hashlib
+import json
+import os
+import pathlib
+import re
+import shutil
+import sys
+import tempfile
+import textwrap
+import zipfile
+
+from pathlib import Path
+
+################################################################################
+## CONFIGRE THIS
+PM_PRIORITY = 50
+PM_PREFIX   = "klop"
+PM_NAME     = "Kloptops"
+
+GIT_USER_NAME   = "kloptops"
+GIT_REPO_NAME   = "Portmaster-misc"
+GIT_REPO_BRANCH = "main"
+GIT_ROOT_PATH   = "releases/" ## Really should end with a slash
+
+USE_MD5SUM = True
+
+################################################################################
+## Only touch this as you know what you are doing.
+DEFAULT_CONFIG_DATA = {
+    "prefix": PM_PREFIX,
+    "api": "GitHubRepoV1",
+    "name": PM_NAME,
+    "config": {
+        "user_name":   GIT_USER_NAME,
+        "repo_name":   GIT_REPO_NAME,
+        "branch_name": GIT_REPO_BRANCH,
+        "sub_folder":  GIT_ROOT_PATH
+        },
+    "url": None,
+    "last_checked": None,
+    "version": 1,
+    "data": {}
+    }
+
+################################################################################
+## Utils
+def hash_file(file):
+    md5 = hashlib.md5()
+    with open(file, 'rb') as fh:
+        while True:
+            data = fh.read(1024 * 1024)
+            if len(data) == 0:
+                break
+
+            md5.update(data)
+
+    return md5.hexdigest()
+
+
+def hash_text(text):
+    md5 = hashlib.md5()
+    if isinstance(text, str):
+        md5.update(text.encode('utf-8'))
+    else:
+        md5.update(text)
+
+    return md5.hexdigest()
+
+
+def make_md5(file_name):
+    md5 = hash_file(file_name)
+    with file_name.with_name(file_name.name + '.md5').open('wt') as fh:
+        fh.write(md5)
+
+    return md5
+
+
+def make_md5sum(file_name):
+    md5 = hash_file(file_name)
+    with file_name.with_name(file_name.name + '.md5sum').open('wt') as fh:
+        fh.write(f"{md5} *{file_name.name}")
+
+    return md5
+
+
+def clean_name(file_name, attr='name'):
+    if attr == 'name':
+        name = file_name.name
+    elif attr == 'stem':
+        name = file_name.name
+        if '.' in name:
+            name = name.split('.', 1)[0]
+    else:
+        name = str(file_name)
+
+    return name.lower().replace(" ", ".").replace("..", ".")
+
+################################################################################
+## Taken from harbourmaster
+class PortInfo():
+    VERSION = 1
+    __attrs__ = (
+        'version', 'source', 'items', 'items', 'items_opt', 'md5', 'attr')
+
+    def __init__(self, info):
+        if isinstance(info, pathlib.PurePath):
+            with info.open('r') as fh:
+                self.from_dict(json.load(fh))
+
+        elif isinstance(info, dict):
+            self.from_dict(info)
+
+        else:
+            raise ValueError(str(info))
+
+    def from_dict(self, info):
+        self.version = info.get('source', self.VERSION)
+        self.source  = info.get('source', None)
+        self.items   = info.get('items', None)
+        self.items_opt = info.get('items_opt', None)
+        self.md5  = info.get('md5', None)
+        self.attr = info.get('attr', {})
+        self.attr.setdefault('porter', None)
+        self.attr.setdefault('desc', None)
+        self.attr.setdefault('inst', None)
+        self.attr.setdefault('genres', None)
+        self.attr.setdefault('images', None)
+        self.attr.setdefault('rtr', None)
+        self.attr.setdefault('runtime', None)
+
+    def merge_info(self, other):
+        if isinstance(other, (str, dict)):
+            info = PortInfo(other)
+
+        elif isinstance(other, PortInfo):
+            pass
+
+        else:
+            raise ValueError(str(info))
+
+        for attr in self.__attrs__:
+            value_a = getattr(self, attr)
+            value_b = getattr(other, attr, None)
+
+            if value_a is None and value_b is not None:
+                setattr(self, attr, value_b)
+
+            if attr == 'attr':
+                for key in value_b.keys():
+                    if value_b[key] is None:
+                        continue
+
+                    if key not in value_a or value_a[key] is None:
+                        value_a[key] = value_b[key]
+
+    @property
+    def dirs(self):
+        return [
+            item[:-1]
+            for item in self.items
+            if item.endswith('/')]
+
+    @property
+    def scripts(self):
+        return [
+            item
+            for item in self.items
+            if not item.endswith('/')]
+
+    def to_dict(self):
+        return {
+            attr: getattr(self, attr)
+            for attr in self.__attrs__
+            }
+
+    def __str__(self):
+        return str(self.to_dict())
+
+    def __repr__(self):
+        return str(self.to_dict())
+
+
+def load_port_json(file_name):
+    # When we analyse a port, we want to look at the root directories, and the rooth scripts.
+    port_info_file = None
+    items = []
+    dirs = []
+    scripts = []
+
+    zip_name = clean_name(file_name)
+
+    with zipfile.ZipFile(file_name, 'r') as zf:
+        for file_info in zf.infolist():
+            if file_info.filename.startswith('/'):
+                ## Sneaky
+                print(f"- illegal file {file_info.filename!r}.")
+                continue
+
+            if file_info.filename.startswith('../'):
+                ## Little
+                print(f"- illegal file {file_info.filename!r}.")
+                continue
+
+            if '/../' in file_info.filename:
+                ## Shits
+                print(f"- illegal file {file_info.filename!r}.")
+                continue
+
+            if '/./' in file_info.filename:
+                ## Not too bad I suppose.
+                print(f"- illegal file {file_info.filename!r}.")
+                continue
+
+            if '/' in file_info.filename:
+                parts = file_info.filename.split('/')
+
+                if parts[0] not in dirs:
+                    items.append(parts[0] + '/')
+                    dirs.append(parts[0])
+
+                if len(parts) == 2:
+                    if parts[1].lower().endswith('.port.json'):
+                        ## TODO: add the ability for multiple port folders to have multiple port.json files. 
+                        if port_info_file is not None:
+                            print(f"- multiple port.json files.")
+                            print(f"  - Before: {port_info_file!r}")
+                            print(f"  - Now:    {file_info.filename!r}")
+
+                        port_info_file = file_info.filename
+
+                if file_info.filename.lower().endswith('.sh'):
+                    print(f"- extra script {file_info.filename!r}, this can cause issues.")
+
+            else:
+                if file_info.filename.lower().endswith('.sh'):
+                    scripts.append(file_info.filename)
+                    items.append(file_info.filename)
+                else:
+                    print(f"- extra file at root level thats not a script: {file_info.filename!r}")
+
+        if port_info_file is not None:
+            with zf.open(port_info_file, "r") as fh:
+                port_info = PortInfo(json.loads(fh.read()))
+        else:
+            port_info = PortInfo({})
+
+    ## These two are always overriden.
+    port_info.items = items
+    port_info.source = f"{PM_PREFIX}/{zip_name}"
+
+    if port_info_file is None:
+        port_info.file = f"{dirs[0]}/{(clean_name(file_name, 'stem') + '.port.json')}"
+        print(f"- {file_info.filename!r} missing .port.json")
+        print(f"  adding {port_info.file}.")
+        # print(f"{json.dumps(port_info.to_dict(), indent=4)}")
+        # print()
+
+        ## TODO: fix this
+        # with zipfile.ZipFile(file_name, 'a') as zf:
+        #     zf.writestr(port_info.file, json.dumps(port_info.to_dict(), indent=4))
+
+    else:
+        port_info.file = port_info_file
+
+    return port_info
+
+
+def main():
+    make_sumfile = USE_MD5SUM and make_md5sum or make_md5
+    ROOT_PATH = Path(GIT_ROOT_PATH)
+    SOURCE_FILE = ROOT_PATH / f"{PM_PRIORITY:03d}_{PM_NAME.casefold()}.source.json"
+    PORTS_JSON = ROOT_PATH / "ports.json"
+
+    with SOURCE_FILE.open("w") as fh:
+        json.dump(DEFAULT_CONFIG_DATA, fh, indent=4)
+
+    ports_info = {
+        'version': 1,
+        'ports': [],
+        }
+
+    for file_name in ROOT_PATH.iterdir():
+        if file_name.name.casefold().endswith('.zip'):
+            port_info = load_port_json(file_name)
+            port_info.md5 = make_sumfile(file_name)
+
+            ports_info['ports'].append(port_info.to_dict())
+
+        if (file_name.name.casefold().rsplit('.', 1)[1] not in ('md5', 'md5sum', '.source.json') and
+                file_name.name.casefold() not in ('ports.json', ) and
+                not file_name.name.startswith('.')):
+            make_sumfile(file_name)
+
+    with PORTS_JSON.open('wt') as fh:
+        json.dump(ports_info, fh, indent=4)
+
+    make_sumfile(PORTS_JSON)
+
+
+if __name__ == '__main__':
+    main()
