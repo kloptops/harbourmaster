@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <title>Generate JSON</title>
   <style>
@@ -57,8 +58,12 @@
     }
   </style>
 </head>
+
 <body>
   <form>
+    <label for="file-input">Upload JSON</label>
+    <input type="file" id="file-input" name="file-input" accept=".json" />
+
     <label for="port-title">Port Title:</label>
     <input type="text" id="port-title" name="port-title" required>
 
@@ -119,10 +124,72 @@
     <label for="blank">&nbsp;</label>
     <button type="button" id="generate-json">Generate JSON</button>
   </form>
-
   <div id="json"></div>
 
+
+
+
+
+
+
   <script>
+
+    function readJson() {
+      input = document.getElementById("file-input")
+      var file = input.files[0];
+      if (!file) {
+        return;
+      }
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        var contents = e.target.result;
+        loadJson(contents);
+      };
+      reader.readAsText(file);
+    }
+
+    function loadJson(contents) {
+      var json = JSON.parse(contents);
+      console.log(json);
+      var title = document.getElementById('port-title');
+      title.value = json.attr.title;
+      var scriptNames = [];
+      var directory = "";
+      for (i in json.items) {
+        console.log(json.items[i]);
+        if (json.items[i].includes(".sh")) {
+          scriptNames.push(json.items[i]);
+        }
+        else {
+          directory = json.items[i];
+        }
+
+      }
+      genres = document.getElementById("genres");
+      Array.from(genres.options).forEach(function (option) {
+
+        option.selected = json.attr.genres.includes(option.value);
+
+      });
+      var name = document.getElementById('script-name');
+      name.value = scriptNames.join(",");
+      var directoryName = document.getElementById('directory-name');
+      directoryName.value = directory;
+      var porter = document.getElementById('porter');
+      porter.value = json.attr.porter;
+      var description = document.getElementById('description');
+      description.value = json.attr.desc;
+      var instructions = document.getElementById('instructions');
+      instructions.value = json.attr.inst;
+      var runtime = document.getElementById('runtime');
+      runtime.value = json.attr.runtime;
+      var rtr = document.getElementById('ready-to-run');
+      rtr.checked = json.attr.rtr;
+    }
+
+    document.getElementById('file-input')
+      .addEventListener('change', readJson, false);
+
     function validateInputs() {
       // TODO: fix validation :(
 
@@ -131,7 +198,7 @@
       // return scriptNameValid && directoryNameValid;
     }
 
-    document.getElementById("generate-json").addEventListener("click", function() {
+    document.getElementById("generate-json").addEventListener("click", function () {
       if (validateInputs()) {
         generateJSON();
       }
@@ -139,7 +206,7 @@
 
     function generateJSON() {
       var portTitle = document.getElementById("port-title").value;
-      var scriptName = document.getElementById("script-name").value;
+      var scriptNames = document.getElementById("script-name").value.split(",");
       var directoryName = document.getElementById("directory-name").value;
       var genres = Array.from(document.getElementById("genres").selectedOptions).map(o => o.value);
       var description = document.getElementById("description").value;
@@ -150,23 +217,30 @@
 
       runtime = runtime.length === 0 ? null : runtime;
 
+      var items = [];
+
+      for (i in scriptNames) {
+        items.push(scriptNames[i]);
+      }
+
+      items.push(directoryName);
+
       var data = {
-          "items": [
-            scriptName,
-            directoryName
-          ],
-          "attr": {
-              "porter": porter,
-              "desc": description,
-              "inst": instructions,
-              "genres": genres,
-              "rtr": readyToRun,
-              "runtime": runtime
-          }
+        items,
+        "attr": {
+          "title": portTitle,
+          "porter": porter,
+          "desc": description,
+          "inst": instructions,
+          "genres": genres,
+          "rtr": readyToRun,
+          "runtime": runtime
+        }
       }
 
       document.getElementById("json").innerHTML = JSON.stringify(data, null, 2);
     }
   </script>
 </body>
+
 </html>
