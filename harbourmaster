@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import pathlib
+import platform
 import re
 import shutil
 import sys
@@ -66,8 +67,8 @@ TESTING=False
 ## The following code is a simplification of the PortMaster toolsloc and whichsd code.
 DEFAULT_PORTS_DIR = Path("/roms/ports")
 
-## For testing on MAC OS X.
-if Path("/Volumes").is_dir():
+if platform.system() in ('Darwin', 'Windows'):
+    ## For testing
     DEFAULT_TOOLS_DIR = Path('.').absolute()
     DEFAULT_PORTS_DIR = Path('ports/').absolute()
     TESTING=True
@@ -117,7 +118,6 @@ else:
 LOG_FILE = TOOLS_DIR / "PortMaster" / "harbourmaster.txt"
 if LOG_FILE.parent.is_dir():
     LOG_FILE_HANDLE = logger.add(LOG_FILE, backtrace=True, diagnose=True)
-    print(LOG_FILE_HANDLE)
 
 # print(f"PORTS_DIR: {PORTS_DIR}")
 # print(f"TOOLS_DIR: {TOOLS_DIR}")
@@ -400,6 +400,7 @@ class GitHubRawReleaseV1(BaseSource):
         ...
 
     def update(self):
+        cprint(f"<b>{self._config['name']}</b>: updating")
         self._clear()
         self._data = {}
         self.ports = []
@@ -439,9 +440,12 @@ class GitHubRawReleaseV1(BaseSource):
 
         self.save()
         self._did_update = True
-        cprint(f"<b>{self._config['name']}:</b> Done.")
+        cprint(f"- <b>{self._config['name']}:</b> Done.")
 
-    def download(self, port_name, temp_dir=None):
+    def download(self, port_name, temp_dir=None, md5_result=None):
+        if md5_result is None:
+            md5_result = [None]
+
         if port_name not in self._data:
             logger.error(f"Unable to find port <b>{port_name}</b>")
             return None
@@ -449,19 +453,60 @@ class GitHubRawReleaseV1(BaseSource):
         if temp_dir is None:
             temp_dir = self._hm.temp_dir
 
-        md5_source = fetch_text(self._data[port_name + '.md5']['url'])
+        if (port_name + '.md5') in self._data:
+            md5_file = port_name + '.md5'
+        elif (port_name + '.md5sum') in self._data:
+            md5_file = port_name + '.md5sum'
+        else:
+            logger.error(f"Unable to find md5 for <b>{port_name}</b>")
+            return None
+
+        md5_source = fetch_text(self._data[md5_file]['url'])
         if md5_source is None:
             logger.error(f"Unable to download md5 file: {self._data[port_name + '.md5']['url']!r}")
             return None
 
-        md5_source = md5_source.strip()
+        md5_source = md5_source.strip().split(' ', 1)[0]
 
         zip_file = download(temp_dir / port_name, self._data[port_name]['url'], md5_source)
 
         if zip_file is not None:
             cprint("<b,g,>Success!</b,g,>")
 
+        md5_result[0] = md5_source
+
         return zip_file
+
+    def port_info(self, port_name):
+        port_name = self.clean_name(port_name)
+
+        if port_name not in getattr(self, '_info', {}):
+            return {}
+
+        return self._info[port_name]
+
+    def portmd(self, port_name):
+        port_info = self.port_info(port_name)
+        output = []
+
+        if 'opengl' in port_info["attr"]["reqs"]:
+            output.append(f'<r>Title_F</r>="<y>{port_info["attr"]["title"].replace(" ", "_")} .</y>"')
+        elif 'power' in port_info["attr"]['reqs']:
+            output.append(f'<r>Title_P</r>="<y>{port_info["attr"]["title"].replace(" ", "_")} .</y>"')
+        else:
+            output.append(f'<r>Title</r>="<y>{port_info["attr"]["title"].replace(" ", "_")} .</y>"')
+
+        output.append(f'<r>Desc</r>="<y>{port_info["attr"]["desc"]}</y>"')
+        output.append(f'<r>porter</r>="<y>{port_info["attr"]["porter"]}</y>"')
+        output.append(f'<r>locat</r>="<y>{self._prefix}/{port_info["source"]}</y>"')
+        if port_info["attr"]['rtr']:
+            output.append(f'<r>runtype</r>="<e>rtr</e>"')
+        if port_info["attr"]['runtime'] == "mono-6.12.0.122-aarch64.squashfs":
+            output.append(f'<r>mono</r>="<e>y</e>"')
+
+        output.append(f'<r>genres</r>="<m>{",".join(port_info["attr"]["genres"])}</m>"')
+
+        return ' '.join(output)
 
 
 class PortMasterV1(GitHubRawReleaseV1):
@@ -476,48 +521,43 @@ class PortMasterV1(GitHubRawReleaseV1):
     def _update(self):
 
         cprint(f"- <b>{self._config['name']}</b>: Fetching info")
-        for line in fetch_text(self._data['ports.md']['url']).split('\n'):
+        portsmd_url = "https://raw.githubusercontent.com/kloptops/PortMaster/main/ports.md"
+        # portsmd_url = self._data['ports.md']['url']
+        for line in fetch_text(portsmd_url).split('\n'):
             line = line.strip()
             if line == '':
                 continue
 
-            info = self._parse_port_info(line)
-            info_key = self.clean_name(info['file'])
+            port_info = self._portsmd_to_portinfo(line)
 
-            self._info[info_key] = info
+            self._info[port_info['source']] = port_info
 
-            self.ports.append(info_key)
+            self.ports.append(port_info['source'])
 
         self._config['data']['info']  = self._info
 
-    def _parse_port_info(self, text):
+    def _portsmd_to_portinfo(self, text):
         # Super jank
-        keys = {
-            'title_f': 'title',
-            'title_p': 'title',
-            'locat': 'file',
-            }
-
-        info = {
+        raw_info = {
             'title': '',
             'desc': '',
-            'file': '',
+            'locat': '',
             'porter': '',
-            'opengl': False,
-            'power': False,
+            'reqs': [],
             'rtr': False,
-            'mono': False,
+            'runtime': None,
             'genres': [],
             }
 
         for key, value in re.findall(r'(?:^|\s)(\w+)=\"(.+?)"(?=\s+\w+=|$)', text.strip()):
-            if key.lower() == 'title_f':
-                info['opengl'] = True
+            key = key.casefold()
+            if key == 'title_f':
+                raw_info['reqs'].append('opengl')
+                key = 'title'
+            elif key == 'title_p':
+                raw_info['reqs'].append('power')
+                key = 'title'
 
-            if key.lower() == 'title_p':
-                info['power'] = True
-
-            key = keys.get(key.lower(), key.lower())
             if key == 'title':
                 value = value[:-2].replace('_', ' ')
 
@@ -528,40 +568,32 @@ class PortMasterV1(GitHubRawReleaseV1):
 
             # Special keys
             if key == 'runtype':
-                key, value = 'rtr', True
-            elif key == 'mono':
-                key, value = 'mono', True
-            elif key == 'genres':
+                key, value = "rtr", True
+            elif key == "mono":
+                key, value = "runtime", "mono-6.12.0.122-aarch64.squashfs"
+            elif key == "genres":
                 value = value.split(',')
 
-            info[key] = value
+            raw_info[key] = value
 
-        return info
+        port_info = PortInfo({})
 
+        port_info.source = self.clean_name(raw_info['locat'])
+        ## SUPER JANK --
+        port_info.items = ports_info['ports'].get(port_info.source, {'items': []})['items']
+        port_info.attr['title']   = raw_info['title']
+        port_info.attr['porter']  = raw_info['porter']
+        port_info.attr['desc']    = raw_info['desc']
+        port_info.attr['rtr']     = raw_info['rtr']
+        port_info.attr['reqs']    = raw_info['reqs']
+        port_info.attr['runtime'] = raw_info['runtime']
+        port_info.attr['genres']  = raw_info['genres']
 
-    def port_info(self, port_name):
-        if port_name not in self.ports:
-            return None
-
-        return self._info[port_name]
-
+        return port_info.to_dict()
 
     def download(self, port_name, temp_dir=None):
-        if port_name not in self._data:
-            logger.error(f"Unable to find port <b>{port_name}</b>")
-            return None
-
-        if temp_dir is None:
-            temp_dir = self._hm.temp_dir
-
-        md5_source = fetch_text(self._data[port_name + '.md5']['url'])
-        if md5_source is None:
-            logger.error(f"Unable to download md5 file: {self._data[port_name + '.md5']['url']!r}")
-            return None
-
-        md5_source = md5_source.strip()
-
-        zip_file = download(temp_dir / port_name, self._data[port_name]['url'], md5_source)
+        md5_result = [None]
+        zip_file = super().download(port_name, temp_dir, md5_result)
 
         if port_name in self.utils:
             ## Utils
@@ -569,42 +601,18 @@ class PortMasterV1(GitHubRawReleaseV1):
 
         zip_info = PortInfo({})
 
-        zip_info.md5 = md5_source
+        zip_info.md5 = md5_result[0]
         zip_info.source = f"{self._prefix}/{port_name}"
-        zip_info.attr['porter'] = self._info[port_name]['porter']
-        zip_info.attr['desc']   = self._info[port_name]['desc']
-
-        ## TODO: fix this. :(
-        if self._info[port_name]['mono'] is True:
-            zip_info.attr['runtime'] = "mono-6.12.0.122-aarch64.squashfs"
-
-        zip_info.attr['rtr'] = self._info[port_name]['rtr']
         zip_info.zip_file = zip_file
 
-        cprint("<b,g,>Success!</b,g,>")
+        port_info = self.port_info(port_name)
+        zip_info.merge_info(port_info)
+
+        # print(f"Port Info {port_info}")
+        # print(f"Zip Info {zip_info.to_dict()}")
+
         return zip_info
 
-
-    def portmd(self, port_name):
-        info = self.port_info(port_name)
-        output = []
-
-        if info['opengl']:
-            output.append(f'<r>Title_F</r>="<y>{info["title"].replace(" ", "_")} .</y>"')
-        elif info['power']:
-            output.append(f'<r>Title_P</r>="<y>{info["title"].replace(" ", "_")} .</y>"')
-        else:
-            output.append(f'<r>Title</r>="<y>{info["title"].replace(" ", "_")} .</y>"')
-
-        output.append(f'<r>Desc</r>="<y>{info["desc"]}</y>"')
-        output.append(f'<r>porter</r>="<y>{info["porter"]}</y>"')
-        output.append(f'<r>locat</r>="<y>{self._prefix}/{info["file"]}</y>"')
-        if info['rtr']:
-            output.append(f'<r>runtype</r>="<e>rtr</e>"')
-        if info['mono']:
-            output.append(f'<r>mono</r>="<e>y</e>"')
-
-        return ' '.join(output)
 
 class GitHubRepoV1(GitHubRawReleaseV1):
     VERSION = 2
@@ -616,6 +624,7 @@ class GitHubRepoV1(GitHubRawReleaseV1):
         self._info = self._config.setdefault('data', {}).setdefault('info', {})
 
     def update(self):
+        cprint(f"<b>{self._config['name']}</b>: updating")
         if self._did_update:
             cprint(f"- <b>{self._config['name']}</b>: up to date already.")
             return
@@ -647,8 +656,7 @@ class GitHubRepoV1(GitHubRawReleaseV1):
 
             name = path.rsplit('/', 1)[1]
 
-            if not (
-                    path.endswith('.zip') or
+            if not (path.endswith('.zip') or
                     path.endswith('.md5') or
                     path.endswith('.squashfs') or
                     path.endswith('.md5sum') or
@@ -675,8 +683,12 @@ class GitHubRepoV1(GitHubRawReleaseV1):
             ports_json = fetch_json(self._data[ports_json_file]['url'])
 
             for port_info in ports_json['ports']:
-                ## TODO Load port.json info.
-                port_name = self.clean_name(port_info['source'].rsplit('/', 1)[1])
+                port_name = port_info['source']
+                if '/' in port_name:
+                    port_name = port_name.rsplit('/', 1)[1]
+
+                port_name = self.clean_name(port_name)
+
                 self._info[port_name] = port_info
 
                 self.ports.append(port_name)
@@ -693,6 +705,24 @@ class GitHubRepoV1(GitHubRawReleaseV1):
         self.save()
         self._did_update = True
         cprint(f"- <b>{self._config['name']}:</b> Done.")
+
+    def download(self, port_name, temp_dir=None):
+        md5_result = [None]
+        zip_file = super().download(port_name, temp_dir, md5_result)
+
+        if port_name in self.utils:
+            ## Utils
+            return zip_file
+
+        zip_info = PortInfo({})
+
+        zip_info.md5 = md5_result[0]
+        zip_info.source = f"{self._prefix}/{port_name}"
+        zip_info.zip_file = zip_file
+
+        zip_info.merge_info(self.port_info(port_name))
+
+        return zip_info
 
 
 SOURCE_APIS = {
@@ -726,17 +756,21 @@ class PortInfo():
         self.items_opt = info.get('items_opt', None)
         self.md5  = info.get('md5', None)
         self.attr = info.get('attr', {})
-        self.attr.setdefault('porter', None)
-        self.attr.setdefault('desc', None)
-        self.attr.setdefault('inst', None)
-        self.attr.setdefault('genres', None)
-        self.attr.setdefault('images', None)
-        self.attr.setdefault('rtr', None)
+        self.attr.setdefault('title', "")
+        self.attr.setdefault('desc', "")
+        self.attr.setdefault('inst', "")
+        self.attr.setdefault('genres', [])
+        self.attr.setdefault('porter', "")
+        self.attr.setdefault('image', None)
+        self.attr.setdefault('rtr', False)
         self.attr.setdefault('runtime', None)
+        self.attr.setdefault('reqs', [])
 
     def merge_info(self, other):
+        BLANK = object()
+
         if isinstance(other, (str, dict)):
-            info = PortInfo(other)
+            other = PortInfo(other)
 
         elif isinstance(other, PortInfo):
             pass
@@ -746,18 +780,43 @@ class PortInfo():
 
         for attr in self.__attrs__:
             value_a = getattr(self, attr)
-            value_b = getattr(other, attr, None)
+            value_b = getattr(other, attr, BLANK)
 
-            if value_a is None and value_b is not None:
+            if value_b is BLANK:
+                continue
+
+            if value_a is None or value_a == "" or value_a == []:
                 setattr(self, attr, value_b)
+
+            if value_b in (True, False) and value_a in (True, False, None):
+                setattr(self, attr, value_b)
+                continue
+
+            if isinstance(value_b, str) and value_a in ("", None):
+                setattr(self, attr, value_b)
+                continue
+
+            if isinstance(value_b, list) and value_a in ([], None):
+                setattr(self, attr, value_b)
+                continue
 
             if attr == 'attr':
                 for key in value_b.keys():
-                    if value_b[key] is None:
+                    if key not in value_a:
+                        value_a[key] = value_b[key]
                         continue
 
-                    if key not in value_a or value_a[key] is None:
+                    if value_b[key] in (True, False) and value_a[key] in (True, False, None):
                         value_a[key] = value_b[key]
+                        continue
+
+                    if isinstance(value_b[key], str) and value_a[key] in ("", None):
+                        value_a[key] = value_b[key]
+                        continue
+
+                    if isinstance(value_b[key], list) and value_a[key] in ([], None):
+                        value_a[key] = value_b[key]
+                        continue
 
     @property
     def dirs(self):
@@ -1061,7 +1120,7 @@ class HarbourMaster():
             port_info_file = self.ports_dir / dirs[0] / (download_info.zip_file.stem + '.port.json')
 
         # print(f"Merged Info: {port_info}")
- 
+
         with open(port_info_file, 'w') as fh:
             json.dump(port_info.to_dict(), fh, indent=4)
 
@@ -1130,7 +1189,7 @@ def self_upgrade():
 
         file_md5_result = fetch_text(file_url_md5)
         if file_md5_result is None:
-            logger.error("Self Upgrade: File download failed. [<b>{file_url_md5}</b>]")
+            logger.error(f"Self Upgrade: File download failed. [<b>{file_url_md5}</b>]")
             return 255
 
         file_md5_result = file_md5_result.strip()
@@ -1146,7 +1205,7 @@ def self_upgrade():
 
         file_data = fetch_data(file_url)
         if file_data is None:
-            logger.error("Self Upgrade: File download failed. [<b>{file_url}</b>]")
+            logger.error(f"Self Upgrade: File download failed. [<b>{file_url}</b>]")
             return 255
 
         md5 = hashlib.md5()
@@ -1154,7 +1213,7 @@ def self_upgrade():
         file_md5_check = md5.hexdigest()
 
         if file_md5_check != file_md5_result:
-            logger.error("Self Upgrade: MD5 sum doesn't match. [<b>{file_md5_check}</b> vs <b>{file_md5_result}</b>]")
+            logger.error(f"Self Upgrade: MD5 sum doesn't match. [<b>{file_md5_check}</b> vs <b>{file_md5_result}</b>]")
             return 255
 
         results.append((file_name, file_data))
@@ -1205,13 +1264,19 @@ def do_list(hm, argv):
 
     {command} list [filters]
     """
+    ports = set()
+
     cprint("Available ports:")
     for source_prefix, source in hm.sources.items():
         for port in source.ports:
+            if port in ports:
+                continue
+            ports.add(port)
+
             port_info = source.port_info(port)
-            cprint(f"- <d>{source_prefix}</d>/<b>{port}<b>: <b,g,>{port_info['title']}</b,g,>")
+            cprint(f"- <d>{source_prefix}</d>/<b>{port}<b>: <b,g,>{port_info['attr']['title']}</b,g,>")
             cprint("")
-            cprint('\n'.join(textwrap.wrap(port_info['desc'], width=70, initial_indent='    ', subsequent_indent='    ')))
+            cprint('\n'.join(textwrap.wrap(port_info['attr']['desc'], width=70, initial_indent='    ', subsequent_indent='    ')))
             cprint("")
             cprint("")
 
@@ -1259,8 +1324,14 @@ def do_portsmd(hm, argv):
 
     {command} portsmd
     """
+    ports = set()
+
     for source_prefix, source in hm.sources.items():
         for port in source.ports:
+            if port in ports:
+                continue
+            ports.add(port)
+
             cprint(source.portmd(port))
             cprint()
 
@@ -1273,8 +1344,8 @@ def do_install(hm, argv):
 
     {command} install Half-Life.zip               # Install from highest priority repo
     {command} install */Half-Life.zip             # Same as above.
-    {command} install pm/Half-Life.zip            # Install specifically from portmaster repo
-    {command} install kloptops/Half-Life.zip      # Install specifically from kloptops repo
+    {command} install pm/Half-Life.zip            # Install specifically from Portmaster repo
+    {command} install klops/Half-Life.zip         # Install specifically from Kloptops repo
     {command} install https://example.com/example_port.zip # Download a port from a url
     """
     if len(argv) == 0:
@@ -1312,6 +1383,7 @@ def do_install(hm, argv):
             if download_info is None:
                 return 255
 
+            # print(f"Download Info: {download_info.to_dict()}")
             result = hm.install_port(download_info)
             if result != 0:
                 return result
@@ -1454,7 +1526,7 @@ def main(argv):
             return 1
 
         if argv[1].lower() not in all_commands:
-            print(f'Command {argv[1]!r} not found.')
+            cprint(f'Command <b>{argv[1]}</b> not found.')
             all_commands['help'](hm, [])
             return 2
 
