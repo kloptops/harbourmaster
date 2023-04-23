@@ -123,16 +123,31 @@
 
     <label for="blank">&nbsp;</label>
     <button type="button" id="generate-json">Generate JSON</button>
+    <label for="blank">&nbsp;</label>
+    <button type="button" id="download-json">Download JSON</button>
   </form>
   <div id="json"></div>
 
 
-
-
-
-
-
   <script>
+    function download() {
+      var file = new Blob([document.getElementById("json").innerHTML], { type: "application/json" });
+      if (window.navigator.msSaveOrOpenBlob) // IE10+
+        window.navigator.msSaveOrOpenBlob(file, filename);
+      else { // Others
+        var a = document.createElement("a"),
+          url = URL.createObjectURL(file);
+        a.href = url;
+        a.download = document.getElementById("directory-name").value + ".port.json";
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () {
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        }, 0);
+      }
+    }
+
 
     function readJson() {
       input = document.getElementById("file-input")
@@ -150,13 +165,11 @@
 
     function loadJson(contents) {
       var json = JSON.parse(contents);
-      console.log(json);
       var title = document.getElementById('port-title');
       title.value = json.attr.title;
       var scriptNames = [];
       var directory = "";
       for (i in json.items) {
-        console.log(json.items[i]);
         if (json.items[i].includes(".sh")) {
           scriptNames.push(json.items[i]);
         }
@@ -189,6 +202,9 @@
 
     document.getElementById('file-input')
       .addEventListener('change', readJson, false);
+
+    document.getElementById('download-json')
+      .addEventListener('click', download, false);
 
     function validateInputs() {
       // TODO: fix validation :(
