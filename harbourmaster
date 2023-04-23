@@ -1583,7 +1583,11 @@ def main(argv):
             all_commands['help'](hm, [])
             return 1
 
-        if argv[1].lower() not in all_commands:
+        if argv[1].casefold() == 'nothing':
+            ## This is used to lazily update sources.
+            return 0
+
+        if argv[1].casefold() not in all_commands:
             cprint(f'Command <b>{argv[1]}</b> not found.')
             all_commands['help'](hm, [])
             return 2
