@@ -55,9 +55,10 @@ else:
 
                 md5_check.update(data)
 
-        md5_check.hexdigest()
         with PYLIB_ZIP_MD5.open('wt') as fh:
-            fh.write(md5_check)
+            fh.write(md5_check.hexdigest())
+
+        del md5_check
 
         PYLIB_ZIP.unlink()
 
