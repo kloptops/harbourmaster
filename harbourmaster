@@ -19,14 +19,56 @@ from difflib import Differ
 from pathlib import Path
 from urllib.parse import urlparse, urlunparse
 
+################################################################################
+## This speeds up harbourmaster from 4-5 seconds to 1-2 seconds.
+##
 ## Insert our extra modules.
-sys.path.insert(0, str(Path(__file__).parent / 'pylibs.zip'))
+PYLIB_ZIP     = Path(__file__).parent / 'pylibs.zip'
+PYLIB_ZIP_MD5 = Path(__file__).parent / 'pylibs.zip.md5'
+PYLIB_PATH    = Path(__file__).parent / 'pylibs'
 
+if platform.system() in ('Darwin', 'Windows'):
+    PYLIB2_PATH  = Path(__file__).parent / 'pylibs2'
+    if not PYLIB2_PATH.is_dir():
+        if PYLIB_ZIP.is_file():
+            PYLIB2_PATH.mkdir(0o755)
+            with zipfile.ZipFile(PYLIB_ZIP, 'r') as zf:
+                zf.extractall(PYLIB2_PATH)
+
+    sys.path.insert(0, str(PYLIB2_PATH))
+
+else:
+    if PYLIB_ZIP.is_file():
+        if PYLIB_PATH.is_dir():
+            shutil.rmtree(PYLIB_PATH)
+
+        PYLIB_PATH.mkdir(0o755)
+        with zipfile.ZipFile(PYLIB_ZIP, 'r') as zf:
+            zf.extractall(PYLIB_PATH)
+
+        md5_check = hashlib.md5()
+        with PYLIB_ZIP.open('rb') as fh:
+            while True:
+                data = fh.read(1024 * 1024)
+                if len(data) == 0:
+                    break
+
+                md5_check.update(data)
+
+        md5_check.hexdigest()
+        with PYLIB_ZIP_MD5.open('wt') as fh:
+            fh.write(md5_check)
+
+        PYLIB_ZIP.unlink()
+
+    sys.path.insert(0, str(PYLIB_PATH))
+
+################################################################################
+## Now load the stuff we include
 import loguru
 import requests
 import utility
 
-from ports_info import ports_info
 from utility import cprint, cstrip
 
 logger = loguru.logger.opt(colors=True)
@@ -580,6 +622,8 @@ class PortMasterV1(GitHubRawReleaseV1):
 
         port_info.source = self.clean_name(raw_info['locat'])
         ## SUPER JANK --
+        from ports_info import ports_info
+
         port_info.items = ports_info['ports'].get(port_info.source, {'items': []})['items']
         port_info.attr['title']   = raw_info['title']
         port_info.attr['porter']  = raw_info['porter']
@@ -994,8 +1038,12 @@ class HarbourMaster():
                     unknown_files.append(file_name)
 
         ## Find any ports that match the files we couldnt find matchting a port.json file
+        ports_info = None
         new_ports = []
         for unknown_file in unknown_files:
+            if ports_info is None:
+                from ports_info import ports_info
+
             port_owners = get_list(ports_info['items'], unknown_file)
 
             if len(port_owners) == 1:
@@ -1008,6 +1056,9 @@ class HarbourMaster():
 
         ## Create new port.json files for any new ports, these only contain the most basic of information.
         for new_port in new_ports:
+            if ports_info is None:
+                from ports_info import ports_info
+
             port_info_raw = ports_info['ports'][new_port]
 
             port_info = PortInfo(port_info_raw)
@@ -1194,7 +1245,13 @@ def self_upgrade():
 
         file_md5_result = file_md5_result.strip()
 
-        if (self_path / file_name).is_file():
+        if file_name == 'pylibs.zip':
+            if (self_path / (file_name + '.md5')).is_file():
+                if (self_path / (file_name + '.md5')).read_text().strip() == file_md5_result:
+                    cprint(f"- skipping <b>{file_name!r}</b>, already up to date.")
+                    continue
+
+        elif (self_path / file_name).is_file():
             md5 = hashlib.md5()
             with open(self_path / file_name, 'rb') as fh:
                 md5.update(fh.read())
