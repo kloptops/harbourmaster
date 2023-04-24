@@ -261,15 +261,19 @@
       JSZip.loadAsync(file)
         .then(function (zip) {
           portJson = generateJSON();
-          name = "";
+          name = portJson.source;
+          directory = "";
           for (i in portJson.items) {
             if (!portJson.items[i].includes(".sh")) {
-              name = portJson.items[i];
+              directory = portJson.items[i];
+              if (name == "") {
+                name = portJson.items[i] + ".zip";
+              }
             }
           }
-          zip.file(name + "/" + name + ".port.json", JSON.stringify(portJson));
+          zip.file(directory + "/" + directory + ".port.json", JSON.stringify(portJson));
           zip.generateAsync({ type: "blob" }).then(function (blob) {
-            saveAs(blob, name + ".zip");
+            saveAs(blob, name);
           }, function (err) {
             console.log(err);
           });
@@ -332,7 +336,7 @@
       .addEventListener('click', downloadJson, false);
 
     document.getElementById('download-zip')
-      .addEventListener('click', downloadZip, false);
+      .addEventListener('click', downloadZip);
 
     function validateInputs() {
       // TODO: fix validation :(
@@ -380,7 +384,7 @@
       data.items = items;
       data.attr.title = portTitle;
       data.attr.porter = porter;
-      data.desc = description;
+      data.attr.desc = description;
       data.attr.inst = instructions;
       data.attr.genres = genres;
       data.attr.rtr = readyToRun;
