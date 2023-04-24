@@ -168,7 +168,7 @@ config/
 ._*
 
 ports_info_cache.*
-ports_info.json
-pylibs/
+exlibs/
+pylibs2/
 ports/
 PortMaster/
