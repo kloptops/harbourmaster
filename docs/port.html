@@ -267,7 +267,7 @@
             if (!portJson.items[i].includes(".sh")) {
               directory = portJson.items[i];
               if (name == "") {
-                name = portJson.items[i] + ".zip";
+                name =  portJson.items[i].charAt(0).toUpperCase() + portJson.items[i].slice(1)  + ".zip";
               }
             }
           }
@@ -311,7 +311,7 @@
       var directoryName = document.getElementById('directory-name');
       directoryName.value = directory;
       var source = document.getElementById('port-source');
-      source.value = json.source;
+      source.value = json.source || directory.charAt(0).toUpperCase() + directory.slice(1) + ".zip";
       var version = document.getElementById('port-version');
       version.value = json.version;
       var porter = document.getElementById('porter');
@@ -380,7 +380,7 @@
       items.push(directoryName);
       var data = getJsonTemplate();
       data.version = portVersion;
-      data.source = portSource;
+      data.source = portSource || directoryName.charAt(0).toUpperCase() + directoryName.slice(1) + ".zip";
       data.items = items;
       data.attr.title = portTitle;
       data.attr.porter = porter;
