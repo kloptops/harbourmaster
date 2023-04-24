@@ -68,6 +68,12 @@
     <label for="zip-input">Upload Zip</label>
     <input type="file" id="zip-input" name="zip-input" accept=".zip" />
 
+    <label for="port-version">Port Version:</label>
+    <input type="text" id="port-version" value="1.0" name="port-version" required>
+
+    <label for="port-source">Port Source:</label>
+    <input type="text" id="port-source" name="port-source" required>
+
     <label for="port-title">Port Title:</label>
     <input type="text" id="port-title" name="port-title" required>
 
@@ -138,6 +144,30 @@
 
 
   <script>
+    function getJsonTemplate() {
+      portJson = {
+        "version": 1.0,
+        "source": "",
+        "items": [],
+        "items_opt": [],
+        "md5": null,
+        "attr": {
+          "title": "",
+          "porter": "",
+          "desc": "",
+          "inst": "",
+          "genres": [],
+          "image": null,
+          "rtr": false,
+          "runtime": null,
+          "reqs": [],
+          "url": ""
+        }
+      }
+      var copiedTemplate = { ...portJson };
+      return copiedTemplate
+
+    }
     function downloadJson() {
       var file = new Blob([document.getElementById("json").innerHTML], { type: "application/json" });
       if (window.navigator.msSaveOrOpenBlob) // IE10+
@@ -158,12 +188,10 @@
 
 
     function analyzePort(zip) {
-      portJson = {};
-      attr = {};
+      portJson = getJsonTemplate();
       itemsList = [];
-      zip.forEach(function (relativePath, zipEntry) {  // 2) print entries
+      zip.forEach(function (relativePath, zipEntry) {
         if (!zipEntry.name.includes("/")) {
-          // files at the root directory
           itemsList.push(zipEntry.name)
         }
         else {
@@ -176,13 +204,6 @@
         }
       });
       portJson.items = itemsList;
-      portJson.attr = attr;
-      portJson.attr.title = "";
-      portJson.attr.porter = "";
-      portJson.attr.desc = "";
-      portJson.attr.inst = "";
-      portJson.attr.genres = [];
-      portJson.attr.rtr = false;
       portJson.attr.runtime = "blank"
       return JSON.stringify(portJson);
     }
@@ -208,9 +229,9 @@
         return;
       }
       var jsonIncluded = false;
-      JSZip.loadAsync(file)                                   // 1) read the Blob
+      JSZip.loadAsync(file)
         .then(function (zip) {
-          zip.forEach(function (relativePath, zipEntry) {  // 2) print entries
+          zip.forEach(function (relativePath, zipEntry) {
             if (zipEntry.name.includes("json")) {
               jsonIncluded = true;
               zip.files[zipEntry.name].async("string")
@@ -222,10 +243,9 @@
           });
         }).then(function () {
           if (!jsonIncluded) {
-            JSZip.loadAsync(file)                                   // 1) read the Blob
+            JSZip.loadAsync(file)
               .then(function (zip) {
                 var portJson = analyzePort(zip);
-                //console.log(portJson);
                 loadJson(portJson);
               });
           }
@@ -238,7 +258,7 @@
       if (!file) {
         return;
       }
-      JSZip.loadAsync(file)                                   // 1) read the Blob
+      JSZip.loadAsync(file)
         .then(function (zip) {
           portJson = generateJSON();
           name = "";
@@ -248,8 +268,8 @@
             }
           }
           zip.file(name + "/" + name + ".port.json", JSON.stringify(portJson));
-          zip.generateAsync({ type: "blob" }).then(function (blob) { // 1) generate the zip file
-            saveAs(blob, name + ".zip");                          // 2) trigger the download
+          zip.generateAsync({ type: "blob" }).then(function (blob) {
+            saveAs(blob, name + ".zip");
           }, function (err) {
             console.log(err);
           });
@@ -257,7 +277,12 @@
     }
 
     function loadJson(contents) {
-      var json = JSON.parse(contents);
+      var template = getJsonTemplate();
+      var contentsJson = JSON.parse(contents);
+      var json = {
+        ...template,
+        ...contentsJson
+      };
       var title = document.getElementById('port-title');
       title.value = json.attr.title;
       var scriptNames = [];
@@ -281,6 +306,8 @@
       name.value = scriptNames.join(",");
       var directoryName = document.getElementById('directory-name');
       directoryName.value = directory;
+      var version = document.getElementById('port-version');
+      version.value = json.version;
       var porter = document.getElementById('porter');
       porter.value = json.attr.porter;
       var description = document.getElementById('description');
@@ -324,6 +351,8 @@
     }
 
     function generateJSON() {
+      var portVersion = document.getElementById("port-version").value;
+      var portSource = document.getElementById("port-source").value;
       var portTitle = document.getElementById("port-title").value;
       var scriptNames = document.getElementById("script-name").value.split(",");
       var directoryName = document.getElementById("directory-name").value;
@@ -343,20 +372,17 @@
       }
 
       items.push(directoryName);
-
-      var data = {
-        items,
-        "attr": {
-          "title": portTitle,
-          "porter": porter,
-          "desc": description,
-          "inst": instructions,
-          "genres": genres,
-          "rtr": readyToRun,
-          "runtime": runtime
-        }
-      }
-
+      var data = getJsonTemplate();
+      data.version = portVersion;
+      data.source = portSource;
+      data.items = items;
+      data.attr.title = portTitle;
+      data.attr.porter = porter;
+      data.desc = description;
+      data.attr.inst = instructions;
+      data.attr.genres = genres;
+      data.attr.rtr = readyToRun;
+      data.attr.runtime = runtime;
       return data;
     }
   </script>
