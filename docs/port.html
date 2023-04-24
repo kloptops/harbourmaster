@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <html>
+<script type="text/javascript" src="jszip.min.js"></script>
+<script type="text/javascript" src="FileSaver.min.js"></script>
 
 <head>
   <title>Generate JSON</title>
@@ -63,6 +65,8 @@
   <form>
     <label for="file-input">Upload JSON</label>
     <input type="file" id="file-input" name="file-input" accept=".json" />
+    <label for="zip-input">Upload Zip</label>
+    <input type="file" id="zip-input" name="zip-input" accept=".zip" />
 
     <label for="port-title">Port Title:</label>
     <input type="text" id="port-title" name="port-title" required>
@@ -125,12 +129,14 @@
     <button type="button" id="generate-json">Generate JSON</button>
     <label for="blank">&nbsp;</label>
     <button type="button" id="download-json">Download JSON</button>
+    <label for="blank">&nbsp;</label>
+    <button type="button" id="download-zip">Download Zip</button>
   </form>
   <div id="json"></div>
 
 
   <script>
-    function download() {
+    function downloadJson() {
       var file = new Blob([document.getElementById("json").innerHTML], { type: "application/json" });
       if (window.navigator.msSaveOrOpenBlob) // IE10+
         window.navigator.msSaveOrOpenBlob(file, filename);
@@ -149,6 +155,36 @@
     }
 
 
+    function analyzePort(zip) {
+      portJson = {};
+      attr = {};
+      itemsList = [];
+      zip.forEach(function (relativePath, zipEntry) {  // 2) print entries
+        if (!zipEntry.name.includes("/")) {
+          // files at the root directory
+          itemsList.push(zipEntry.name)
+        }
+        else {
+          if (zipEntry.dir) {
+            if (zipEntry.name.split("/")[1] == "") {
+              itemsList.push(zipEntry.name.slice(0, zipEntry.name.length - 1));
+            }
+          }
+
+        }
+      });
+      portJson.items = itemsList;
+      portJson.attr = attr;
+      portJson.attr.title = "";
+      portJson.attr.porter = "";
+      portJson.attr.desc = "";
+      portJson.attr.inst = "";
+      portJson.attr.genres = [];
+      portJson.attr.rtr = false;
+      portJson.attr.runtime = "blank"
+      return JSON.stringify(portJson);
+    }
+
     function readJson() {
       input = document.getElementById("file-input")
       var file = input.files[0];
@@ -161,6 +197,61 @@
         loadJson(contents);
       };
       reader.readAsText(file);
+    }
+
+    function readZip() {
+      input = document.getElementById("zip-input")
+      var file = input.files[0];
+      if (!file) {
+        return;
+      }
+      var jsonIncluded = false;
+      JSZip.loadAsync(file)                                   // 1) read the Blob
+        .then(function (zip) {
+          zip.forEach(function (relativePath, zipEntry) {  // 2) print entries
+            if (zipEntry.name.includes("json")) {
+              jsonIncluded = true;
+              zip.files[zipEntry.name].async("string")
+                .then(function (data) {
+                  loadJson(data);
+                  zip = null;
+                });
+            }
+          });
+        }).then(function () {
+          if (!jsonIncluded) {
+            JSZip.loadAsync(file)                                   // 1) read the Blob
+              .then(function (zip) {
+                var portJson = analyzePort(zip);
+                //console.log(portJson);
+                loadJson(portJson);
+              });
+          }
+        });
+    }
+
+    function downloadZip() {
+      input = document.getElementById("zip-input")
+      var file = input.files[0];
+      if (!file) {
+        return;
+      }
+      JSZip.loadAsync(file)                                   // 1) read the Blob
+        .then(function (zip) {
+          portJson = generateJSON();
+          name = "";
+          for (i in portJson.items) {
+            if (!portJson.items[i].includes(".sh")) {
+              name = portJson.items[i];
+            }
+          }
+          zip.file(name + "/" + name + ".port.json", JSON.stringify(portJson));
+          zip.generateAsync({ type: "blob" }).then(function (blob) { // 1) generate the zip file
+            saveAs(blob, name + ".zip");                          // 2) trigger the download
+          }, function (err) {
+            console.log(err);
+          });
+        });
     }
 
     function loadJson(contents) {
@@ -203,8 +294,14 @@
     document.getElementById('file-input')
       .addEventListener('change', readJson, false);
 
+    document.getElementById('zip-input')
+      .addEventListener('change', readZip, false);
+
     document.getElementById('download-json')
-      .addEventListener('click', download, false);
+      .addEventListener('click', downloadJson, false);
+
+    document.getElementById('download-zip')
+      .addEventListener('click', downloadZip, false);
 
     function validateInputs() {
       // TODO: fix validation :(
@@ -216,9 +313,13 @@
 
     document.getElementById("generate-json").addEventListener("click", function () {
       if (validateInputs()) {
-        generateJSON();
+        setJSON(generateJSON());
       }
     });
+
+    function setJSON(json) {
+      document.getElementById("json").innerHTML = JSON.stringify(json, null, 2);
+    }
 
     function generateJSON() {
       var portTitle = document.getElementById("port-title").value;
@@ -254,7 +355,7 @@
         }
       }
 
-      document.getElementById("json").innerHTML = JSON.stringify(data, null, 2);
+      return data;
     }
   </script>
 </body>
