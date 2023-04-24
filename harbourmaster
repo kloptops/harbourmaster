@@ -81,7 +81,7 @@ PORTS_DIR=None
 UPDATE_FREQUENCY=(60 * 60 * 22) # Only check automatically once a day.
 
 SOURCE_DEFAULTS = {
-    "000_portmaster.source.json": textwrap.dedent("""
+    "020_portmaster.source.json": textwrap.dedent("""
     {
         "prefix": "pm",
         "api": "PortMasterV1",
@@ -92,7 +92,7 @@ SOURCE_DEFAULTS = {
         "data": {}
     }
     """),
-    "001_runtimes.source.json": textwrap.dedent("""
+    "021_runtimes.source.json": textwrap.dedent("""
     {
         "prefix": "pr",
         "api": "GitHubRawReleaseV1",
@@ -211,7 +211,7 @@ def nice_size(size):
     if suffix == 'B':
         return f"{size:.0f} {suffix}"
 
-    return f"{size:.03f} {suffix}"
+    return f"{size:.02f} {suffix}"
 
 
 def download(file_name, file_url, md5_source=None, md5_result=None):
@@ -249,10 +249,10 @@ def download(file_name, file_url, md5_source=None, md5_result=None):
             length += len(data)
 
             if total_length is None:
-                sys.stdout.write(f"\r[{'?' * 50}] - {nice_size(length)} / {total_length_mb}    ")
+                sys.stdout.write(f"\r[{'?' * 40}] - {nice_size(length)} / {total_length_mb} ")
             else:
-                amount = int(length / total_length * 50)
-                sys.stdout.write(f"\r[{'.' * amount}{' ' * (50 - amount)}] - {nice_size(length)} / {total_length_mb}    ")
+                amount = int(length / total_length * 40)
+                sys.stdout.write(f"\r[{'|' * amount}{' ' * (40 - amount)}] - {nice_size(length)} / {total_length_mb} ")
             sys.stdout.flush()
 
         cprint("\n")
@@ -564,8 +564,8 @@ class PortMasterV1(GitHubRawReleaseV1):
     def _update(self):
 
         cprint(f"- <b>{self._config['name']}</b>: Fetching info")
-        portsmd_url = "https://raw.githubusercontent.com/kloptops/PortMaster/main/ports.md"
-        # portsmd_url = self._data['ports.md']['url']
+        # portsmd_url = "https://raw.githubusercontent.com/kloptops/PortMaster/main/ports.md"
+        portsmd_url = self._data['ports.md']['url']
         for line in fetch_text(portsmd_url).split('\n'):
             line = line.strip()
             if line == '':
@@ -1249,7 +1249,7 @@ def self_upgrade():
         if file_name == 'pylibs.zip':
             if (self_path / (file_name + '.md5')).is_file():
                 if (self_path / (file_name + '.md5')).read_text().strip() == file_md5_result:
-                    cprint(f"- skipping <b>{file_name!r}</b>, already up to date.")
+                    cprint(f"- skipping <b>{file_name!r}</b>, already up to date. [<b>{file_md5_result}</b>]")
                     continue
 
         elif (self_path / file_name).is_file():
@@ -1258,7 +1258,7 @@ def self_upgrade():
                 md5.update(fh.read())
 
             if md5.hexdigest() == file_md5_result:
-                cprint(f"- skipping <b>{file_name!r}</b>, already up to date.")
+                cprint(f"- skipping <b>{file_name!r}</b>, already up to date. [<b>{file_md5_result}</b>]")
                 continue
 
         file_data = fetch_data(file_url)
@@ -1288,6 +1288,8 @@ def self_upgrade():
             cprint( "  done.")
 
         cprint("<b>All Done!</b>")
+
+    return 0
 
 
 ################################################################################
@@ -1382,16 +1384,19 @@ def do_portsmd(hm, argv):
 
     {command} portsmd
     """
-    ports = set()
+    ports = {}
 
     for source_prefix, source in hm.sources.items():
         for port in source.ports:
             if port in ports:
                 continue
-            ports.add(port)
 
-            cprint(source.portmd(port))
-            cprint()
+            ports[port] = source.portmd(port)
+
+    cprint()
+    for port in sorted(ports.keys(), key=lambda x: x.casefold()):
+        cprint(ports[port])
+        cprint()
 
     return 0
 
