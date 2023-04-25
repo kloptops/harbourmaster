@@ -28,14 +28,9 @@ PYLIB_ZIP_MD5 = Path(__file__).parent / 'pylibs.zip.md5'
 PYLIB_PATH    = Path(__file__).parent / 'pylibs'
 
 if platform.system() in ('Darwin', 'Windows'):
-    PYLIB2_PATH  = Path(__file__).parent / 'pylibs2'
-    if not PYLIB2_PATH.is_dir():
-        if PYLIB_ZIP.is_file():
-            PYLIB2_PATH.mkdir(0o755)
-            with zipfile.ZipFile(PYLIB_ZIP, 'r') as zf:
-                zf.extractall(PYLIB2_PATH)
-
-    sys.path.insert(0, str(PYLIB2_PATH))
+    EXLIB_PATH = Path(__file__).parent / 'exlibs'
+    sys.path.insert(0, str(EXLIB_PATH))
+    sys.path.insert(0, str(PYLIB_PATH))
 
 else:
     if PYLIB_ZIP.is_file():
@@ -78,7 +73,7 @@ logger = loguru.logger.opt(colors=True)
 ## Override this for custom tools/ports directories
 TOOLS_DIR=None
 PORTS_DIR=None
-UPDATE_FREQUENCY=(60 * 60 * 22) # Only check automatically once a day.
+UPDATE_FREQUENCY=(60 * 60 * 3) # Only check automatically every few hours.
 
 SOURCE_DEFAULTS = {
     "020_portmaster.source.json": textwrap.dedent("""
@@ -1076,6 +1071,58 @@ class HarbourMaster():
 
             self.installed_ports.append(port_info)
 
+
+    def port_info_attrs(self, port_info):
+        runtime_fix = {
+            'frt':  'godot',
+            'mono': 'mono',
+            'jdk11': 'jre',
+            }
+
+        attrs = []
+        runtime = port_info.get('attr', {}).get('runtime', None)
+        if runtime is not None:
+            for runtime_key, runtime_attr in runtime_fix.items():
+                if runtime_key in runtime:
+                    add_unique(attrs, runtime_attr)
+
+        for genre in port_info.get('attr', {}).get('genres', None):
+            add_unique(attrs, genre.casefold())
+
+        rtr = port_info.get('attr', {}).get('rtr', False)
+        if rtr:
+            add_unique(attrs, 'rtr')
+
+        return attrs
+
+    def match_filters(self, port_filters, port_info):
+        port_attrs = self.port_info_attrs(port_info)
+
+        for port_filter in port_filters:
+            if port_filter.casefold() not in port_attrs:
+                return False
+
+        return True
+
+    def list_ports(self, filters=[]):
+        ## Filters can be genre, runtime
+
+        ports = {}
+
+        for source_prefix, source in self.sources.items():
+            for port in source.ports:
+                if port in ports:
+                    continue
+
+                port_info = source.port_info(port)
+
+                if not self.match_filters(filters, port_info):
+                    continue
+
+                ports[port] = (source, port, port_info)
+
+        return ports
+
     def install_port(self, download_info):
         """
         Installs a port.
@@ -1324,21 +1371,24 @@ def do_list(hm, argv):
 
     {command} list [filters]
     """
-    ports = set()
+    ports = hm.list_ports(argv)
+    available_filters = set()
 
     cprint("Available ports:")
-    for source_prefix, source in hm.sources.items():
-        for port in source.ports:
-            if port in ports:
-                continue
-            ports.add(port)
+    for port in sorted(ports.keys(), key=lambda port: ports[port][2]['attr']['title'].casefold()):
+        port_info = ports[port][2]
 
-            port_info = source.port_info(port)
-            cprint(f"- <d>{source_prefix}</d>/<b>{port}<b>: <b,g,>{port_info['attr']['title']}</b,g,>")
-            cprint("")
-            cprint('\n'.join(textwrap.wrap(port_info['attr']['desc'], width=70, initial_indent='    ', subsequent_indent='    ')))
-            cprint("")
-            cprint("")
+        cprint(f"- <d>{ports[port][0]._prefix}</d>/<b>{port}<b>: <b,g,>{port_info['attr']['title']}</b,g,>")
+        cprint("")
+        cprint('\n'.join(textwrap.wrap(port_info['attr']['desc'], width=70, initial_indent='    ', subsequent_indent='    ')))
+        cprint("")
+        cprint("")
+
+        available_filters.update(hm.port_info_attrs(ports[port][2]))
+
+    available_filters -= set(argv)
+
+    cprint(f'<r>Filters</r>: <m>{", ".join(sorted(available_filters))}</m>')
 
     return 0
 
@@ -1384,19 +1434,34 @@ def do_portsmd(hm, argv):
 
     {command} portsmd
     """
-    ports = {}
-
-    for source_prefix, source in hm.sources.items():
-        for port in source.ports:
-            if port in ports:
+    if len(argv) > 0:
+        results = []
+        for arg in argv:
+            if arg == '':
                 continue
 
-            ports[port] = source.portmd(port)
+            if ',' in arg:
+                results.extend([
+                    x
+                    for x in arg.split(',')
+                    if x != ''])
+            else:
+                results.append(arg)
+
+        argv = results
+
+    ports = hm.list_ports(argv)
+    available_filters = set()
 
     cprint()
-    for port in sorted(ports.keys(), key=lambda x: x.casefold()):
-        cprint(ports[port])
+    for port in sorted(ports.keys(), key=lambda port: ports[port][2]['attr']['title'].casefold()):
+        cprint(ports[port][0].portmd(port))
         cprint()
+        available_filters.update(hm.port_info_attrs(ports[port][2]))
+
+    available_filters -= set(argv)
+
+    cprint(f'<r>Filters</r>="<m>{",".join(sorted(available_filters))}</m>"')
 
     return 0
 
@@ -1478,6 +1543,36 @@ def do_upgrade(hm, argv):
 
     logger.error("Error: Not yet implemented.")
     return 255
+
+
+def do_fifo_control(hm, argv):
+    """
+    {command} fifo_control /dev/shm/portmaster/hm_input > /dev/null &
+
+    echo "portsmd:/dev/shm/portmaster/ports.md:" > /dev/shm/portmaster/hm_input
+
+    """
+    if len(argv) == 0:
+        return 0
+
+    with open(argv[0], 'r') as pipe:
+        while True:
+            args = pipe.readline().strip()
+            if not args:
+                continue
+
+            args = args.split(':')
+
+            if args[0] == 'exit':
+                return 0
+
+            orig_stdout = sys.stdout
+
+            with open(args[1], 'w') as fh:
+                sys.stdout = fh
+                all_commands[args[0].casefold()](hm, args[2:])
+
+            sys.stdout = orig_stdout
 
 
 def do_help(hm, argv):
@@ -1592,12 +1687,16 @@ def main(argv):
             ## This is used to lazily update sources.
             return 0
 
+        if argv[1].casefold() == 'fifo_control':
+            do_fifo_control(hm, argv[2:])
+            return 0
+
         if argv[1].casefold() not in all_commands:
             cprint(f'Command <b>{argv[1]}</b> not found.')
             all_commands['help'](hm, [])
             return 2
 
-        return all_commands[argv[1].lower()](hm, argv[2:])
+        return all_commands[argv[1].casefold()](hm, argv[2:])
 
 
 if __name__ == '__main__':
