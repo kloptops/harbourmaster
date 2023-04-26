@@ -1,17 +1,21 @@
 
 import contextlib
 import datetime
-import platform
-import tempfile
-import shutil
+import hashlib
 import json
+import platform
+import shutil
+import sys
+import tempfile
 
 from pathlib import Path
 
 import loguru
 import requests
+import utility
 
 from loguru import logger
+from utility import cprint, cstrip
 
 from .config import *
 
@@ -256,5 +260,6 @@ __all__ = (
     'make_temp_directory',
     'download',
     'datetime_compare',
+    'nice_size',
     'raw_download',
     )

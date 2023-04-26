@@ -94,6 +94,11 @@ def port_info_load(raw_info, source_name=None):
 def port_info_merge(port_info, other):
     if isinstance(other, (str, pathlib.PurePath)):
         other_info = port_info_parse(other)
+    elif isinstance(other, dict):
+        other_info = other
+    else:
+        logger.error(f"Unable to merge {other!r}")
+        return None
 
     for attr, attr_default in PORT_INFO_ROOT_ATTRS.items():
         if attr == 'attr':
@@ -103,19 +108,19 @@ def port_info_merge(port_info, other):
         value_b = other_info['attr']
 
         if value_a is None or value_a == "" or value_a == []:
-            value_a[attr] = value_b
+            port_info[attr] = value_b
             continue
 
         if value_b in (True, False) and value_a in (True, False, None):
-            value_a[attr] = value_b
+            port_info[attr] = value_b
             continue
 
         if isinstance(value_b, str) and value_a in ("", None):
-            value_a[attr] = value_b
+            port_info[attr] = value_b
             continue
 
         if isinstance(value_b, list) and value_a in ([], None):
-            value_a[attr] = value_b
+            port_info[attr] = value_b
             continue
 
     for key_b, value_b in other_info['attr'].items():

@@ -1,5 +1,7 @@
 
+import json
 import pathlib
+import zipfile
 
 from pathlib import Path
 from loguru import logger
@@ -282,21 +284,21 @@ class HarbourMaster():
         dirs = []
         scripts = []
 
-        with zipfile.ZipFile(download_info.zip_file, 'r') as zf:
+        with zipfile.ZipFile(download_info['zip_file'], 'r') as zf:
             for file_info in zf.infolist():
                 if file_info.filename.startswith('/'):
                     ## Sneaky
-                    logger.error(f"Port <b>{download_info.source}</b> has an illegal file {file_info.filename!r}, aborting.")
+                    logger.error(f"Port <b>{download_info['source']}</b> has an illegal file {file_info.filename!r}, aborting.")
                     return 255
 
                 if file_info.filename.startswith('../'):
                     ## Little
-                    logger.error(f"Port <b>{download_info.source}</b> has an illegal file {file_info.filename!r}, aborting.")
+                    logger.error(f"Port <b>{download_info['source']}</b> has an illegal file {file_info.filename!r}, aborting.")
                     return 255
 
                 if '/../' in file_info.filename:
                     ## Shits
-                    logger.error(f"Port <b>{download_info.source}</b> has an illegal file {file_info.filename!r}, aborting.")
+                    logger.error(f"Port <b>{download_info['source']}</b> has an illegal file {file_info.filename!r}, aborting.")
                     return 255
 
                 if '/' in file_info.filename:
@@ -310,28 +312,28 @@ class HarbourMaster():
                         if parts[1].lower().endswith('.port.json'):
                             ## TODO: add the ability for multiple port folders to have multiple port.json files. ?
                             if port_info_file is not None:
-                                logger.warning(f"Port <b>{download_info.source}</b> has multiple port.json files.")
+                                logger.warning(f"Port <b>{download_info['source']}</b> has multiple port.json files.")
                                 logger.warning(f"- Before: <b>{port_info_file.relative_to(self.ports_dir)!r}</b>")
                                 logger.warning(f"- Now:    <b>{file_info.filename!r}</b>")
 
                             port_info_file = self.ports_dir / file_info.filename
 
                     if file_info.filename.lower().endswith('.sh'):
-                        logger.warning(f"Port <b>{download_info.source}</b> has <b>{file_info.filename}</b> inside, this can cause issues.")
+                        logger.warning(f"Port <b>{download_info['source']}</b> has <b>{file_info.filename}</b> inside, this can cause issues.")
 
                 else:
                     if file_info.filename.lower().endswith('.sh'):
                         scripts.append(file_info.filename)
                         items.append(file_info.filename)
                     else:
-                        logger.warning(f"Port <b>{download_info.source}</b> contains <b>{file_info.filename}</b> at the top level, but it is not a shell script.")
+                        logger.warning(f"Port <b>{download_info['source']}</b> contains <b>{file_info.filename}</b> at the top level, but it is not a shell script.")
 
             if len(dirs) == 0:
-                logger.error(f"Port <b>{download_info.source}</b> has no directories, aborting.")
+                logger.error(f"Port <b>{download_info['source']}</b> has no directories, aborting.")
                 return 255
 
             if len(scripts) == 0:
-                logger.error(f"Port <b>{download_info.source}</b> has no scripts, aborting.")
+                logger.error(f"Port <b>{download_info['source']}</b> has no scripts, aborting.")
                 return 255
 
             ## TODO: keep a list of installed files for uninstalling?
@@ -349,31 +351,31 @@ class HarbourMaster():
                 zf.extract(file_info, path=self.ports_dir)
 
         if port_info_file is not None:
-            port_info = PortInfo(port_info_file)
+            port_info = port_info_load(port_info_file)
         else:
-            port_info = PortInfo({})
+            port_info = port_info_load({})
 
         # print(f"Port Info: {port_info}")
         # print(f"Download Info: {download_info}")
 
-        port_info.merge_info(download_info)
+        port_info_merge(port_info, download_info)
 
         ## These two are always overriden.
-        port_info.items = items
-        port_info.md5 = download_info.md5
+        port_info['items'] = items
+        port_info['md5'] = download_info['md5']
 
         if port_info_file is None:
-            port_info_file = self.ports_dir / dirs[0] / (download_info.zip_file.stem + '.port.json')
+            port_info_file = self.ports_dir / dirs[0] / (download_info['zip_file'].stem + '.port.json')
 
         # print(f"Merged Info: {port_info}")
 
         with open(port_info_file, 'w') as fh:
-            json.dump(port_info.to_dict(), fh, indent=4)
+            json.dump(port_info, fh, indent=4)
 
         return self.check_runtime(port_info)
 
     def check_runtime(self, port_info):
-        runtime = port_info.attr.get('runtime', None)
+        runtime = port_info['attr'].get('runtime', None)
         if isinstance(runtime, str):
             if '/' in runtime:
                 logger.error(f"Bad runtime <b>{runtime}</b>")
