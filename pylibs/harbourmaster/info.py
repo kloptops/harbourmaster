@@ -15,12 +15,12 @@ from .util import *
 ################################################################################
 ## Port Information
 PORT_INFO_ROOT_ATTRS = {
-    'version': 1,
-    'source': None,
+    'version': 2,
+    'name': None,
     'items': None,
     'items_opt': None,
-    'md5': None,
     'attr': {},
+    'status': None,
     }
 
 PORT_INFO_ATTR_ATTRS = {
@@ -36,14 +36,17 @@ PORT_INFO_ATTR_ATTRS = {
     }
 
 
-def port_info_load(raw_info, source_name=None):
+def port_info_load(raw_info, source_name=None, do_default=False):
     if isinstance(raw_info, pathlib.PurePath):
         source_name = str(raw_info)
 
         with raw_info.open('r') as fh:
             info = json_safe_load(fh)
             if info is None:
-                return None
+                if do_default:
+                    info = {}
+                else:
+                    return None
 
     elif isinstance(raw_info, str):
         if raw_info.strip().startswith('{') and raw_info.strip().endswith('}'):
@@ -52,7 +55,10 @@ def port_info_load(raw_info, source_name=None):
 
             info = json_safe_loads(info)
             if info is None:
-                return None
+                if do_default:
+                    info = {}
+                else:
+                    return None
 
         elif Path(raw_info).is_file():
             source_name = raw_info
@@ -60,14 +66,20 @@ def port_info_load(raw_info, source_name=None):
             with open(rawinfo, 'r') as fh:
                 info = json_safe_load(fh)
                 if info is None:
-                    return None
+                    if do_default:
+                        info = {}
+                    else:
+                        return None
 
         else:
             if source_name is None:
                 source_name = "<str>"
 
             logger.error(f'Unable to load port_info from <b>{source_name!r}</b>: <b>{raw_info!r}</b>')
-            return None
+            if do_default:
+                info = {}
+            else:
+                return None
 
     elif isinstance(raw_info, dict):
         if source_name is None:
@@ -77,12 +89,31 @@ def port_info_load(raw_info, source_name=None):
 
     else:
         logger.error(f'Unable to load port_info from <b>{source_name!r}</b>: <b>{raw_info!r}</b>')
-        return None
+        if do_default:
+            info = {}
+        else:
+            return None
+
+    if info.get('version', None) == 1 or 'source' in info:
+        info = info.copy()
+        info['name'] = info['source'].rsplit('/', 1)[-1]
+        del info['source']
+        info['version'] = 2
+
+        if info.get('md5', None) is not None:
+            info['status'] = {
+                'source': "Unknown",
+                'md5': info['md5'],
+                'status': "Unknown",
+                }
 
     # This strips out extra stuff
     port_info = {}
 
     for attr, attr_default in PORT_INFO_ROOT_ATTRS.items():
+        if attr_default == {}:
+            attr_default = {}
+
         port_info[attr] = info.get(attr, attr_default)
 
     for attr, attr_default in PORT_INFO_ATTR_ATTRS.items():
@@ -105,7 +136,7 @@ def port_info_merge(port_info, other):
             break
 
         value_a = port_info[attr]
-        value_b = other_info['attr']
+        value_b = other_info[attr]
 
         if value_a is None or value_a == "" or value_a == []:
             port_info[attr] = value_b
@@ -120,7 +151,11 @@ def port_info_merge(port_info, other):
             continue
 
         if isinstance(value_b, list) and value_a in ([], None):
-            port_info[attr] = value_b
+            port_info[attr] = value_b[:]
+            continue
+
+        if isinstance(value_b, dict) and value_a in ({}, None):
+            port_info[attr] = value_b.copy()
             continue
 
     for key_b, value_b in other_info['attr'].items():

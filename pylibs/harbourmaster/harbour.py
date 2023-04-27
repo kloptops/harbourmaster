@@ -120,13 +120,22 @@ class HarbourMaster():
 
         ## Load all the known ports with port.json files
         for port_file in port_files:
+            changed = False
             port_info = port_info_load(port_file)
 
             for item in port_info['items']:
-                add_dict_list_unique(all_items, item, port_info['source'])
+                add_dict_list_unique(all_items, item, port_info['name'])
 
             for item in get_dict_list(port_info, 'items_opt'):
-                add_dict_list_unique(all_items, item, port_info['source'])
+                add_dict_list_unique(all_items, item, port_info['name'])
+
+            if port_info.get('status', None) is None:
+                changed = True
+                port_info['status'] = {
+                    'source': 'Unknown',
+                    'md5': None,
+                    'status': 'Unknown'
+                    }
 
             bad = False
             for script_name in (item for script_name in port_info['items'] if not item.endswith('/')):
@@ -140,9 +149,20 @@ class HarbourMaster():
                     break
 
             if bad:
+                if port_info['status']['status'] != 'Broken':
+                    port_info['status']['status'] = 'Broken'
+                    changed = True
+
                 self.broken_ports.append(port_info)
             else:
+                if port_info['status']['status'] != 'Installed':
+                    port_info['status']['status'] = 'Installed'
+                    changed = True
+
                 self.installed_ports.append(port_info)
+
+            with port_file.open('wt') as fh:
+                json.dump(port_info, fh, indent=4)
 
         ## Check all files
         for file_item in self.ports_dir.iterdir():
@@ -175,7 +195,8 @@ class HarbourMaster():
             port_owners = get_dict_list(ports_info['items'], unknown_file)
 
             if len(port_owners) == 1:
-                add_unique(new_ports, port_owners[0])
+                add_list_unique(new_ports, port_owners[0])
+
             elif len(port_owners) == 0:
                 if unknown_file.endswith('.sh'):
                     ## Keep track of unknown bash scripts.
@@ -192,20 +213,27 @@ class HarbourMaster():
             port_info = port_info_load(port_info_raw)
 
             port_json = self.ports_dir / port_info_raw['file']
-            if not port_json.parent.is_dir():
-                ## CEBION WAS HERE!
-                logger.info(f"Broken port: {port_info}")
-                self.broken_ports.append(port_info)
-                continue
 
             ## Load extra info
             for source in self.sources.values():
-                port_name = source.clean_name(port_info['source'].split('/')[1])
+                port_name = source.clean_name(port_info['name'])
 
                 if port_name in source.ports:
-                    port_info.merge_info(source.port_info(port_name))
+                    port_info_merge(port_info, source.port_info(port_name))
                     break
 
+            port_info.setdefault('status', {})
+            port_info['status']['source'] = "Unknown"
+            port_info['status']['md5'] = None
+
+            if not port_json.parent.is_dir():
+                ## CEBION WAS HERE!
+                logger.info(f"Broken port: {port_info}")
+                port_info['status']['status'] = "Broken"
+                self.broken_ports.append(port_info)
+                continue
+
+            port_info['status']['status'] = "Installed"
             with port_json.open('w') as fh:
                 json.dump(port_info, fh, indent=4)
 
@@ -234,11 +262,11 @@ class HarbourMaster():
             add_list_unique(attrs, 'rtr')
 
         for installed_port in self.installed_ports:
-            if installed_port['source'].endswith(port_info['source']):
+            if installed_port['name'].endswith(port_info['name']):
                 add_list_unique(attrs, 'installed')
 
         for broken_port in self.broken_ports:
-            if broken_port['source'].endswith(port_info['source']):
+            if broken_port['name'].endswith(port_info['name']):
                 add_list_unique(attrs, 'installed')
                 add_list_unique(attrs, 'broken')
 
@@ -288,17 +316,17 @@ class HarbourMaster():
             for file_info in zf.infolist():
                 if file_info.filename.startswith('/'):
                     ## Sneaky
-                    logger.error(f"Port <b>{download_info['source']}</b> has an illegal file {file_info.filename!r}, aborting.")
+                    logger.error(f"Port <b>{download_info['name']}</b> has an illegal file {file_info.filename!r}, aborting.")
                     return 255
 
                 if file_info.filename.startswith('../'):
                     ## Little
-                    logger.error(f"Port <b>{download_info['source']}</b> has an illegal file {file_info.filename!r}, aborting.")
+                    logger.error(f"Port <b>{download_info['name']}</b> has an illegal file {file_info.filename!r}, aborting.")
                     return 255
 
                 if '/../' in file_info.filename:
                     ## Shits
-                    logger.error(f"Port <b>{download_info['source']}</b> has an illegal file {file_info.filename!r}, aborting.")
+                    logger.error(f"Port <b>{download_info['name']}</b> has an illegal file {file_info.filename!r}, aborting.")
                     return 255
 
                 if '/' in file_info.filename:
@@ -312,28 +340,28 @@ class HarbourMaster():
                         if parts[1].lower().endswith('.port.json'):
                             ## TODO: add the ability for multiple port folders to have multiple port.json files. ?
                             if port_info_file is not None:
-                                logger.warning(f"Port <b>{download_info['source']}</b> has multiple port.json files.")
+                                logger.warning(f"Port <b>{download_info['name']}</b> has multiple port.json files.")
                                 logger.warning(f"- Before: <b>{port_info_file.relative_to(self.ports_dir)!r}</b>")
                                 logger.warning(f"- Now:    <b>{file_info.filename!r}</b>")
 
                             port_info_file = self.ports_dir / file_info.filename
 
                     if file_info.filename.lower().endswith('.sh'):
-                        logger.warning(f"Port <b>{download_info['source']}</b> has <b>{file_info.filename}</b> inside, this can cause issues.")
+                        logger.warning(f"Port <b>{download_info['name']}</b> has <b>{file_info.filename}</b> inside, this can cause issues.")
 
                 else:
                     if file_info.filename.lower().endswith('.sh'):
                         scripts.append(file_info.filename)
                         items.append(file_info.filename)
                     else:
-                        logger.warning(f"Port <b>{download_info['source']}</b> contains <b>{file_info.filename}</b> at the top level, but it is not a shell script.")
+                        logger.warning(f"Port <b>{download_info['name']}</b> contains <b>{file_info.filename}</b> at the top level, but it is not a shell script.")
 
             if len(dirs) == 0:
-                logger.error(f"Port <b>{download_info['source']}</b> has no directories, aborting.")
+                logger.error(f"Port <b>{download_info['name']}</b> has no directories, aborting.")
                 return 255
 
             if len(scripts) == 0:
-                logger.error(f"Port <b>{download_info['source']}</b> has no scripts, aborting.")
+                logger.error(f"Port <b>{download_info['name']}</b> has no scripts, aborting.")
                 return 255
 
             ## TODO: keep a list of installed files for uninstalling?
@@ -362,7 +390,8 @@ class HarbourMaster():
 
         ## These two are always overriden.
         port_info['items'] = items
-        port_info['md5'] = download_info['md5']
+        port_info['status'] = download_info['status'].copy()
+        port_info['status']['status'] = 'Installed'
 
         if port_info_file is None:
             port_info_file = self.ports_dir / dirs[0] / (download_info['zip_file'].stem + '.port.json')
@@ -416,7 +445,7 @@ class HarbourMaster():
 
         output.append(f'<r>Desc</r>="<y>{port_info["attr"]["desc"]}</y>"')
         output.append(f'<r>porter</r>="<y>{port_info["attr"]["porter"]}</y>"')
-        output.append(f'<r>locat</r>="<y>{port_info["source"]}</y>"')
+        output.append(f'<r>locat</r>="<y>{port_info["name"]}</y>"')
         if port_info["attr"]['rtr']:
             output.append(f'<r>runtype</r>="<e>rtr</e>"')
         if port_info["attr"]['runtime'] == "mono-6.12.0.122-aarch64.squashfs":

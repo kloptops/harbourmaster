@@ -1,17 +1,19 @@
 
+# System imports
 import datetime
 import json
 import re
 
+from pathlib import Path
+from urllib.parse import urlparse, urlunparse
+
+# Included imports
 import loguru
 
-from pathlib import Path
-
-from pathlib import Path
 from loguru import logger
-
 from utility import cprint, cstrip
 
+# Module imports
 from .config import *
 from .info import *
 from .util import *
@@ -193,9 +195,9 @@ class PortMasterV1(GitHubRawReleaseV1):
 
             port_info = self._portsmd_to_portinfo(line)
 
-            self._info[port_info['source']] = port_info
+            self._info[port_info['name']] = port_info
 
-            self.ports.append(port_info['source'])
+            self.ports.append(port_info['name'])
 
         self._config['data']['info']  = self._info
 
@@ -241,11 +243,11 @@ class PortMasterV1(GitHubRawReleaseV1):
 
         port_info = port_info_load({})
 
-        port_info['source'] = self.clean_name(raw_info['locat'])
+        port_info['name'] = self.clean_name(raw_info['locat'])
         ## SUPER JANK --
         from ports_info import ports_info
 
-        port_info['items'] = ports_info['ports'].get(port_info['source'], {'items': []})['items']
+        port_info['items'] = ports_info['ports'].get(port_info['name'], {'items': []})['items']
         port_info['attr']['title']   = raw_info['title']
         port_info['attr']['porter']  = raw_info['porter']
         port_info['attr']['desc']    = raw_info['desc']
@@ -266,8 +268,12 @@ class PortMasterV1(GitHubRawReleaseV1):
 
         zip_info = port_info_load({})
 
-        zip_info['md5'] = md5_result[0]
-        zip_info['source'] = f"{self._prefix}/{port_name}"
+        zip_info['name'] = port_name
+        zip_info['status'] = {
+            'source': self._config['name'],
+            'md5':    md5_result[0],
+            'status': 'downloaded',
+            }
         zip_info['zip_file'] = zip_file
 
         port_info = self.port_info(port_name)
@@ -345,9 +351,7 @@ class GitHubRepoV1(GitHubRawReleaseV1):
             ports_json = fetch_json(self._data[ports_json_file]['url'])
 
             for port_info in ports_json['ports']:
-                port_name = port_info['source']
-                if '/' in port_name:
-                    port_name = port_name.rsplit('/', 1)[1]
+                port_name = port_info['name']
 
                 port_name = self.clean_name(port_name)
 
@@ -378,14 +382,69 @@ class GitHubRepoV1(GitHubRawReleaseV1):
 
         zip_info = port_info_load({})
 
-        zip_info['md5'] = md5_result[0]
-        zip_info['source'] = f"{self._prefix}/{port_name}"
+        zip_info['name'] = port_name
+        zip_info['status'] = {
+            'source': self._config['name'],
+            'md5':    md5_result[0],
+            'status': 'downloaded',
+            }
         zip_info['zip_file'] = zip_file
 
         port_info = self.port_info(port_name)
         port_info_merge(zip_info, port_info)
 
         return zip_info
+
+
+################################################################################
+## Raw Downloader
+
+def raw_download(save_path, file_url):
+    """
+    This is a bit of a hack, this acts as a source of ports, but for raw urls.
+    This only supports downloading so not bothering to add it as a full blown source.
+    """
+    original_url = file_url
+    url_info = urlparse(file_url)
+    file_name = url_info.path.rsplit('/', 1)[1]
+
+    if file_name.endswith('.md5') or file_name.endswith('.md5sum'):
+        ## If it is an md5 file, we assume the actual zip is sans the md5/md5sum
+        md5_source = fetch_text(file_url)
+        if md5_source is None:
+            logger.error(f"Unable to download file: {file_url!r} [{r.status_code}]")
+
+        md5_source = md5_source.strip().split(' ', 1)[0]
+
+        file_name = file_name.rsplit('.', 1)[0]
+        file_url = urlunparse(url_info._replace(path=url_info.path.rsplit('.', 1)[0]))
+    else:
+        md5_source = None
+
+    if not file_name.endswith('.zip'):
+        logger.error(f"Unable to download file: {file_url!r} [doesn't end with '.zip']")
+        return None
+
+    file_name = file_name.replace('%20', '.').replace('+', '.').replace('..', '.')
+
+    md5_result = [None]
+    zip_file = download(save_path / file_name, file_url, md5_source, md5_result)
+
+    zip_info = port_info_load({})
+
+    zip_info['name'] = zip_file.name
+    zip_info['zip_file'] = zip_file
+    zip_info['status'] = {
+        'source': 'url',
+        'md5': md5_result[0],
+        'url': original_url,
+        'status': 'downloaded',
+        }
+
+    # print(f"-- {zip_info} --")
+
+    cprint("<b,g,>Success!</b,g,>")
+    return zip_info
 
 
 HM_SOURCE_APIS = {
@@ -396,6 +455,7 @@ HM_SOURCE_APIS = {
 
 __all__ = (
     'BaseSource',
+    'raw_download',
     'HM_SOURCE_APIS',
     )
 

@@ -69,7 +69,12 @@ from utility import cprint, cstrip
 
 logger = loguru.logger.opt(colors=True)
 
-from harbourmaster import HarbourMaster, HM_TOOLS_DIR, make_temp_directory
+from harbourmaster import (
+    HarbourMaster,
+    raw_download,
+    make_temp_directory,
+    HM_TOOLS_DIR,
+    )
 
 
 LOG_FILE = HM_TOOLS_DIR / "PortMaster" / "harbourmaster.txt"
@@ -222,7 +227,7 @@ def do_ports(hm, argv):
     if len(hm.installed_ports) > 0:
         cprint("<b,g,>Installed Ports:</b,g,>")
         for port_info in hm.installed_ports:
-            cprint(f"- <b>{port_info['source']}</b>")
+            cprint(f"- <b>{port_info['name']}</b>")
 
         cprint()
 
@@ -236,7 +241,7 @@ def do_ports(hm, argv):
     if len(hm.broken_ports) > 0:
         cprint("<error>Broken Ports:</error>")
         for port_info in hm.broken_ports:
-            cprint(f"- <b>{port_info['source']}</b>")
+            cprint(f"- <b>{port_info['name']}</b>")
 
         cprint()
 
