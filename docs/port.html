@@ -309,16 +309,14 @@
       }
 
       if (!json.source == "" && !json.source.includes(".zip")) {
-        json.source = json.source + ".zip"
+        json.source = json.source + ".zip";
       }
 
       var items_opt = json.items_opt.join(",");
       var reqs = json.attr.reqs.join(",");
       genres = document.getElementById("genres");
       Array.from(genres.options).forEach(function (option) {
-
         option.selected = json.attr.genres.includes(option.value);
-
       });
       var md5 = document.getElementById('md5');
       md5.value = json.md5;
