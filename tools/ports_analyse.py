@@ -99,7 +99,7 @@ class PortInfo():
     Similar to the one in harbourmaster, but more streamlined.
     """
     __attrs__ = (
-        'file', 'source', 'items', 'items_opt')
+        'file', 'name', 'items', 'items_opt')
 
     def __init__(self, info):
         if isinstance(info, pathlib.PurePath):
@@ -114,7 +114,7 @@ class PortInfo():
 
     def from_dict(self, info):
         self.file = info.get('file', None)
-        self.source = info.get('source', None)
+        self.name = info.get('name', None)
         self.items = info.get('items', None)
         self.items_opt = info.get('items_opt', None)
 
@@ -237,7 +237,7 @@ def analyse_known_port(file_name, all_data):
     zip_name = f"{clean_name(file_name, 'stem')}.zip"
 
     ## These two are always overriden.
-    port_info.source = f"*/{zip_name}"
+    port_info.name = zip_name
 
     port_info.file = f"{port_info.dirs[0]}/{(clean_name(file_name, 'stem') + '.port.json')}"
 
@@ -332,7 +332,7 @@ def analyse_port(file_name, all_data):
 
     ## These two are always overriden.
     port_info.items = items
-    port_info.source = f"pm/{zip_name}"
+    port_info.name = zip_name
 
     if port_info_file is None:
         port_info.file = f"{dirs[0]}/{(clean_name(file_name, 'stem') + '.port.json')}"

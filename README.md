@@ -8,15 +8,15 @@ Harbourmaster is the start of the eventual replacement of the [PortMaster][PortM
 The goal is to have a gui frontend that can display text/images and a description about the game, even add sorting by genre or updates available. This is the script backend that will handle listing available ports, downloading and installing/uninstalling ports.
 
 - [x] `ports.md` generation for `PortMaster.sh`
-  - [ ] List by Genre
+  - [x] List by Genre
   - [ ] List by Updates
-  - [ ] List by Ready to Run
+  - [x] List by Ready to Run
 - [x] Download Ports
 - [x] Install Ports
 - [x] List ports
 - [x] Detect ports installed by zip
   - [x] Have a builtin list of known ports to figure out older ports and ports installed manually.
-- [ ] Multiple Ports repositories
+- [x] Multiple Ports repositories
 - [ ] Uninstall Ports
 
 ## commands available:
@@ -24,8 +24,8 @@ The goal is to have a gui frontend that can display text/images and a descriptio
 | Command                                                  | Effect                                                  |
 |  ------------------------------------------------------- | ------------------------------------------------------- |
 | `harbourmaster update`                                   | downloads the latest ports information                  |
-| `harbourmaster portsmd`                                  | generate a ports.md file compatible with PortMaster.sh  |
-| `harbourmaster list`                                     | list available ports                                    |
+| `harbourmaster portsmd [filters]`                        | generate a ports.md file compatible with PortMaster.sh  |
+| `harbourmaster list [filters]`                           | list available ports                                    |
 | `harbourmaster ports`                                    | list installed ports, and unknown ports.                |
 | `harbourmaster install <source>/<zipname>.zip`           | downloads and installs the port from available sources. |
 | `harbourmaster install http[s]://<url>.zip[.md5/md5sum]` | downloads a port from the specified url. If the url ends with md5/md5sum it assumes the url without the md5 is the ports zipfile. It will check the md5 against what is downloaded. |
