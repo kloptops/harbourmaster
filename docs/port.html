@@ -275,12 +275,10 @@
           for (i in portJson.items) {
             if (!portJson.items[i].includes(".sh")) {
               directory = portJson.items[i];
-              if (name == "") {
-                name = portJson.items[i].charAt(0).toUpperCase() + portJson.items[i].slice(1) + ".zip";
-              }
             }
           }
-          zip.file(directory + "/" + directory + ".port.json", JSON.stringify(portJson));
+          var removed = zip.remove(directory + "/" + directory + ".port.json");
+          zip.file(directory + "/" + directory + ".port.json", JSON.stringify(portJson, null, 4));
           zip.generateAsync({ type: "blob" }).then(function (blob) {
             saveAs(blob, name);
           }, function (err) {
@@ -308,6 +306,10 @@
           directory = json.items[i];
         }
 
+      }
+
+      if (!json.source == "" && !json.source.includes(".zip")) {
+        json.source = json.source + ".zip"
       }
 
       var items_opt = json.items_opt.join(",");
@@ -397,6 +399,10 @@
       var url = document.getElementById("url").value;
       runtime = runtime.length === 0 ? null : runtime;
 
+      if (!portSource == "" && !portSource.includes(".zip")) {
+        portSource = portSource + ".zip"
+      }
+
       var items = [];
       var items_opt = []
       var reqs = []
@@ -422,7 +428,7 @@
       if (!directoryName == "") {
         items.push(directoryName);
       }
-      
+
       var data = getJsonTemplate();
       data.version = portVersion;
       data.items_opt = items_opt;
