@@ -69,12 +69,7 @@ from utility import cprint, cstrip
 
 logger = loguru.logger.opt(colors=True)
 
-from harbourmaster import (
-    HarbourMaster,
-    raw_download,
-    make_temp_directory,
-    HM_TOOLS_DIR,
-    )
+from harbourmaster import (HarbourMaster, raw_download, make_temp_directory, HM_TOOLS_DIR)
 
 
 LOG_FILE = HM_TOOLS_DIR / "PortMaster" / "harbourmaster.txt"

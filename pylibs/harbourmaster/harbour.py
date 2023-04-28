@@ -118,10 +118,45 @@ class HarbourMaster():
         all_items = {}
         unknown_files = []
 
+        ports_info = None
+
         ## Load all the known ports with port.json files
         for port_file in port_files:
             changed = False
             port_info = port_info_load(port_file)
+
+            # logger.info(f"Port Info: {port_info!r}")
+
+            if port_info.get('name', None) is None:
+                logger.error(f"No 'name' in {port_info!r}")
+                if port_info.get('items', None) is None:
+                    continue
+
+                if ports_info is None:
+                    from ports_info import ports_info
+
+                for item in port_info['items']:
+                    port_temp = ports_info['items'].get(item.casefold(), None)
+                    if isinstance(port_temp, str):
+                        break
+                else:
+                    logger.error(f"Unable to figure it out.")
+                    continue
+
+                changed = True
+                port_info['name'] = port_temp[0]
+
+            if port_info.get('items', None) is None:
+                logger.error(f"No 'items' in {port_info!r}")
+                if ports_info is None:
+                    from ports_info import ports_info
+
+                if port_info['name'] not in ports_info['ports']:
+                    logger.error(f"Unable to figure it out.")
+                    continue
+
+                changed = True
+                port_info['items'] = ports_info['ports'][port_info['name']]['items'][:]
 
             for item in port_info['items']:
                 add_dict_list_unique(all_items, item, port_info['name'])
@@ -222,7 +257,9 @@ class HarbourMaster():
                     port_info_merge(port_info, source.port_info(port_name))
                     break
 
-            port_info.setdefault('status', {})
+            if port_info.get('status', None) is None:
+                port_info['status'] = {}
+
             port_info['status']['source'] = "Unknown"
             port_info['status']['md5'] = None
 
