@@ -70,11 +70,11 @@
 
 
     <input type="hidden" id="port-version" value="1.0" name="port-version">
-    <input type="hidden" id="md5"  name="md5">
-    <input type="hidden" id="image"  name="image">
-    <input type="hidden" id="url"  name="url">
+    <input type="hidden" id="md5" name="md5">
+    <input type="hidden" id="image" name="image">
+    <input type="hidden" id="url" name="url">
     <input type="hidden" id="items-opt" name="items-opt">
-    <input type="hidden" id="requirements"  name="requirements">
+    <input type="hidden" id="requirements" name="requirements">
 
 
     <label for="port-source">Port Source:</label>
@@ -275,12 +275,10 @@
           for (i in portJson.items) {
             if (!portJson.items[i].includes(".sh")) {
               directory = portJson.items[i];
-              if (name == "") {
-                name = portJson.items[i].charAt(0).toUpperCase() + portJson.items[i].slice(1) + ".zip";
-              }
             }
           }
-          zip.file(directory + "/" + directory + ".port.json", JSON.stringify(portJson));
+          var removed = zip.remove(directory + "/" + directory + ".port.json");
+          zip.file(directory + "/" + directory + ".port.json", JSON.stringify(portJson, null, 4));
           zip.generateAsync({ type: "blob" }).then(function (blob) {
             saveAs(blob, name);
           }, function (err) {
@@ -310,13 +308,15 @@
 
       }
 
+      if (!json.source == "" && !json.source.includes(".zip")) {
+        json.source = json.source + ".zip";
+      }
+
       var items_opt = json.items_opt.join(",");
       var reqs = json.attr.reqs.join(",");
       genres = document.getElementById("genres");
       Array.from(genres.options).forEach(function (option) {
-
         option.selected = json.attr.genres.includes(option.value);
-
       });
       var md5 = document.getElementById('md5');
       md5.value = json.md5;
@@ -397,26 +397,39 @@
       var url = document.getElementById("url").value;
       runtime = runtime.length === 0 ? null : runtime;
 
+      if (!portSource == "" && !portSource.includes(".zip")) {
+        portSource = portSource + ".zip"
+      }
+
       var items = [];
       var items_opt = []
       var reqs = []
 
       for (i in scriptNames) {
-        items.push(scriptNames[i]);
+        if (!scriptNames[i] == "") {
+          items.push(scriptNames[i]);
+        }
       }
 
       for (i in itemsOpt) {
-        items_opt.push(itemsOpt[i]);
+        if (!itemsOpt[i] == "") {
+          items_opt.push(itemsOpt[i]);
+        }
       }
 
       for (i in requirements) {
-        reqs.push(requirements[i]);
+        if (!requirements[i] == "") {
+          reqs.push(requirements[i]);
+        }
       }
 
-      items.push(directoryName);
+      if (!directoryName == "") {
+        items.push(directoryName);
+      }
+
       var data = getJsonTemplate();
       data.version = portVersion;
-      data.items_opt = itemsOpt;
+      data.items_opt = items_opt;
       data.md5 = md5;
       data.attr.image = image;
       data.attr.reqs = reqs;
