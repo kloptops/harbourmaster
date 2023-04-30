@@ -491,7 +491,7 @@ class HarbourMaster():
             json.dump(port_info, fh, indent=4)
 
         if port_info['attr'].get('runtime', None) is not None:
-            return self.check_runtime(port_info['attr'].get('runtime', None))
+            return self.check_runtime(port_info['attr']['runtime'])
 
         return 0
 
@@ -552,9 +552,7 @@ class HarbourMaster():
                 return 255
 
             # print(f"Download Info: {download_info.to_dict()}")
-            result = self._install_port(download_info)
-            if result != 0:
-                return result
+            return self._install_port(download_info)
 
         cprint(f"Unable to find a source for <b>{port_name}</b>")
         return 255
