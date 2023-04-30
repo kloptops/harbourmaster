@@ -23,7 +23,27 @@ The goal is to have a gui frontend that can display text/images and a descriptio
 
 ## Listing available ports:
 
+Harbourmaster has a list of sources where it fetches ports from, by default it comes with:
+
+| Source               | Description                                                                           | Source File                  |
+| -------------------- | --------------------------------------------------------------------------------------| ---------------------------- |
+| PortMaster           | This draws from the default portmaster repository, it uses the PortMasterV1 protocol. | `020_portmaster.source.json` |
+| PortMaster Runtimes  | This is where runtimes for different game systems live, it uses the GitHubRawReleaseV1 protocol. | `021_runtimes.source.json` |
+
+With these two sources portmaster behaves as usual.
+
+What makes portmaster different is it is now possible to install additional port sources, so that additional repositories of ports can be sourced.
+
+| Source               | Description                                                                           | Source File                  |
+| -------------------- | --------------------------------------------------------------------------------------| ---------------------------- |
+| Kloptops             | This is a source for my own testing port releases, it uses the GitHubRepoV1 protocol. | [`050_kloptops.source.json`][KloptopsSource] |
+
+
+_Note: additional sources can be added_
+
 ## Installing ports:
+
+Harbour
 
 ## Keeping track of installed ports:
 
@@ -42,3 +62,4 @@ Harbourmaster maintains a record of installed ports by checking the ports folder
 | `harbourmaster upgrade harbourmaster`                    | Updates harbourmaster against the latest version on github |
 
 [PortMaster]: https://github.com/christianhaitian/PortMaster
+[KloptopsSource]: https://raw.githubusercontent.com/kloptops/Portmaster-misc/main/releases/050_kloptops.source.json
