@@ -343,7 +343,12 @@
       var instructions = document.getElementById('instructions');
       instructions.value = json.attr.inst;
       var runtime = document.getElementById('runtime');
-      runtime.value = json.attr.runtime;
+      if (runtime === null) {
+        runtime.value = "blank";
+      }
+      else {
+        runtime.value = json.attr.runtime;
+      }
       var rtr = document.getElementById('ready-to-run');
       rtr.checked = json.attr.rtr;
     }
@@ -425,6 +430,10 @@
 
       if (!directoryName == "") {
         items.push(directoryName);
+      }
+
+      if (runtime == "blank") {
+        runtime = null;
       }
 
       var data = getJsonTemplate();
