@@ -582,6 +582,16 @@ class HarbourMaster():
             for item in get_dict_list(item_info, 'items_opt'):
                 add_dict_list_unique(all_items, item, item_info['name'])
 
+        for item_name, item_info in self.broken_ports.items():
+            # Add all the root dirs/scripts in the port
+            for item in item_info['items']:
+                add_dict_list_unique(all_items, item, item_info['name'])
+
+            # And any optional ones.
+            for item in get_dict_list(item_info, 'items_opt'):
+                add_dict_list_unique(all_items, item, item_info['name'])
+
+        cprint(f"{all_items}")
         cprint(f"Uninstalling <b>{port_name}</b>")
         all_port_items = port_info['items'][:]
         if port_info.get('items_opt', None) is not None:
