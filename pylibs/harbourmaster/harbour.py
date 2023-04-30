@@ -490,10 +490,12 @@ class HarbourMaster():
         with open(port_info_file, 'w') as fh:
             json.dump(port_info, fh, indent=4)
 
-        return self.check_runtime(port_info)
+        if port_info['attr'].get('runtime', None) is not None:
+            return self.check_runtime(port_info['attr'].get('runtime', None))
 
-    def check_runtime(self, port_info):
-        runtime = port_info['attr'].get('runtime', None)
+        return 0
+
+    def check_runtime(self, runtime):
         if isinstance(runtime, str):
             if '/' in runtime:
                 logger.error(f"Bad runtime <b>{runtime}</b>")
@@ -519,8 +521,7 @@ class HarbourMaster():
                         return 0
                 else:
                     logger.error(f"Unable to find suitable source for {runtime}.")
-                    return 0
-                    # return 255
+                    return 255
 
     def install_port(self, port_name):
         # Special HTTP download code.
@@ -594,6 +595,7 @@ class HarbourMaster():
             ports_dir = ports_dir.resolve()
 
         for item in all_port_items:
+            # Only delete files/scripts with only 1 owner.
             item_owners = get_dict_list(all_items, item)
             if len(item_owners) != 1:
                 continue
@@ -617,6 +619,7 @@ class HarbourMaster():
                 elif item_path.is_file():
                     item_path.unlink()
 
+        del port_loc[port_name.casefold()]
 
     def portmd(self, port_info):
         output = []

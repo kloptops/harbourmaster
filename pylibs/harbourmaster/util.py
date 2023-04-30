@@ -30,12 +30,14 @@ def json_safe_loads(*args):
         logger.error(f"Unable to load json_data <b>{err.doc}</b>:<b>{err.pos}</b>")
         return None
 
+
 def json_safe_load(*args):
     try:
         return json.load(*args)
     except json.JSONDecodeError as err:
         logger.error(f"Unable to load json_data <b>{err.doc}</b>:<b>{err.pos}</b>")
         return None
+
 
 def fetch(url):
     r = requests.get(url)

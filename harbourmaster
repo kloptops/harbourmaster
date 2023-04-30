@@ -69,7 +69,11 @@ from utility import cprint, cstrip
 
 logger = loguru.logger.opt(colors=True)
 
-from harbourmaster import (HarbourMaster, make_temp_directory)
+from harbourmaster import (
+    HarbourMaster,
+    make_temp_directory,
+    add_list_unique,
+    )
 
 
 LOG_FILE = harbourmaster.HM_TOOLS_DIR / "PortMaster" / "harbourmaster.txt"
@@ -348,6 +352,45 @@ def do_upgrade(hm, argv):
     return 255
 
 
+def do_runtime_list(hm, argv):
+    """
+    List available runtimes
+
+    {command} runtime_list 
+    """
+    runtimes = []
+
+    for source_prefix, source in hm.sources.items():
+        for runtime in source.utils:
+            add_list_unique(runtimes, runtime)
+
+    runtimes.sort()
+
+    cprint("<b>Available Runtimes:</b>")
+    for runtime in runtimes:
+        installed = ""
+        if (hm.libs_dir / runtime).is_file():
+            installed = " <b,g,>(installed)</b,g,>"
+
+        cprint(f"- {runtime}{installed}")
+
+    return 0
+
+
+def do_runtime_check(hm, argv):
+    """
+    Check if a runtime is installed, if not install it.
+
+    {command} runtime_check "mono-6.12.0.122-aarch64.squashfs"
+    """
+
+    if len(argv) == 0:
+        cprint("Missing arguments.")
+        return do_help(hm, ['runtime_check'])
+
+    return hm.check_runtime(argv[0])
+
+
 def do_fifo_control(hm, argv):
     """
     {command} fifo_control /dev/shm/portmaster/hm_input > /dev/null &
@@ -425,6 +468,8 @@ all_commands = {
     'install': do_install,
     'uninstall': do_uninstall,
     'upgrade': do_upgrade,
+    'runtime_list': do_runtime_list,
+    'runtime_check': do_runtime_check,
     'help': do_help,
     }
 
