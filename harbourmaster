@@ -443,9 +443,11 @@ def do_help(hm, argv):
 
     cprint(f"{command} <d>[flags]</d> <b><update></b> <d>[source or all]</d> ")
     cprint(f"{command} <d>[flags]</d> <b><install/upgrade></b> <d>[source/]</d><port_name>.zip ")
-    cprint(f"{command} <d>[flags]</d> <uninstall> [source/]<port_name> ")
+    cprint(f"{command} <d>[flags]</d> <uninstall> <port_name> ")
     cprint(f"{command} <d>[flags]</d> <b><list/portsmd></b> <d>[source or all]</d> <d>[... filters]</d>")
     cprint(f"{command} <d>[flags]</d> <b><ports></b>")
+    cprint(f"{command} <d>[flags]</d> <b><runtime_check></b> <runtime>")
+    cprint(f"{command} <d>[flags]</d> <b><runtime_list></b>")
     cprint(f"{command} <d>[flags]</d> <b><help></b> <command>")
     cprint()
     cprint("Flags:")
