@@ -560,25 +560,44 @@ class HarbourMaster():
 
     def uninstall_port(self, port_name):
         port_info = self.installed_ports.get(port_name.casefold(), None)
+        port_loc = self.installed_ports
 
         if port_info is None:
             port_info = self.broken_ports.get(port_name.casefold(), None)
+            port_loc = self.broken_ports
 
             if port_info is None:
                 logger.error(f"Unknown port {port_name}")
                 return 255
 
+        all_items = {}
+
+        # We need to build up a list of all associated files
+        # so we only delete the ones that will no longer be associaed with any ports.
+        for item_name, item_info in self.installed_ports.items():
+            # Add all the root dirs/scripts in the port
+            for item in item_info['items']:
+                add_dict_list_unique(all_items, item, item_info['name'])
+
+            # And any optional ones.
+            for item in get_dict_list(item_info, 'items_opt'):
+                add_dict_list_unique(all_items, item, item_info['name'])
+
         cprint(f"Uninstalling <b>{port_name}</b>")
-        all_items = port_info['items'][:]
+        all_port_items = port_info['items'][:]
         if port_info.get('items_opt', None) is not None:
-            all_items.extend(port_info['items_opt'])
+            all_port_items.extend(port_info['items_opt'])
 
         ports_dir = self.ports_dir
 
         if not ports_dir.is_absolute():
             ports_dir = ports_dir.resolve()
 
-        for item in all_items:
+        for item in all_port_items:
+            item_owners = get_dict_list(all_items, item)
+            if len(item_owners) != 1:
+                continue
+
             # Sneaky shits
             if (item.startswith('/') or item.startswith('../') or '/../' in item):
                 logger.error(f"- Possible bad files in port_info: {item}, skipping for safety.")
@@ -594,6 +613,7 @@ class HarbourMaster():
                 cprint(f"- removing {item}")
                 if item_path.is_dir():
                     shutil.rmtree(item_path)
+
                 elif item_path.is_file():
                     item_path.unlink()
 
