@@ -1,19 +1,27 @@
 
+# System imports
+import fnmatch
 import json
 import pathlib
+import shutil
 import zipfile
 
 from pathlib import Path
-from loguru import logger
 
+# Included imports
+import loguru
 import utility
 
 from utility import cprint, cstrip
 
+# Module imports
 from .config import *
 from .util import *
 from .info import *
 from .source import *
+
+
+logger = loguru.logger.opt(colors=True)
 
 ################################################################################
 ## Config loading
@@ -112,9 +120,9 @@ class HarbourMaster():
         port_files = list(self.ports_dir.glob('*/*.port.json'))
         port_files.sort()
 
-        self.installed_ports = []
+        self.installed_ports = {}
+        self.broken_ports = {}
         self.unknown_ports = []
-        self.broken_ports = []
         all_items = {}
         unknown_files = []
 
@@ -123,13 +131,16 @@ class HarbourMaster():
         ## Load all the known ports with port.json files
         for port_file in port_files:
             changed = False
-            port_info = port_info_load(port_file)
+            port_info = port_info_load(port_file, do_default=True)
 
             # logger.info(f"Port Info: {port_info!r}")
 
+            # Its possible for the port_info to be in a bad way, lets try and fix it.
             if port_info.get('name', None) is None:
+                # No name, check the items and see if it matches our internal database, we can get the port name from a script.
                 logger.error(f"No 'name' in {port_info!r}")
                 if port_info.get('items', None) is None:
+                    # Can't do shit if the items is empty. :(
                     continue
 
                 if ports_info is None:
@@ -140,6 +151,7 @@ class HarbourMaster():
                     if isinstance(port_temp, str):
                         break
                 else:
+                    # Couldn't find the port.
                     logger.error(f"Unable to figure it out.")
                     continue
 
@@ -147,20 +159,25 @@ class HarbourMaster():
                 port_info['name'] = port_temp[0]
 
             if port_info.get('items', None) is None:
+                # This shouldn't happen, but we can restore it.
                 logger.error(f"No 'items' in {port_info!r}")
+
                 if ports_info is None:
                     from ports_info import ports_info
 
                 if port_info['name'] not in ports_info['ports']:
+                    # Sorry, cant work it out.
                     logger.error(f"Unable to figure it out.")
                     continue
 
                 changed = True
                 port_info['items'] = ports_info['ports'][port_info['name']]['items'][:]
 
+            # Add all the root dirs/scripts in the port
             for item in port_info['items']:
                 add_dict_list_unique(all_items, item, port_info['name'])
 
+            # And any optional ones.
             for item in get_dict_list(port_info, 'items_opt'):
                 add_dict_list_unique(all_items, item, port_info['name'])
 
@@ -173,36 +190,33 @@ class HarbourMaster():
                     }
 
             bad = False
-            for script_name in (item for script_name in port_info['items'] if not item.endswith('/')):
-                if not (self.ports_dir / script_name).is_file():
-                    bad = True
-                    break
-
-            for dir_name in (item for script_name in port_info['items'] if item.endswith('/')):
-                if not (self.ports_dir / dir_name).is_dir():
+            for item in port_info['items']:
+                if not (self.ports_dir / item).exists():
+                    logger.info(f"Port {port_info['name']} missing file: {item}")
                     bad = True
                     break
 
             if bad:
-                if port_info['status']['status'] != 'Broken':
+                if port_info['status'].get('status', 'Unknown') != 'Broken':
                     port_info['status']['status'] = 'Broken'
                     changed = True
 
-                self.broken_ports.append(port_info)
+                self.broken_ports[port_info['name'].casefold()] = port_info
             else:
-                if port_info['status']['status'] != 'Installed':
+                if port_info['status'].get('status', 'Unknown') != 'Installed':
                     port_info['status']['status'] = 'Installed'
                     changed = True
 
-                self.installed_ports.append(port_info)
+                self.installed_ports[port_info['name'].casefold()] = port_info
 
-            with port_file.open('wt') as fh:
-                json.dump(port_info, fh, indent=4)
+            if changed:
+                with port_file.open('wt') as fh:
+                    json.dump(port_info, fh, indent=4)
 
         ## Check all files
         for file_item in self.ports_dir.iterdir():
             ## Skip these
-            if file_item.name.lower() in (
+            if file_item.name.casefold() in (
                 'portmaster', 'portmaster.sh',
                 'thememaster', 'thememaster.sh',
                 'harbourmaster',
@@ -217,11 +231,9 @@ class HarbourMaster():
             port_owners = get_dict_list(all_items, file_name)
 
             if len(port_owners) == 0:
-                if file_name.lower().endswith('.sh'):
-                    unknown_files.append(file_name)
+                unknown_files.append(file_name)
 
         ## Find any ports that match the files we couldnt find matchting a port.json file
-        ports_info = None
         new_ports = []
         for unknown_file in unknown_files:
             if ports_info is None:
@@ -260,22 +272,46 @@ class HarbourMaster():
             if port_info.get('status', None) is None:
                 port_info['status'] = {}
 
+            port_name = port_info['name'].casefold()
+
             port_info['status']['source'] = "Unknown"
             port_info['status']['md5'] = None
 
             if not port_json.parent.is_dir():
                 ## CEBION WAS HERE!
+                if port_name in self.installed_ports:
+                    del self.installed_ports[port_name]
+
                 logger.info(f"Broken port: {port_info}")
                 port_info['status']['status'] = "Broken"
-                self.broken_ports.append(port_info)
+                self.broken_ports[port_info['name'].casefold()] = port_info
                 continue
 
-            port_info['status']['status'] = "Installed"
+            bad = False
+            for item in port_info['items']:
+                if not (self.ports_dir / item).exists():
+                    logger.info(f"Port {port_info['name']} missing file: {item}")
+                    bad = True
+
+            if bad:
+                if port_name in self.installed_ports:
+                    del self.installed_ports[port_name]
+
+                if port_info['status'].get('status', 'Unknown') != 'Broken':
+                    port_info['status']['status'] = 'Broken'
+
+                self.broken_ports[port_name] = port_info
+            else:
+                if port_name in self.broken_ports:
+                    del self.broken_ports[port_name]
+
+                if port_info['status'].get('status', 'Unknown') != 'Installed':
+                    port_info['status']['status'] = 'Installed'
+
+                self.installed_ports[port_name] = port_info
+
             with port_json.open('w') as fh:
                 json.dump(port_info, fh, indent=4)
-
-            self.installed_ports.append(port_info)
-
 
     def port_info_attrs(self, port_info):
         runtime_fix = {
@@ -298,14 +334,12 @@ class HarbourMaster():
         if rtr:
             add_list_unique(attrs, 'rtr')
 
-        for installed_port in self.installed_ports:
-            if installed_port['name'].endswith(port_info['name']):
-                add_list_unique(attrs, 'installed')
+        if port_info['name'].casefold() in self.installed_ports:
+            add_list_unique(attrs, 'installed')
 
-        for broken_port in self.broken_ports:
-            if broken_port['name'].endswith(port_info['name']):
-                add_list_unique(attrs, 'installed')
-                add_list_unique(attrs, 'broken')
+        if port_info['name'].casefold() in self.broken_ports:
+            add_list_unique(attrs, 'installed')
+            add_list_unique(attrs, 'broken')
 
         return attrs
 
@@ -324,20 +358,38 @@ class HarbourMaster():
         ports = {}
 
         for source_prefix, source in self.sources.items():
-            for port in source.ports:
-                if port in ports:
+            for port_name in source.ports:
+                if port_name.casefold() in ports:
                     continue
 
-                port_info = source.port_info(port)
+                port_info = source.port_info(port_name)
 
                 if not self.match_filters(filters, port_info):
                     continue
 
-                ports[port] = port_info
+                ports[port_name.casefold()] = port_info
+
+        for port_name, port_info in self.installed_ports.items():
+            if port_name.casefold() in ports:
+                continue
+
+            if not self.match_filters(filters, port_info):
+                continue
+
+            ports[port_name.casefold()] = port_info
+
+        for port_name, port_info in self.broken_ports.items():
+            if port_name.casefold() in ports:
+                continue
+
+            if not self.match_filters(filters, port_info):
+                continue
+
+            ports[port_name.casefold()] = port_info
 
         return ports
 
-    def install_port(self, download_info):
+    def _install_port(self, download_info):
         """
         Installs a port.
 
@@ -469,6 +521,82 @@ class HarbourMaster():
                     logger.error(f"Unable to find suitable source for {runtime}.")
                     return 0
                     # return 255
+
+    def install_port(self, port_name):
+        # Special HTTP download code.
+        if port_name.startswith('http'):
+            download_info = raw_download(self.temp_dir, arg)
+
+            if download_info is None:
+                return 255
+
+            return self._install_port(download_info)
+
+        if '/' in port_name:
+            repo, port_name = port_name.split('/', 1)
+        else:
+            repo = '*'
+
+        # Otherwise:
+        for source_prefix, source in self.sources.items():
+            if not fnmatch.fnmatch(source_prefix, repo):
+                continue
+
+            if source.clean_name(port_name) not in source.ports:
+                continue
+
+            download_info = source.download(source.clean_name(port_name))
+
+            if download_info is None:
+                return 255
+
+            # print(f"Download Info: {download_info.to_dict()}")
+            result = self._install_port(download_info)
+            if result != 0:
+                return result
+
+        cprint(f"Unable to find a source for <b>{port_name}</b>")
+        return 255
+
+    def uninstall_port(self, port_name):
+        port_info = self.installed_ports.get(port_name.casefold(), None)
+
+        if port_info is None:
+            port_info = self.broken_ports.get(port_name.casefold(), None)
+
+            if port_info is None:
+                logger.error(f"Unknown port {port_name}")
+                return 255
+
+        cprint(f"Uninstalling <b>{port_name}</b>")
+        all_items = port_info['items'][:]
+        if port_info.get('items_opt', None) is not None:
+            all_items.extend(port_info['items_opt'])
+
+        ports_dir = self.ports_dir
+
+        if not ports_dir.is_absolute():
+            ports_dir = ports_dir.resolve()
+
+        for item in all_items:
+            # Sneaky shits
+            if (item.startswith('/') or item.startswith('../') or '/../' in item):
+                logger.error(f"- Possible bad files in port_info: {item}, skipping for safety.")
+                continue
+
+            item_path = self.ports_dir / item
+            # Stop it! >:O
+            if not item_path.is_relative_to(ports_dir):
+                logger.error(f"- Trying to get outside of the ports folder: {item_path!r}, skipping.")
+                continue
+
+            if item_path.exists():
+                cprint(f"- removing {item}")
+                if item_path.is_dir():
+                    shutil.rmtree(item_path)
+                elif item_path.is_file():
+                    item_path.unlink()
+
 
     def portmd(self, port_info):
         output = []

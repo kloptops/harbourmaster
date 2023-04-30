@@ -1,16 +1,22 @@
 
+# System imports
 import json
 import pathlib
 
 from pathlib import Path
 
+# Included imports
+import loguru
 import utility
 
 from utility import cprint, cstrip
 
+# Module imports
 from .config import *
 from .util import *
 
+
+logger = loguru.logger.opt(colors=True)
 
 ################################################################################
 ## Port Information
@@ -32,7 +38,7 @@ PORT_INFO_ATTR_ATTRS = {
     'image': {},
     'rtr': False,
     'runtime': None,
-    'reqs': [],
+    'reqs': {},
     }
 
 
@@ -42,7 +48,7 @@ def port_info_load(raw_info, source_name=None, do_default=False):
 
         with raw_info.open('r') as fh:
             info = json_safe_load(fh)
-            if info is None:
+            if info is None or not isinstance(info, dict):
                 if do_default:
                     info = {}
                 else:
@@ -54,7 +60,7 @@ def port_info_load(raw_info, source_name=None, do_default=False):
                 source_name = "<str>"
 
             info = json_safe_loads(info)
-            if info is None:
+            if info is None or not isinstance(info, dict):
                 if do_default:
                     info = {}
                 else:
@@ -65,7 +71,7 @@ def port_info_load(raw_info, source_name=None, do_default=False):
 
             with open(rawinfo, 'r') as fh:
                 info = json_safe_load(fh)
-                if info is None:
+                if info is None or not isinstance(info, dict):
                     if do_default:
                         info = {}
                     else:
@@ -95,6 +101,7 @@ def port_info_load(raw_info, source_name=None, do_default=False):
             return None
 
     if info.get('version', None) == 1 or 'source' in info:
+        # Update older json version to the newer one.
         info = info.copy()
         info['name'] = info['source'].rsplit('/', 1)[-1]
         del info['source']
@@ -106,18 +113,68 @@ def port_info_load(raw_info, source_name=None, do_default=False):
                 'md5': info['md5'],
                 'status': "Unknown",
                 }
+            del info['md5']
+
+        # WHOOPS! :O
+        if info.get('attr', {}).get('runtime', None) == "blank":
+            info['attr']['runtime'] = None
 
     # This strips out extra stuff
     port_info = {}
 
     for attr, attr_default in PORT_INFO_ROOT_ATTRS.items():
-        if attr_default == {}:
-            attr_default = {}
+        if isinstance(attr_default, (dict, list)):
+            attr_default = attr_default.copy()
 
         port_info[attr] = info.get(attr, attr_default)
 
     for attr, attr_default in PORT_INFO_ATTR_ATTRS.items():
+        if isinstance(attr_default, (dict, list)):
+            attr_default = attr_default.copy()
+
         port_info['attr'][attr] = info.get('attr', {}).get(attr, attr_default)
+
+    if isinstance(port_info['items'], list):
+        i = 0
+        while i < len(port_info['items']):
+            item = port_info['items'][i]
+            if item.startswith('/'):
+                logger.error(f"port_info['items'] contains bad name {item}")
+                del port_info['items'][i]
+                continue
+
+            if item.startswith('../'):
+                logger.error(f"port_info['items'] contains bad name {item}")
+                del port_info['items'][i]
+                continue
+
+            if '/../' in item:
+                logger.error(f"port_info['items'] contains bad name {item}")
+                del port_info['items'][i]
+                continue
+
+            i += 1
+
+    if isinstance(port_info['items_opt'], list):
+        i = 0
+        while i < len(port_info['items_opt']):
+            item = port_info['items_opt'][i]
+            if item.startswith('/'):
+                logger.error(f"port_info['items_opt'] contains bad name {item}")
+                del port_info['items_opt'][i]
+                continue
+
+            if item.startswith('../'):
+                logger.error(f"port_info['items_opt'] contains bad name {item}")
+                del port_info['items_opt'][i]
+                continue
+
+            if '/../' in item:
+                logger.error(f"port_info['items_opt'] contains bad name {item}")
+                del port_info['items'][i]
+                continue
+
+            i += 1
 
     return port_info
 

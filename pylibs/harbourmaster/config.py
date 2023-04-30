@@ -6,7 +6,6 @@ import textwrap
 from pathlib import Path
 
 import loguru
-
 import utility
 
 from loguru import logger

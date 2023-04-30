@@ -2,7 +2,6 @@
 
 import contextlib
 import datetime
-import fnmatch
 import hashlib
 import json
 import os
@@ -70,7 +69,7 @@ from utility import cprint, cstrip
 
 logger = loguru.logger.opt(colors=True)
 
-from harbourmaster import (HarbourMaster, raw_download, make_temp_directory)
+from harbourmaster import (HarbourMaster, make_temp_directory)
 
 
 LOG_FILE = harbourmaster.HM_TOOLS_DIR / "PortMaster" / "harbourmaster.txt"
@@ -222,8 +221,8 @@ def do_ports(hm, argv):
     """
     if len(hm.installed_ports) > 0:
         cprint("<b,g,>Installed Ports:</b,g,>")
-        for port_info in hm.installed_ports:
-            cprint(f"- <b>{port_info['name']}</b>")
+        for port in hm.installed_ports:
+            cprint(f"- <b>{port}</b>")
 
         cprint()
 
@@ -236,8 +235,8 @@ def do_ports(hm, argv):
 
     if len(hm.broken_ports) > 0:
         cprint("<error>Broken Ports:</error>")
-        for port_info in hm.broken_ports:
-            cprint(f"- <b>{port_info['name']}</b>")
+        for port in hm.broken_ports:
+            cprint(f"- <b>{port}</b>")
 
         cprint()
 
@@ -288,20 +287,6 @@ def do_portsmd(hm, argv):
 
 
 def do_uninstall(hm, argv):
-    def find_port(port_list, port_name):
-        if '/' in port_name:
-            for port_info in port_list:
-                if port_name.casefold() == port_info['source'].casefold():
-                    return port_info
-
-            return None
-
-        for port_info in port_list:
-            if port_name.casefold() == port_info['source'].split('/', 1)[-1].casefold():
-                return port_info
-
-        return None
-
     """
     Uninstall a port
 
@@ -312,28 +297,9 @@ def do_uninstall(hm, argv):
         return do_help(hm, ['uninstall'])
 
     for arg in argv:
-        port_info = find_port(hm.installed_ports, arg)
-
-        if port_info is None:
-            port_info = find_port(hm.broken_ports, arg)
-
-            if port_info is None:
-                logger.error(f"Unknown port {arg}")
-                continue
-
-        cprint(f"Uninstalling <b>{arg}</b>")
-        all_items = port_info['items']
-        if port_info.get('items_opt', None) is not None:
-            all_items.extend(port_info['items_opt'])
-
-        for item in all_items:
-            item_path = hm.ports_dir / item
-            if item_path.exists():
-                cprint(f"- removing {item}")
-                if item_path.is_dir():
-                    shutil.rmtree(item_path)
-                elif item_path.is_file():
-                    item_path.unlink()
+        result = hm.uninstall_port(arg)
+        if result != 0:
+            return result
 
     return 0
 
@@ -353,44 +319,9 @@ def do_install(hm, argv):
         return do_help(hm, ['install'])
 
     for arg in argv:
-        if arg.startswith('http'):
-            download_info = raw_download(hm.temp_dir, arg)
-
-            if download_info is None:
-                return 255
-
-            result = hm.install_port(download_info)
-            if result != 0:
-                return result
-
-            continue
-
-        if '/' in arg:
-            repo, port_name = arg.split('/', 1)
-        else:
-            repo = '*'
-            port_name = arg
-
-        for source_prefix, source in hm.sources.items():
-            if not fnmatch.fnmatch(source_prefix, repo):
-                continue
-
-            if source.clean_name(port_name) not in source.ports:
-                continue
-
-            download_info = source.download(source.clean_name(port_name))
-
-            if download_info is None:
-                return 255
-
-            # print(f"Download Info: {download_info.to_dict()}")
-            result = hm.install_port(download_info)
-            if result != 0:
-                return result
-
-            break
-        else:
-            cprint(f"Unable to find a source for <b>{port_name}</b>")
+        result = hm.install_port(arg)
+        if result != 0:
+            return result
 
     return 0
 

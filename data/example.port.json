@@ -1,12 +1,11 @@
 {
-    "version": 1,
-    "source": "half-life.zip",
+    "version": 2,
+    "name": "half-life.zip",
     "items": [
         "Half-Life.sh",
         "Half-Life/"
     ],
     "items_opt": ["Half-Life Blue Shift.sh", "Half-Life Opposing Forces.sh"],
-    "md5": null,
     "attr": {
         /* title of the game. */
         "title": "Half Life",
@@ -29,7 +28,14 @@
         "runtime": null,
         /* Any hardware/software requiremeents. opengl/power */
         "reqs": [],
-        /* If the source starts with url, this is the url of which the port was fetched from. */
-        "url": ""
-   }
+    },
+    /* These bits get filled out when installed by harbourmaster. */
+    "status": {
+        /* Which repository was it installed from? */
+        "source": "PortMaster",
+        /* md5sum of the zip it was installed from. */
+        "md5": null,
+        /* Status of the port. Installed/Broken */
+        "status": "Installed"
+    }
 }
