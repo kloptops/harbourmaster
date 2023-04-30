@@ -121,6 +121,7 @@ Some ports, because of their nature, cannot or do not exist on PortMaster. So th
 
 [example_json]: https://github.com/kloptops/harbourmaster/blob/main/data/example.port.json
 [port_html]: https://kloptops.github.io/harbourmaster/port.html
+[known_ports]: https://github.com/kloptops/harbourmaster/tree/main/known-ports
 
 [ansimarkup]: https://pypi.org/project/ansimarkup/
 [certifi]: https://pypi.org/project/certifi/
