@@ -90,17 +90,19 @@ Some ports, because of their nature, cannot or do not exist on PortMaster. So th
 
 ## Commands available:
 
-**WARNING OUT OF DATE**
 
-| Command                                                  | Effect                                                  |
-|  ------------------------------------------------------- | ------------------------------------------------------- |
-| `harbourmaster update`                                   | downloads the latest ports information                  |
-| `harbourmaster portsmd [filters]`                        | generate a ports.md file compatible with PortMaster.sh  |
-| `harbourmaster list [filters]`                           | list available ports                                    |
-| `harbourmaster ports`                                    | list installed ports, and unknown ports.                |
-| `harbourmaster install [source/]<zipname>.zip`           | downloads and installs the port from available sources. |
-| `harbourmaster install http[s]://<url>.zip[.md5/md5sum]` | downloads a port from the specified url. If the url ends with md5/md5sum it assumes the url without the md5 is the ports zipfile. It will check the md5 against what is downloaded. |
-| `harbourmaster upgrade harbourmaster`                    | Updates harbourmaster against the latest version on github |
+| Command                                                   | Effect                                                     |
+|  -------------------------------------------------------- | ---------------------------------------------------------- |
+| `harbourmaster update`                                    | downloads the latest ports information                     |
+| `harbourmaster portsmd [filters]`                         | generate a ports.md file compatible with PortMaster.sh     |
+| `harbourmaster list [filters]`                            | list available ports                                       |
+| `harbourmaster ports`                                     | list installed, broken, and unknown ports.                 |
+| `harbourmaster install http[s]://<url>.zip[.md5/md5sum]`  | downloads a port from the specified url. If the url ends with md5/md5sum it assumes the url without the md5 is the ports zipfile. It will check the md5 against what is downloaded. |
+| `harbourmaster install [source/]<portname>.zip`           | downloads and installs the port from available sources.    |
+| `harbourmaster uninstall <portname>.zip`                  | Uninstall specified port.                                  |
+| `harbourmaster runtimes_list`                             | List available runtime environments                        |
+| `harbourmaster runtimes_check <runtime>`                  | Installs the specified runtime if it is not installed      |
+| `harbourmaster upgrade harbourmaster`                     | Updates harbourmaster against the latest version on github |
 
 
 ## Python libraries used:

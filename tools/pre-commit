@@ -121,6 +121,12 @@ def clean_name(file_name, attr='name'):
 
     return name.lower().replace(" ", ".").replace("..", ".")
 
+
+def delete_from_zip(zip_name, *files_to_delete):
+    cmd=['zip', '-d', zip_name] + list(files_to_delete)
+    subprocess.check_call(cmd)
+
+
 ################################################################################
 ## Port Information
 PORT_INFO_ROOT_ATTRS = {
@@ -401,8 +407,10 @@ def load_port_json(file_name, modified_files=None):
 
         if port_info_file is not None:
             with zf.open(port_info_file, "r") as fh:
-                port_info = port_info_load(json.loads(fh.read()))
+                port_info_data = fh.read().decode()
+                port_info = port_info_load(json.loads(port_info_data))
         else:
+            port_info_data = ""
             port_info = port_info_load({})
 
     add_unique(modified_files, str(file_name))
@@ -411,15 +419,25 @@ def load_port_json(file_name, modified_files=None):
     port_info['items'] = items
     port_info['name'] = f"{zip_name}"
 
+    delete_port_info = True
+
     if port_info_file is None:
         port_info_file = f"{dirs[0]}/{(clean_name(file_name, 'stem') + '.port.json')}"
         print(f"- {file_name} missing .port.json")
         print(f"  adding {port_info.file}.")
         print(f"{json.dumps(port_info, indent=4)}")
+        delete_port_info = False
 
-    ## TODO: Figure out how to update the file without it crapping out.
-    # with zipfile.ZipFile(file_name, 'a') as zf:
-    #     zf.writestr(port_info_file, json.dumps(port_info, indent=4))
+    new_port_info_data = json.dumps(port_info, indent=4)
+    if port_info_data != new_port_info_data:
+        print(f"Old: {port_info_data.strip()}")
+        print(f"New: {new_port_info_data.strip()}")
+        if delete_port_info:
+            delete_from_zip(str(file_name), str(port_info_file))
+
+        ## TODO: Figure out how to update the file without it crapping out.
+        with zipfile.ZipFile(file_name, 'a') as zf:
+            zf.writestr(port_info_file, new_port_info_data)
 
     return port_info
 
