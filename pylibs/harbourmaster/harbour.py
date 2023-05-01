@@ -352,7 +352,7 @@ class HarbourMaster():
 
         return True
 
-    def list_ports(self, filters=[]):
+    def list_ports(self, filters=[], include_installed=False):
         ## Filters can be genre, runtime
 
         ports = {}
@@ -369,23 +369,24 @@ class HarbourMaster():
 
                 ports[port_name.casefold()] = port_info
 
-        for port_name, port_info in self.installed_ports.items():
-            if port_name.casefold() in ports:
-                continue
+        if include_installed:
+            for port_name, port_info in self.installed_ports.items():
+                if port_name.casefold() in ports:
+                    continue
 
-            if not self.match_filters(filters, port_info):
-                continue
+                if not self.match_filters(filters, port_info):
+                    continue
 
-            ports[port_name.casefold()] = port_info
+                ports[port_name.casefold()] = port_info
 
-        for port_name, port_info in self.broken_ports.items():
-            if port_name.casefold() in ports:
-                continue
+            for port_name, port_info in self.broken_ports.items():
+                if port_name.casefold() in ports:
+                    continue
 
-            if not self.match_filters(filters, port_info):
-                continue
+                if not self.match_filters(filters, port_info):
+                    continue
 
-            ports[port_name.casefold()] = port_info
+                ports[port_name.casefold()] = port_info
 
         return ports
 
@@ -526,7 +527,7 @@ class HarbourMaster():
     def install_port(self, port_name):
         # Special HTTP download code.
         if port_name.startswith('http'):
-            download_info = raw_download(self.temp_dir, arg)
+            download_info = raw_download(self.temp_dir, port_name)
 
             if download_info is None:
                 return 255
