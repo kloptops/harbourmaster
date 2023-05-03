@@ -19,7 +19,7 @@ from utility import cprint, cstrip
 
 from .config import *
 
-logger = loguru.logger.opt(colors=True)
+logger = loguru.logger # .opt(colors=True)
 
 ################################################################################
 ## Utils
