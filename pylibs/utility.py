@@ -15,6 +15,7 @@ am = AnsiMarkup(tags={
 
 
 __colorama = None
+__output_fh = None
 
 
 def to_str(data):
@@ -29,6 +30,12 @@ def in_terminal():
     Are we in a terminal?
     """
     return os.isatty(sys.stdout.fileno()) and os.isatty(sys.stdin.fileno())
+
+
+def do_cprint_output(file_handle):
+    global __output_fh
+
+    __output_fh = file_handle
 
 
 def do_color(mode=None):
@@ -50,10 +57,14 @@ def do_color(mode=None):
 
 def cprint(*args, **kwargs):
     global __colorama
+    global __output_fh
     if __colorama is None:
         do_color()
 
-    if __colorama:
+    if __output_fh is not None:
+        color_func = am.strip
+        kwargs.setdefault('file', __output_fh)
+    elif __colorama:
         color_func = am.parse
     else:
         color_func = am.strip
