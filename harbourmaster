@@ -1,22 +1,14 @@
 #!/usr/bin/env python3
 
-import contextlib
-import datetime
 import hashlib
-import json
 import os
-import pathlib
 import platform
-import re
 import shutil
 import sys
-import tempfile
 import textwrap
 import zipfile
 
-from difflib import Differ
 from pathlib import Path
-from urllib.parse import urlparse, urlunparse
 
 ################################################################################
 ## This speeds up harbourmaster from 4-5 seconds to 1-2 seconds.
@@ -61,11 +53,10 @@ else:
 ################################################################################
 ## Now load the stuff we include
 import loguru
-import requests
 import utility
 import harbourmaster
 
-from utility import cprint, cstrip
+from utility import cprint, do_cprint_output
 
 logger = loguru.logger.opt(colors=True)
 
@@ -393,7 +384,7 @@ def do_runtime_check(hm, argv):
 
 def do_fifo_control(hm, argv):
     """
-    {command} fifo_control /dev/shm/portmaster/hm_input > /dev/null &
+    {command} --quiet --no-check fifo_control /dev/shm/portmaster/hm_input > /dev/null &
 
     echo "portsmd:/dev/shm/portmaster/ports.md:" > /dev/shm/portmaster/hm_input
 
@@ -401,24 +392,37 @@ def do_fifo_control(hm, argv):
     if len(argv) == 0:
         return 0
 
-    with open(argv[0], 'r') as pipe:
-        while True:
-            args = pipe.readline().strip()
-            if not args:
-                continue
+    fifo = Path(argv[0])
+    if fifo.exists():
+        fifo.unlink()
 
-            args = args.split(':')
+    try:
+        os.mkfifo(fifo, mode=0o666)
 
-            if args[0] == 'exit':
-                return 0
+        with open(argv[0], 'r') as pipe:
+            while True:
+                args = pipe.readline().strip()
+                if not args:
+                    continue
 
-            orig_stdout = sys.stdout
+                args = args.split(':')
 
-            with open(args[1], 'w') as fh:
-                sys.stdout = fh
-                all_commands[args[0].casefold()](hm, args[2:])
+                if args[0] == 'exit':
+                    return 0
 
-            sys.stdout = orig_stdout
+                if len(args) < 2:
+                    continue
+
+                with open(args[1], 'w') as fh:
+                    do_cprint_output(fh)
+                    all_commands[args[0].casefold()](hm, args[2:])
+                    do_cprint_output(None)
+
+    finally:
+        if fifo.exists():
+            fifo.unlink()
+
+        raise err
 
 
 def do_help(hm, argv):

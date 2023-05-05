@@ -217,11 +217,17 @@ class HarbourMaster():
         for file_item in self.ports_dir.iterdir():
             ## Skip these
             if file_item.name.casefold() in (
-                'portmaster', 'portmaster.sh',
-                'thememaster', 'thememaster.sh',
-                'harbourmaster',
-                'images', 'videos', 'manuals',
-                'gamelist.xml', 'gamelist.xml.old'):
+                    'gamelist.xml',
+                    'gamelist.xml.old',
+                    'harbourmaster',
+                    'images',
+                    'manuals',
+                    'portmaster',
+                    'portmaster.sh',
+                    'thememaster',
+                    'thememaster.sh',
+                    'videos',
+                    ):
                 continue
 
             file_name = file_item.name
@@ -592,7 +598,7 @@ class HarbourMaster():
             for item in get_dict_list(item_info, 'items_opt'):
                 add_dict_list_unique(all_items, item, item_info['name'])
 
-        cprint(f"{all_items}")
+        # cprint(f"{all_items}")
         cprint(f"Uninstalling <b>{port_name}</b>")
         all_port_items = port_info['items'][:]
         if port_info.get('items_opt', None) is not None:
