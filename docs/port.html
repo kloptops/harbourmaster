@@ -65,20 +65,18 @@
   <form>
     <label for="file-input">Upload JSON</label>
     <input type="file" id="file-input" name="file-input" accept=".json" />
+
     <label for="zip-input">Upload Zip</label>
     <input type="file" id="zip-input" name="zip-input" accept=".zip" />
 
 
-    <input type="hidden" id="port-version" value="1.0" name="port-version">
-    <input type="hidden" id="md5" name="md5">
+    <input type="hidden" id="port-version" value="2" name="port-version">
     <input type="hidden" id="image" name="image">
-    <input type="hidden" id="url" name="url">
     <input type="hidden" id="items-opt" name="items-opt">
     <input type="hidden" id="requirements" name="requirements">
 
-
-    <label for="port-source">Port Source:</label>
-    <input type="text" id="port-source" name="port-source" required>
+    <label for="port-name">Zip Name:</label>
+    <input type="text" id="port-name" name="port-name" required>
 
     <label for="port-title">Port Title:</label>
     <input type="text" id="port-title" name="port-title" required>
@@ -88,8 +86,6 @@
 
     <label for="directory-name">Directory Name:</label>
     <input type="text" id="directory-name" name="directory-name" required>
-
-
 
     <label for="genres">Genres:</label>
     <select id="genres" name="genres" multiple>
@@ -154,11 +150,10 @@
   <script>
     function getJsonTemplate() {
       portJson = {
-        "version": 1.0,
-        "source": "",
+        "version": 2,
+        "name": "",
         "items": [],
-        "items_opt": [],
-        "md5": null,
+        "items_opt": null,
         "attr": {
           "title": "",
           "porter": "",
@@ -169,7 +164,6 @@
           "rtr": false,
           "runtime": null,
           "reqs": [],
-          "url": ""
         }
       }
       var copiedTemplate = { ...portJson };
@@ -308,8 +302,8 @@
 
       }
 
-      if (!json.source == "" && !json.source.includes(".zip")) {
-        json.source = json.source + ".zip";
+      if (!json.name == "" && !json.name.includes(".zip")) {
+        json.name = json.name + ".zip";
       }
 
       var items_opt = json.items_opt.join(",");
@@ -318,10 +312,6 @@
       Array.from(genres.options).forEach(function (option) {
         option.selected = json.attr.genres.includes(option.value);
       });
-      var md5 = document.getElementById('md5');
-      md5.value = json.md5;
-      var url = document.getElementById('url');
-      url.value = json.attr.url;
       var image = document.getElementById('image');
       image.value = json.attr.image;
       var itemsOpt = document.getElementById('items-opt');
@@ -332,8 +322,8 @@
       name.value = scriptNames.join(",");
       var directoryName = document.getElementById('directory-name');
       directoryName.value = directory;
-      var source = document.getElementById('port-source');
-      source.value = json.source || directory.charAt(0).toUpperCase() + directory.slice(1) + ".zip";
+      var portName = document.getElementById('port-name');
+      portName.value = json.name || directory.charAt(0).toUpperCase() + directory.slice(1) + ".zip";
       var version = document.getElementById('port-version');
       version.value = json.version;
       var porter = document.getElementById('porter');
@@ -385,7 +375,7 @@
 
     function generateJSON() {
       var portVersion = document.getElementById("port-version").value;
-      var portSource = document.getElementById("port-source").value;
+      var portName = document.getElementById("port-name").value;
       var portTitle = document.getElementById("port-title").value;
       var scriptNames = document.getElementById("script-name").value.split(",");
       var itemsOpt = document.getElementById("items-opt").value.split(",");
@@ -397,13 +387,11 @@
       var porter = document.getElementById("porter").value;
       var runtime = document.getElementById("runtime").value;
       var readyToRun = document.getElementById("ready-to-run").checked;
-      var md5 = document.getElementById("md5").value || null;
       var image = document.getElementById("image").value || null;
-      var url = document.getElementById("url").value;
       runtime = runtime.length === 0 ? null : runtime;
 
-      if (!portSource == "" && !portSource.includes(".zip")) {
-        portSource = portSource + ".zip"
+      if (!portName == "" && !portName.includes(".zip")) {
+        portName = portName + ".zip"
       }
 
       var items = [];
@@ -422,6 +410,10 @@
         }
       }
 
+      if (items_opt.length === 0) {
+        items_opt = null;
+      }
+
       for (i in requirements) {
         if (!requirements[i] == "") {
           reqs.push(requirements[i]);
@@ -438,13 +430,11 @@
 
       var data = getJsonTemplate();
       data.version = portVersion;
+      data.name = portName || directoryName.charAt(0).toUpperCase() + directoryName.slice(1) + ".zip";
+      data.items = items;
       data.items_opt = items_opt;
-      data.md5 = md5;
       data.attr.image = image;
       data.attr.reqs = reqs;
-      data.attr.url = url;
-      data.source = portSource || directoryName.charAt(0).toUpperCase() + directoryName.slice(1) + ".zip";
-      data.items = items;
       data.attr.title = portTitle;
       data.attr.porter = porter;
       data.attr.desc = description;
