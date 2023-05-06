@@ -171,6 +171,13 @@ class HarbourMaster():
                 changed = True
                 port_info['items'] = ports_info['ports'][port_info['name']]['items'][:]
 
+            if port_info['attr']['title'] in ("", None):
+                for item in port_info['items']:
+                    if item.casefold().endswith('.sh'):
+                        port_info['attr']['title'] = item[:-3]
+                        changed = True
+                        break
+
             # Add all the root dirs/scripts in the port
             for item in port_info['items']:
                 add_dict_list_unique(all_items, item, port_info['name'])
@@ -273,6 +280,12 @@ class HarbourMaster():
                     port_info_merge(port_info, source.port_info(port_name))
                     break
 
+            if port_info['attr']['title'] in ("", None):
+                for item in port_info['items']:
+                    if item.casefold().endswith('.sh'):
+                        port_info['attr']['title'] = item[:-3]
+                        break
+
             if port_info.get('status', None) is None:
                 port_info['status'] = {}
 
@@ -356,7 +369,7 @@ class HarbourMaster():
 
         return True
 
-    def list_ports(self, filters=[], include_installed=False):
+    def list_ports(self, filters=[]):
         ## Filters can be genre, runtime
 
         ports = {}
@@ -373,7 +386,7 @@ class HarbourMaster():
 
                 ports[port_name.casefold()] = port_info
 
-        if include_installed:
+        if 'installed' in filters:
             for port_name, port_info in self.installed_ports.items():
                 if port_name.casefold() in ports:
                     continue
@@ -620,9 +633,17 @@ class HarbourMaster():
 
             item_path = self.ports_dir / item
             # Stop it! >:O
-            if not item_path.is_relative_to(ports_dir):
-                logger.error(f"- Trying to get outside of the ports folder: {item_path!r}, skipping.")
-                continue
+            if not hasattr(item_path, 'is_relative_to'):
+                ## Fix for older versions of python which don't have is_relative_to.
+                try:
+                    item_path.relative_to(ports_dir)
+                except ValueError:
+                    logger.error(f"- Trying to get outside of the ports folder: {item_path!r}, skipping.")
+                    continue
+            else:
+                if not item_path.is_relative_to(ports_dir):
+                    logger.error(f"- Trying to get outside of the ports folder: {item_path!r}, skipping.")
+                    continue
 
             if item_path.exists():
                 cprint(f"- removing {item}")
@@ -635,6 +656,13 @@ class HarbourMaster():
         del port_loc[port_name.casefold()]
 
     def portmd(self, port_info):
+        def nice_value(value):
+            if value is None:
+                return ""
+            if value == "None":
+                return ""
+            return value
+
         output = []
 
         if 'opengl' in port_info["attr"]["reqs"]:
@@ -644,9 +672,9 @@ class HarbourMaster():
         else:
             output.append(f'<r>Title</r>="<y>{port_info["attr"]["title"].replace(" ", "_")} .</y>"')
 
-        output.append(f'<r>Desc</r>="<y>{port_info["attr"]["desc"]}</y>"')
-        output.append(f'<r>porter</r>="<y>{port_info["attr"]["porter"]}</y>"')
-        output.append(f'<r>locat</r>="<y>{port_info["name"]}</y>"')
+        output.append(f'<r>Desc</r>="<y>{nice_value(port_info["attr"]["desc"])}</y>"')
+        output.append(f'<r>porter</r>="<y>{nice_value(port_info["attr"]["porter"])}</y>"')
+        output.append(f'<r>locat</r>="<y>{nice_value(port_info["name"])}</y>"')
         if port_info["attr"]['rtr']:
             output.append(f'<r>runtype</r>="<e>rtr</e>"')
         if port_info["attr"]['runtime'] == "mono-6.12.0.122-aarch64.squashfs":

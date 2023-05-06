@@ -274,6 +274,9 @@ def do_portsmd(hm, argv):
 
     available_filters -= set(argv)
 
+    # Always remove these filters
+    available_filters -= {'installed', 'broken'}
+
     cprint(f'<r>Filters</r>="<m>{",".join(sorted(available_filters))}</m>"')
 
     return 0
@@ -380,6 +383,17 @@ def do_runtime_check(hm, argv):
     return hm.check_runtime(argv[0])
 
 
+def do_reload(hm, argv):
+    """
+    Reloads ports list
+
+    {command} reload
+    """
+    hm.load_ports()
+
+    return 0
+
+
 def do_fifo_control(hm, argv):
     """
     {command} --quiet --no-check fifo_control /dev/shm/portmaster/hm_input /dev/shm/portmaster/hm_done > /dev/null &
@@ -419,10 +433,13 @@ def do_fifo_control(hm, argv):
                     continue
 
                 logger.info(f"fifo: {args}")
-                with open(args[1], 'w') as fh:
-                    do_cprint_output(fh)
-                    all_commands[args[0].casefold()](hm, args[2:])
-                    do_cprint_output(None)
+                if args[1] == "":
+                    fifo_commands[args[0].casefold()](hm, args[2:])
+                else:
+                    with open(args[1], 'w') as fh:
+                        do_cprint_output(fh)
+                        fifo_commands[args[0].casefold()](hm, args[2:])
+                        do_cprint_output(None)
 
                 done_file.touch(mode=0o755, exist_ok=True)
 
@@ -474,6 +491,11 @@ def do_help(hm, argv):
     cprint()
 
 
+fifo_commands = {
+    'portsmd': do_portsmd,
+    'reload': do_reload,
+    }
+
 all_commands = {
     'update': do_update,
     'portsmd': do_portsmd,
@@ -486,6 +508,7 @@ all_commands = {
     'runtime_check': do_runtime_check,
     'help': do_help,
     }
+
 
 @logger.catch
 def main(argv):
