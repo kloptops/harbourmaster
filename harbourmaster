@@ -99,7 +99,6 @@ def self_upgrade():
         if not file_url_md5.endswith('.md5'):
             logger.error("Self Upgrade: Something is funky, quitting.")
             return 255
-a
 
         file_md5_result = harbourmaster.fetch_text(file_url_md5)
         if file_md5_result is None:
