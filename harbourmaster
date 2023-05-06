@@ -99,12 +99,11 @@ def self_upgrade():
         if not file_url_md5.endswith('.md5'):
             logger.error("Self Upgrade: Something is funky, quitting.")
             return 255
-
-        file_url = file_url_md5.rsplit('.', 1)[0]
+a
 
         file_md5_result = harbourmaster.fetch_text(file_url_md5)
         if file_md5_result is None:
-            logger.error(f"Self Upgrade: File download failed. [<b>{file_url_md5}</b>]")
+            logger.error(f"Self Upgrade: File download failed. [{file_url_md5}]")
             return 255
 
         file_md5_result = file_md5_result.strip()
@@ -126,7 +125,7 @@ def self_upgrade():
 
         file_data = harbourmaster.fetch_data(file_url)
         if file_data is None:
-            logger.error(f"Self Upgrade: File download failed. [<b>{file_url}</b>]")
+            logger.error(f"Self Upgrade: File download failed. [{file_url}]")
             return 255
 
         md5 = hashlib.md5()
@@ -134,7 +133,7 @@ def self_upgrade():
         file_md5_check = md5.hexdigest()
 
         if file_md5_check != file_md5_result:
-            logger.error(f"Self Upgrade: MD5 sum doesn't match. [<b>{file_md5_check}</b> vs <b>{file_md5_result}</b>]")
+            logger.error(f"Self Upgrade: MD5 sum doesn't match. [{file_md5_check} vs {file_md5_result}]")
             return 255
 
         results.append((file_name, file_data))
@@ -517,7 +516,7 @@ def main(argv):
                     config[argv[i][2:]] = True
                 else:
                     if not config['quiet']:
-                        logger.error(f"unknown argument <b>{argv}</b>")
+                        logger.error(f"unknown argument {argv}")
 
                 del argv[i]
                 continue

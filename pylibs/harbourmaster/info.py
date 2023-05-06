@@ -6,17 +6,14 @@ import pathlib
 from pathlib import Path
 
 # Included imports
-import loguru
 import utility
 
+from loguru import logger
 from utility import cprint, cstrip
 
 # Module imports
 from .config import *
 from .util import *
-
-
-logger = loguru.logger.opt(colors=True)
 
 ################################################################################
 ## Port Information
@@ -81,7 +78,7 @@ def port_info_load(raw_info, source_name=None, do_default=False):
             if source_name is None:
                 source_name = "<str>"
 
-            logger.error(f'Unable to load port_info from <b>{source_name!r}</b>: <b>{raw_inf!r}</b>')
+            logger.error(f'Unable to load port_info from {source_name!r}: {raw_inf!r}')
             if do_default:
                 info = {}
             else:
@@ -94,7 +91,7 @@ def port_info_load(raw_info, source_name=None, do_default=False):
         info = raw_info
 
     else:
-        logger.error(f'Unable to load port_info from <b>{source_name!r}</b>: <b>{raw_in!r}</b>')
+        logger.error(f'Unable to load port_info from {source_name!r}: {raw_in!r}')
         if do_default:
             info = {}
         else:
@@ -139,19 +136,23 @@ def port_info_load(raw_info, source_name=None, do_default=False):
         while i < len(port_info['items']):
             item = port_info['items'][i]
             if item.startswith('/'):
-                logger.error(f"port_info['items'] contains bad name {item}")
+                logger.error(f"port_info['items'] contains bad name {item!r}")
                 del port_info['items'][i]
                 continue
 
             if item.startswith('../'):
-                logger.error(f"port_info['items'] contains bad name {item}")
+                logger.error(f"port_info['items'] contains bad name {item!r}")
                 del port_info['items'][i]
                 continue
 
             if '/../' in item:
-                logger.error(f"port_info['items'] contains bad name {item}")
+                logger.error(f"port_info['items'] contains bad name {item!r}")
                 del port_info['items'][i]
                 continue
+
+            if item == "":
+                logger.error(f"port_info['items'] contains bad name {item!r}")
+                del port_info['items'][i]
 
             i += 1
 
@@ -171,10 +172,17 @@ def port_info_load(raw_info, source_name=None, do_default=False):
 
             if '/../' in item:
                 logger.error(f"port_info['items_opt'] contains bad name {item}")
-                del port_info['items'][i]
+                del port_info['items_opt'][i]
                 continue
 
+            if item == "":
+                logger.error(f"port_info['items'] contains bad name {item!r}")
+                del port_info['items_opt'][i]
+
             i += 1
+
+        if port_info['items_opt'] == []:
+            port_info['items_opt'] = None
 
     return port_info
 

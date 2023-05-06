@@ -1,17 +1,18 @@
 
+# System imports
 import platform
 import os
 import textwrap
 
 from pathlib import Path
 
+# Included imports
 import loguru
 import utility
 
 from loguru import logger
 from utility import cprint, cstrip
 
-logger = loguru.logger.opt(colors=True)
 
 ################################################################################
 ## Override this for custom tools/ports directories

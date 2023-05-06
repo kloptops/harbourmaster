@@ -9,9 +9,9 @@ import zipfile
 from pathlib import Path
 
 # Included imports
-import loguru
 import utility
 
+from loguru import logger
 from utility import cprint, cstrip
 
 # Module imports
@@ -20,8 +20,6 @@ from .util import *
 from .info import *
 from .source import *
 
-
-logger = loguru.logger.opt(colors=True)
 
 ################################################################################
 ## Config loading
@@ -96,12 +94,12 @@ class HarbourMaster():
             fail = False
             for check_key, check_value in check_keys.items():
                 if check_key not in source_data:
-                    logger.error(f"Missing key {check_key!r} in <b>{source_file}</b>.")
+                    logger.error(f"Missing key {check_key!r} in {source_file}.")
                     fail = True
                     break
 
                 if check_value is not None and source_data[check_key] not in check_value:
-                    logger.error(f"Unknown {check_key!r} in <b>{source_file}</b>: {source_data[check_key]}.")
+                    logger.error(f"Unknown {check_key!r} in {source_file}: {source_data[check_key]}.")
                     fail = True
                     break
 
@@ -412,17 +410,17 @@ class HarbourMaster():
             for file_info in zf.infolist():
                 if file_info.filename.startswith('/'):
                     ## Sneaky
-                    logger.error(f"Port <b>{download_info['name']}</b> has an illegal file {file_info.filename!r}, aborting.")
+                    logger.error(f"Port {download_info['name']} has an illegal file {file_info.filename!r}, aborting.")
                     return 255
 
                 if file_info.filename.startswith('../'):
                     ## Little
-                    logger.error(f"Port <b>{download_info['name']}</b> has an illegal file {file_info.filename!r}, aborting.")
+                    logger.error(f"Port {download_info['name']} has an illegal file {file_info.filename!r}, aborting.")
                     return 255
 
                 if '/../' in file_info.filename:
                     ## Shits
-                    logger.error(f"Port <b>{download_info['name']}</b> has an illegal file {file_info.filename!r}, aborting.")
+                    logger.error(f"Port {download_info['name']} has an illegal file {file_info.filename!r}, aborting.")
                     return 255
 
                 if '/' in file_info.filename:
@@ -436,28 +434,28 @@ class HarbourMaster():
                         if parts[1].lower().endswith('.port.json'):
                             ## TODO: add the ability for multiple port folders to have multiple port.json files. ?
                             if port_info_file is not None:
-                                logger.warning(f"Port <b>{download_info['name']}</b> has multiple port.json files.")
-                                logger.warning(f"- Before: <b>{port_info_file.relative_to(self.ports_dir)!r}</b>")
-                                logger.warning(f"- Now:    <b>{file_info.filename!r}</b>")
+                                logger.warning(f"Port {download_info['name']} has multiple port.json files.")
+                                logger.warning(f"- Before: {port_info_file.relative_to(self.ports_dir)!r}")
+                                logger.warning(f"- Now:    {file_info.filename!r}")
 
                             port_info_file = self.ports_dir / file_info.filename
 
                     if file_info.filename.lower().endswith('.sh'):
-                        logger.warning(f"Port <b>{download_info['name']}</b> has <b>{file_info.filename}</b> inside, this can cause issues.")
+                        logger.warning(f"Port {download_info['name']} has {file_info.filename} inside, this can cause issues.")
 
                 else:
                     if file_info.filename.lower().endswith('.sh'):
                         scripts.append(file_info.filename)
                         items.append(file_info.filename)
                     else:
-                        logger.warning(f"Port <b>{download_info['name']}</b> contains <b>{file_info.filename}</b> at the top level, but it is not a shell script.")
+                        logger.warning(f"Port {download_info['name']} contains {file_info.filename} at the top level, but it is not a shell script.")
 
             if len(dirs) == 0:
-                logger.error(f"Port <b>{download_info['name']}</b> has no directories, aborting.")
+                logger.error(f"Port {download_info['name']} has no directories, aborting.")
                 return 255
 
             if len(scripts) == 0:
-                logger.error(f"Port <b>{download_info['name']}</b> has no scripts, aborting.")
+                logger.error(f"Port {download_info['name']} has no scripts, aborting.")
                 return 255
 
             ## TODO: keep a list of installed files for uninstalling?
@@ -505,7 +503,7 @@ class HarbourMaster():
     def check_runtime(self, runtime):
         if isinstance(runtime, str):
             if '/' in runtime:
-                logger.error(f"Bad runtime <b>{runtime}</b>")
+                logger.error(f"Bad runtime {runtime}")
                 return 255
 
             runtime_file = (self.libs_dir / runtime)

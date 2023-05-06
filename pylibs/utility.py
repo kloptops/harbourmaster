@@ -64,6 +64,8 @@ def cprint(*args, **kwargs):
     if __output_fh is not None:
         color_func = am.strip
         kwargs.setdefault('file', __output_fh)
+    elif 'file' in kwargs:
+        color_func = am.strip
     elif __colorama:
         color_func = am.parse
     else:

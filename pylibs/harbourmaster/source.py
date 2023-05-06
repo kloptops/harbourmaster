@@ -8,7 +8,6 @@ from pathlib import Path
 from urllib.parse import urlparse, urlunparse
 
 # Included imports
-import loguru
 
 from loguru import logger
 from utility import cprint, cstrip
@@ -17,10 +16,6 @@ from utility import cprint, cstrip
 from .config import *
 from .info import *
 from .util import *
-
-logger = loguru.logger.opt(colors=True)
-
-
 
 ################################################################################
 ## APIS
@@ -135,7 +130,7 @@ class GitHubRawReleaseV1(BaseSource):
             md5_result = [None]
 
         if port_name not in self._data:
-            logger.error(f"Unable to find port <b>{port_name}</b>")
+            logger.error(f"Unable to find port {port_name}")
             return None
 
         if temp_dir is None:
@@ -146,7 +141,7 @@ class GitHubRawReleaseV1(BaseSource):
         elif (port_name + '.md5sum') in self._data:
             md5_file = port_name + '.md5sum'
         else:
-            logger.error(f"Unable to find md5 for <b>{port_name}</b>")
+            logger.error(f"Unable to find md5 for {port_name}")
             return None
 
         md5_source = fetch_text(self._data[md5_file]['url'])

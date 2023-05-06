@@ -19,15 +19,13 @@ from utility import cprint, cstrip
 
 from .config import *
 
-logger = loguru.logger #.opt(colors=True)
-
 ################################################################################
 ## Utils
 def json_safe_loads(*args):
     try:
         return json.loads(*args)
     except json.JSONDecodeError as err:
-        logger.error(f"Unable to load json_data <b>{err.doc}</b>:<b>{err.pos}</b>")
+        logger.error(f"Unable to load json_data {err.doc}:{err.pos}")
         return None
 
 
@@ -35,14 +33,14 @@ def json_safe_load(*args):
     try:
         return json.load(*args)
     except json.JSONDecodeError as err:
-        logger.error(f"Unable to load json_data <b>{err.doc}</b>:<b>{err.pos}</b>")
+        logger.error(f"Unable to load json_data {err.doc}:{err.pos}")
         return None
 
 
 def fetch(url):
     r = requests.get(url)
     if r.status_code != 200:
-        logger.error(f"Failed to download <b>{url!r}</b>: <b>{r.status_code}</b>")
+        logger.error(f"Failed to download {url!r}: {r.status_code}")
         return None
 
     return r
@@ -138,7 +136,7 @@ def download(file_name, file_url, md5_source=None, md5_result=None):
         else:
             cprint(f"<b,g,>Passed md5 check.</b,g,>")
     else:
-        logger.warning(f"No md5 to check against: <b>{md5_file}</b>")
+        logger.warning(f"No md5 to check against: {md5_file}")
 
     md5_result[0] = md5_file
 

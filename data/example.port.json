@@ -1,11 +1,18 @@
 {
+    /* Version number of the port.json format, currently 2 */
     "version": 2,
+    /* Name of the zip file, this uniquely identifies the port */
     "name": "half-life.zip",
+    /* Directories and scripts that comes with the port. */
     "items": [
         "Half-Life.sh",
         "Half-Life/"
     ],
-    "items_opt": ["Half-Life Blue Shift.sh", "Half-Life Opposing Forces.sh"],
+    /* Optional scripts / directories associated with the port. */
+    "items_opt": [
+        "Half-Life Blue Shift.sh",
+        "Half-Life Opposing Forces.sh"
+    ],
     "attr": {
         /* title of the game. */
         "title": "Half Life",
