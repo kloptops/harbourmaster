@@ -384,22 +384,27 @@ def do_runtime_check(hm, argv):
 
 def do_fifo_control(hm, argv):
     """
-    {command} --quiet --no-check fifo_control /dev/shm/portmaster/hm_input > /dev/null &
+    {command} --quiet --no-check fifo_control /dev/shm/portmaster/hm_input /dev/shm/portmaster/hm_done > /dev/null &
 
-    echo "portsmd:/dev/shm/portmaster/ports.md:" > /dev/shm/portmaster/hm_input
+    echo "portsmd:/dev/shm/portmaster/ports.md:" | sudo tee /dev/shm/portmaster/hm_input > /dev/null
 
     """
-    if len(argv) == 0:
+    if len(argv) < 2:
         return 0
 
     logger.info("-- Beginning Fifo Control --")
 
-    fifo = Path(argv[0])
-    if fifo.exists():
-        fifo.unlink()
+    fifo_file = Path(argv[0])
+    done_file = Path(argv[1])
+
+    if fifo_file.exists():
+        fifo_file.unlink()
+
+    if done_file.exists():
+        done_file.unlink()
 
     try:
-        os.mkfifo(fifo, mode=0o666)
+        os.mkfifo(fifo_file, mode=0o777)
 
         with open(argv[0], 'r') as pipe:
             while True:
@@ -421,9 +426,11 @@ def do_fifo_control(hm, argv):
                     all_commands[args[0].casefold()](hm, args[2:])
                     do_cprint_output(None)
 
+                done_file.touch(mode=0o755, exist_ok=True)
+
     finally:
-        if fifo.exists():
-            fifo.unlink()
+        if fifo_file.exists():
+            fifo_file.unlink()
 
         logger.info("-- Endo Fifo Control --")
 
