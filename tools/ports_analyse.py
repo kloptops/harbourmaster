@@ -118,6 +118,21 @@ class PortInfo():
         self.items = info.get('items', None)
         self.items_opt = info.get('items_opt', None)
 
+        if isinstance(self.items, list):
+            self.items = [
+                item
+                for item in self.items
+                if isinstance(item, str) and item != ""]
+
+        if isinstance(self.items_opt, list):
+            self.items_opt = [
+                item
+                for item in self.items_opt
+                if isinstance(item, str) and item != ""]
+
+            if self.items_opt == []:
+                self.items_opt = None
+
     def merge_info(self, other):
         BLANK = object()
 
@@ -169,6 +184,20 @@ class PortInfo():
                     if isinstance(value_b[key], list) and value_a[key] in ([], None):
                         value_a[key] = value_b[key]
                         continue
+
+            self.items = [
+                item
+                for item in self.items
+                if isinstance(item, str) and item != ""]
+
+            if isinstance(self.items_opt, list):
+                self.items_opt = [
+                    item
+                    for item in self.items_opt
+                    if isinstance(item, str) and item != ""]
+
+                if self.items_opt == []:
+                    self.items_opt = None
 
     def to_dict(self):
         return {
