@@ -22,7 +22,7 @@ HM_UPDATE_FREQUENCY=(60 * 60 * 3) # Only check automatically every few hours.
 HM_TESTING=False
 ################################################################################
 ## The following code is a simplification of the PortMaster toolsloc and whichsd code.
-DEFAULT_PORTS_DIR = Path("/roms/ports")
+HM_DEFAULT_PORTS_DIR = Path("/roms/ports")
 
 if platform.system() in ('Darwin', 'Windows'):
     ## For testing
@@ -40,7 +40,7 @@ else:
     HM_DEFAULT_TOOLS_DIR = Path("/roms/ports")
 
 if Path("/roms2/ports").is_dir():
-    DEFAULT_PORTS_DIR = Path("/roms2/ports")
+    HM_DEFAULT_PORTS_DIR = Path("/roms2/ports")
 
 ## Default TOOLS_DIR
 if HM_TOOLS_DIR is None:

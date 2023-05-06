@@ -69,7 +69,7 @@ from harbourmaster import (
 
 LOG_FILE = harbourmaster.HM_TOOLS_DIR / "PortMaster" / "harbourmaster.txt"
 if LOG_FILE.parent.is_dir():
-    LOG_FILE_HANDLE = logger.add(LOG_FILE, backtrace=True, diagnose=True)
+    LOG_FILE_HANDLE = logger.add(LOG_FILE, level="INFO", backtrace=True, diagnose=True)
 
 
 ################################################################################
@@ -392,6 +392,8 @@ def do_fifo_control(hm, argv):
     if len(argv) == 0:
         return 0
 
+    logger.info("-- Beginning Fifo Control --")
+
     fifo = Path(argv[0])
     if fifo.exists():
         fifo.unlink()
@@ -413,6 +415,7 @@ def do_fifo_control(hm, argv):
                 if len(args) < 2:
                     continue
 
+                logger.info(f"fifo: {args}")
                 with open(args[1], 'w') as fh:
                     do_cprint_output(fh)
                     all_commands[args[0].casefold()](hm, args[2:])
@@ -422,7 +425,7 @@ def do_fifo_control(hm, argv):
         if fifo.exists():
             fifo.unlink()
 
-        raise err
+        logger.info("-- Endo Fifo Control --")
 
 
 def do_help(hm, argv):
@@ -515,9 +518,11 @@ def main(argv):
             i += 1
 
         if config['quiet']:
-            logger.configure(handlers=[{"sink": sys.stderr, "level": "ERROR"}])
+            logger.remove(0)  # For the default handler, it's actually '0'.
+            logger.add(sys.stderr, level="ERROR")
         elif config['debug']:
-            logger.configure(handlers=[{"sink": sys.stderr, "level": "DEBUG"}])
+            logger.remove(0)  # For the default handler, it's actually '0'.
+            logger.add(sys.stderr, level="DEBUG")
 
         if config['no-log']:
             logger.remove(LOG_FILE_HANDLE)
