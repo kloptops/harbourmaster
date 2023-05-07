@@ -1,5 +1,6 @@
 
 # System imports
+import pathlib
 import platform
 import os
 import textwrap
@@ -7,20 +8,19 @@ import textwrap
 from pathlib import Path
 
 # Included imports
-import loguru
-import utility
 
 from loguru import logger
-from utility import cprint, cstrip
 
 
 ################################################################################
 ## Override this for custom tools/ports directories
+
 HM_TOOLS_DIR=None
 HM_PORTS_DIR=None
-HM_UPDATE_FREQUENCY=(60 * 60 * 3) # Only check automatically every few hours.
+HM_UPDATE_FREQUENCY=(60 * 60 * 3)  # Only check automatically every few hours.
 
 HM_TESTING=False
+
 ################################################################################
 ## The following code is a simplification of the PortMaster toolsloc and whichsd code.
 HM_DEFAULT_PORTS_DIR = Path("/roms/ports")
@@ -64,7 +64,7 @@ if HM_PORTS_DIR is None:
         HM_PORTS_DIR = Path(os.environ['HM_PORTS_DIR']).resolve()
     else:
         HM_PORTS_DIR = HM_DEFAULT_PORTS_DIR
-elif isinstance(ports_dir, str):
+elif isinstance(HM_PORTS_DIR, str):
     HM_PORTS_DIR = Path(HM_PORTS_DIR).resolve()
 elif isinstance(HM_PORTS_DIR, pathlib.PurePath):
     # This is good.
@@ -72,7 +72,6 @@ elif isinstance(HM_PORTS_DIR, pathlib.PurePath):
 else:
     logger.error(f"{HM_PORTS_DIR!r} is set to something weird.")
     exit(255)
-
 
 
 HM_SOURCE_DEFAULTS = {

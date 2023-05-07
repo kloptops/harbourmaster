@@ -52,13 +52,12 @@ else:
 
 ################################################################################
 ## Now load the stuff we include
-import loguru
 import utility
 import harbourmaster
+import requests
 
 from utility import cprint, do_cprint_output
-
-logger = loguru.logger.opt(colors=True)
+from loguru import logger
 
 from harbourmaster import (
     HarbourMaster,
@@ -78,6 +77,7 @@ HM_UPDATE_URLS = {
     "harbourmaster": "https://github.com/kloptops/harbourmaster/raw/main/harbourmaster.md5",
     "pylibs.zip": "https://github.com/kloptops/harbourmaster/raw/main/pylibs.zip.md5",
     }
+
 
 def self_upgrade():
     """
@@ -122,6 +122,8 @@ def self_upgrade():
                 cprint(f"- skipping <b>{file_name!r}</b>, already up to date. [<b>{file_md5_result}</b>]")
                 continue
 
+        file_url = file_url_md5.rsplit('.', 1)[0]
+
         file_data = harbourmaster.fetch_data(file_url)
         if file_data is None:
             logger.error(f"Self Upgrade: File download failed. [{file_url}]")
@@ -146,15 +148,43 @@ def self_upgrade():
             cprint(f"- updating <b>{file_name!r}</b>")
             with open(self_path / file_name, 'wb') as fh:
                 fh.write(file_data)
-            cprint( "  done.")
+            cprint("  done.")
 
         cprint("<b>All Done!</b>")
 
     return 0
 
 
+"""
+HM_NEED_UPDATE = False
+
+def first_run():
+    r = requests.get("https://github.com/kloptops/harbourmaster/raw/main/sources/defaults.json")
+    if r.status_code != 200:
+        logger.error(f"Unable to fetch sources list. [{r.status_code}]")
+        exit(255)
+
+    sources = r.json()
+    for source, data in sources.items():
+
+
+if not (harbourmaster.HM_TOOLS_DIR / "PortMaster" / "config").is_dir():
+    first_run()
+"""
+
 ################################################################################
 ## Commands
+
+
+def do_auto_update(hm, argv):
+    """
+    Force auto update available ports.
+    """
+    for source in hm.sources:
+        hm.sources[source].auto_update()
+
+    return 0
+
 
 def do_update(hm, argv):
     """
@@ -348,7 +378,7 @@ def do_runtime_list(hm, argv):
     """
     List available runtimes
 
-    {command} runtime_list 
+    {command} runtime_list
     """
     runtimes = []
 
@@ -464,11 +494,11 @@ def do_help(hm, argv):
     if len(argv) > 0:
         if argv[0].lower() not in all_commands:
             cprint(f"Error: unknown help command <b>{argv[0]}</b>")
-            do_help(hm, build_configs, [])
-            return
+            do_help(hm, [])
+            return 255
 
         cprint(textwrap.dedent(all_commands[argv[0].lower()].__doc__.format(command=command)).strip())
-        return
+        return 0
 
     cprint(f"{command} <d>[flags]</d> <b><update></b> <d>[source or all]</d> ")
     cprint(f"{command} <d>[flags]</d> <b><install/upgrade></b> <d>[source/]</d><port_name>.zip ")
@@ -490,14 +520,18 @@ def do_help(hm, argv):
     cprint("All available commands: <b>" + ('</b>, <b>'.join(all_commands.keys())) + "</b>")
     cprint()
 
+    return 0
+
 
 fifo_commands = {
     'portsmd': do_portsmd,
     'reload': do_reload,
+    'auto_update': do_auto_update,
     }
 
 all_commands = {
     'update': do_update,
+    'auto_update': do_auto_update,
     'portsmd': do_portsmd,
     'ports': do_ports,
     'list': do_list,

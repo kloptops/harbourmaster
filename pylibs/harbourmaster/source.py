@@ -35,19 +35,28 @@ class GitHubRawReleaseV1(BaseSource):
         self._config = config
         self._prefix = config['prefix']
         self._did_update = False
+        self._wants_update = None
 
+        if config['version'] != self.VERSION:
+            self._wants_update = "Cache out of date."
 
-        if hm.config['no-check']:
-            self.load()
-        elif config['version'] != self.VERSION:
-            cprint(f"<b>{self._config['name']}</b>: Cache out of date.")
-            self.update()
         elif self._config['last_checked'] is None:
-            cprint(f"<b>{self._config['name']}</b>: First check.")
-            self.update()
+            self._wants_update = "First check."
+
         elif datetime_compare(self._config['last_checked']) > HM_UPDATE_FREQUENCY:
-            cprint(f"<b>{self._config['name']}</b>: Auto Update.")
+            self._wants_update = "Auto Update."
+
+        if not self._hm.config['no-check']:
+            self.auto_update()
+        else:
+            self.load()
+
+    def auto_update(self):
+        if self._wants_update is not None:
+            cprint(f"<b>{self._config['name']}</b>: {self._wants_update}")
             self.update()
+            self._wants_update = None
+
         else:
             self.load()
 

@@ -12,7 +12,7 @@ from pathlib import Path
 import utility
 
 from loguru import logger
-from utility import cprint, cstrip
+from utility import cprint
 
 # Module imports
 from .config import *
@@ -77,7 +77,6 @@ class HarbourMaster():
         self.load_sources()
 
         self.load_ports()
-
 
     def load_sources(self):
         source_files = list(self.cfg_dir.glob('*.source.json'))
