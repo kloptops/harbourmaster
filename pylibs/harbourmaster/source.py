@@ -266,6 +266,9 @@ class PortMasterV1(GitHubRawReleaseV1):
         md5_result = [None]
         zip_file = super().download(port_name, temp_dir, md5_result)
 
+        if zip_file is None:
+            return None
+
         if port_name in self.utils:
             ## Utils
             return zip_file
