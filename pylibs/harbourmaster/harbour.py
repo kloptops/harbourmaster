@@ -4,6 +4,7 @@ import fnmatch
 import json
 import pathlib
 import shutil
+import subprocess
 import zipfile
 
 from pathlib import Path
@@ -78,6 +79,7 @@ class HarbourMaster():
 
         self.load_ports()
 
+    @timeit
     def load_sources(self):
         source_files = list(self.cfg_dir.glob('*.source.json'))
         source_files.sort()
@@ -109,7 +111,7 @@ class HarbourMaster():
 
             self.sources[source_data['prefix']] = source
 
-
+    @timeit
     def load_ports(self):
         """
         Find all installed ports, because ports can be installed by zips we need to recheck every time.
@@ -406,6 +408,20 @@ class HarbourMaster():
 
         return ports
 
+    def _fix_permissions(self):
+        path_fs = get_path_fs(self.ports_dir)
+        logger.debug(f"{path_fs=}")
+        if path_fs not in ('ext4', 'ext3'):
+            return
+
+        try:
+            logger.info(f"Fixing permissions for {self.ports_dir}.")
+            subprocess.check_output(['chmod', '-R', '777', str(self.ports_dir)])
+
+        except subprocess.CalledProcessError as err:
+            logger.error(f"Failed to fix permissions: {err}")
+            return
+
     def _install_port(self, download_info):
         """
         Installs a port.
@@ -506,6 +522,8 @@ class HarbourMaster():
 
         with open(port_info_file, 'w') as fh:
             json.dump(port_info, fh, indent=4)
+
+        self._fix_permissions()
 
         if port_info['attr'].get('runtime', None) is not None:
             return self.check_runtime(port_info['attr']['runtime'])
@@ -682,3 +700,7 @@ class HarbourMaster():
         output.append(f'<r>genres</r>="<m>{",".join(port_info["attr"]["genres"])}</m>"')
 
         return ' '.join(output)
+
+__all__ = (
+    'HarbourMaster',
+    )

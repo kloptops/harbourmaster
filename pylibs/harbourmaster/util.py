@@ -1,17 +1,21 @@
 
 import contextlib
 import datetime
+import functools
 import hashlib
 import json
 import platform
 import shutil
 import sys
 import tempfile
+import time
 
 from pathlib import Path
 
 import loguru
+import pathlib
 import requests
+import subprocess
 import utility
 
 from loguru import logger
@@ -190,6 +194,54 @@ def get_dict_list(base_dict, key):
     return result
 
 
+def get_path_fs(path):
+    """
+    Get the fs type of the specified path.
+    """
+
+    if HM_TESTING:
+        return None
+
+    if isinstance(path, pathlib.PurePath):
+        if not path.exists():
+            return None
+    elif isinstance(path, str):
+        if not Path(path).exists():
+            return None
+    else:
+        return None
+
+    try:
+        lines = subprocess.check_output(['df', '-PT', str(path)]).decode().split('\n')
+    except subprocess.CalledProcessError as err:
+        return None
+
+    if len(lines) < 2:
+        return None
+
+    if lines[1].strip() == '':
+        return None
+
+    sections = re.split(r'\s+', lines[1])
+    if len(sections) < 2:
+        return None
+
+    return sections[1]
+
+
+def timeit(func):
+    if not HM_PERFTEST:
+        return func
+
+    @functools.wraps(func)
+    def timeit_wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        total_time = end_time - start_time
+        logger.debug(f'TIME: {func.__name__}({args}, {kwargs}): Took {total_time:.4f} seconds')
+        return result
+    return timeit_wrapper
 
 
 @contextlib.contextmanager
@@ -206,6 +258,7 @@ __all__ = (
     'add_list_unique',
     'add_dict_list_unique',
     'get_dict_list',
+    'get_path_fs',
     'fetch_data',
     'fetch_json',
     'fetch_text',
@@ -214,5 +267,6 @@ __all__ = (
     'make_temp_directory',
     'download',
     'datetime_compare',
+    'timeit',
     'nice_size',
     )

@@ -15,8 +15,10 @@ ignore =
     E221,
 
     ## For now i star import
+    F401,
     F403, F405,
 
 per-file-ignores =
     pylibs/ports_info.py:E121,E501
+    pylibs/harbourmaster/*:E225
     harbourmaster:E402

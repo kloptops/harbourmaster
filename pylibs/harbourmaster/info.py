@@ -35,6 +35,7 @@ PORT_INFO_ATTR_ATTRS = {
     }
 
 
+@timeit
 def port_info_load(raw_info, source_name=None, do_default=False):
     if isinstance(raw_info, pathlib.PurePath):
         source_name = str(raw_info)
@@ -183,6 +184,7 @@ def port_info_load(raw_info, source_name=None, do_default=False):
     return port_info
 
 
+@timeit
 def port_info_merge(port_info, other):
     if isinstance(other, (str, pathlib.PurePath)):
         other_info = port_info_parse(other)

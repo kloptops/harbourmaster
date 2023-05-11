@@ -20,6 +20,7 @@ HM_PORTS_DIR=None
 HM_UPDATE_FREQUENCY=(60 * 60 * 3)  # Only check automatically every few hours.
 
 HM_TESTING=False
+HM_PERFTEST=False
 
 ################################################################################
 ## The following code is a simplification of the PortMaster toolsloc and whichsd code.
@@ -29,7 +30,7 @@ if platform.system() in ('Darwin', 'Windows'):
     ## For testing
     HM_DEFAULT_TOOLS_DIR = Path('.').absolute()
     HM_DEFAULT_PORTS_DIR = Path('ports/').absolute()
-    TESTING=True
+    HM_TESTING=True
 elif Path("/opt/tools/PortMaster/").is_dir():
     HM_DEFAULT_TOOLS_DIR = Path("/opt/tools")
 elif Path("/opt/system/Tools/PortMaster/").is_dir():
@@ -73,6 +74,8 @@ else:
     logger.error(f"{HM_PORTS_DIR!r} is set to something weird.")
     exit(255)
 
+if 'HM_PERFTEST' in os.environ:
+    HM_PERFTEST=True
 
 HM_SOURCE_DEFAULTS = {
     "020_portmaster.source.json": textwrap.dedent("""
@@ -107,4 +110,5 @@ __all__ = (
     'HM_DEFAULT_PORTS_DIR',
     'HM_SOURCE_DEFAULTS',
     'HM_TESTING',
+    'HM_PERFTEST',
     )
