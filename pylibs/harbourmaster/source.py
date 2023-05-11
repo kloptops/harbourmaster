@@ -380,6 +380,9 @@ class GitHubRepoV1(GitHubRawReleaseV1):
         md5_result = [None]
         zip_file = super().download(port_name, temp_dir, md5_result)
 
+        if zip_file is None:
+            return None
+
         if port_name in self.utils:
             ## Utils
             return zip_file
@@ -433,6 +436,9 @@ def raw_download(save_path, file_url):
 
     md5_result = [None]
     zip_file = download(save_path / file_name, file_url, md5_source, md5_result)
+
+    if zip_file is None:
+        return None
 
     zip_info = port_info_load({})
 
