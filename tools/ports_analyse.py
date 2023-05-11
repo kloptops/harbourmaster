@@ -280,7 +280,7 @@ def analyse_known_port(file_name, all_data):
     all_data['ports'][zip_name] = port_info.to_dict()
 
 
-def analyse_known_ports(root_path, all_data):
+def analyse_known_ports(root_path, all_data, state):
     # print(f"Checking {root_path}")
     for sub_file in root_path.glob('*.port.json'):
         zip_name = clean_name(sub_file, 'stem') + '.zip'
@@ -288,14 +288,19 @@ def analyse_known_ports(root_path, all_data):
         if zip_name in ('portmaster.zip', 'fallout.1.zip', 'alephone.zip'):
             continue
 
-        if zip_name in all_data['ports']:
+        # if zip_name in all_data['ports']:
+        #     continue
+
+        md5sum = hash_file(sub_file)
+        if md5sum in state['seen']:
             continue
 
         print(f"Scanning {zip_name}")
         analyse_known_port(sub_file, all_data)
+        state['seen'][md5sum] = zip_name
 
 
-def analyse_port(file_name, all_data):
+def analyse_port(file_name, all_data, state):
     # When we analyse a port, we want to look at the root directories, and the rooth scripts.
     port_info_file = None
     items = []
@@ -353,11 +358,20 @@ def analyse_port(file_name, all_data):
                 else:
                     print(f"- extra file at root level thats not a script: {file_info.filename!r}")
 
+        for script in scripts:
+            with zf.open(script, "r") as fh:
+                md5sum = hash_text(fh.read())
+                # print(script, md5sum)
+                add_nicely(all_data['md5'], md5sum, script)
+
         if port_info_file is not None:
             with zf.open(port_info_file, "r") as fh:
                 port_info = PortInfo(json.loads(fh.read()))
         else:
             port_info = PortInfo({})
+
+    if zip_name in all_data['ports']:
+        return
 
     ## These two are always overriden.
     port_info.items = items
@@ -378,7 +392,7 @@ def analyse_port(file_name, all_data):
     all_data['ports'][zip_name] = port_info.to_dict()
 
 
-def analyse_ports(root_path, all_data):
+def analyse_ports(root_path, all_data, state):
     # print(f"Checking {root_path}")
     for sub_file in root_path.glob('*.zip'):
         zip_name = clean_name(sub_file)
@@ -386,14 +400,19 @@ def analyse_ports(root_path, all_data):
         if zip_name in ('portmaster.zip', 'fallout.1.zip', 'alephone.zip'):
             continue
 
-        if zip_name in all_data['ports']:
+        md5sum = hash_file(sub_file)
+        if md5sum in state['seen']:
             continue
 
+        # if zip_name in all_data['ports']:
+        #     continue
+
         print(f"Scanning {zip_name}")
-        analyse_port(sub_file, all_data)
+        analyse_port(sub_file, all_data, state)
+        state['seen'][md5sum] = zip_name
 
 
-def git_rewind(root_path, all_data):
+def git_rewind(root_path, all_data, state):
     commits = []
 
     commit_ids = []
@@ -407,15 +426,21 @@ def git_rewind(root_path, all_data):
         commit_ids.append(commit_id)
 
     try:
+        counter = 0
         for i, commit_id in enumerate(commit_ids, 1):
             subprocess.check_output(['git', 'checkout', commit_id], stderr=subprocess.STDOUT)
+            if commit_id in state['git']:
+                continue
 
-            analyse_ports(root_path, all_data)
-            print(f"Done: {i:3d} / {len(commit_ids):3d}")
+            counter += 1
+            analyse_ports(root_path, all_data, state)
+            print(f"Done: {counter:3d} -- {i:3d} / {len(commit_ids):3d}")
+
+            state['git'][commit_id] = True
 
             ## This seems to work well enough.
-            if i > 10:
-                break
+            # if counter > 100:
+            #     break
 
     except KeyboardInterrupt:
         pass
@@ -432,20 +457,47 @@ def main():
 
     info_file   = Path('pylibs/ports_info.py').absolute()
 
+    state_file   = Path('tools/state.json').absolute()
+
+    state = {
+        'git': {},
+        'seen': {},
+        }
+
     all_data = {
         'items': {},
         'ports': {},
+        'md5': {},
         }
 
-    analyse_known_ports(known_ports, all_data)
+    if state_file.is_file():
+        with state_file.open('rt') as fh:
+            state = json.load(fh)
 
-    analyse_ports(host_path, all_data)
+    if info_file.is_file():
+        check = 'ports_info = '
+        all_text = info_file.read_text()
+        print("Loading port_info data.")
+        if check in all_text:
+            data = all_text[(all_text.index(check) + len(check)):]
+            # print((all_text.index(check) + len(check)), data[:32])
+            all_data = json.loads(data)
+
+    if 'md5' not in all_data:
+        all_data['md5'] = {}
+
+    analyse_known_ports(known_ports, all_data, state)
+
+    analyse_ports(host_path, all_data, state)
 
     os.chdir(root_path)
 
-    git_rewind(root_path, all_data)
+    git_rewind(root_path, all_data, state)
 
     ## Dump it using a custom json dumper.
+    with state_file.open('wt') as fh:
+        out_str = custom_json_indent(state, level=1, indent=2, sort_keys=True)
+        fh.write(out_str)
 
     with info_file.open('wt') as fh:
         fh.write( "# -- Autogenerated by tools/ports_analyse.py --\n")
