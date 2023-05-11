@@ -410,7 +410,7 @@ class HarbourMaster():
 
     def _fix_permissions(self):
         path_fs = get_path_fs(self.ports_dir)
-        logger.debug(f"{path_fs=}")
+        logger.debug(f"path_fs={path_fs}")
         if path_fs not in ('ext4', 'ext3'):
             return
 

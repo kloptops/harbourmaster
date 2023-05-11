@@ -6,6 +6,8 @@ import hashlib
 import json
 import platform
 import shutil
+import re
+import subprocess
 import sys
 import tempfile
 import time
@@ -15,7 +17,6 @@ from pathlib import Path
 import loguru
 import pathlib
 import requests
-import subprocess
 import utility
 
 from loguru import logger
