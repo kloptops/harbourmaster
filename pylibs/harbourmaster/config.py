@@ -59,6 +59,7 @@ else:
     logger.error(f"{HM_TOOLS_DIR!r} is set to something weird.")
     exit(255)
 
+
 ## Default PORTS_DIR
 if HM_PORTS_DIR is None:
     if 'HM_PORTS_DIR' in os.environ:
@@ -74,8 +75,10 @@ else:
     logger.error(f"{HM_PORTS_DIR!r} is set to something weird.")
     exit(255)
 
+
 if 'HM_PERFTEST' in os.environ:
     HM_PERFTEST=True
+
 
 HM_SOURCE_DEFAULTS = {
     "020_portmaster.source.json": textwrap.dedent("""
@@ -102,12 +105,33 @@ HM_SOURCE_DEFAULTS = {
     """),
     }
 
+
+HM_GENRES = [
+      "action",
+      "adventure",
+      "arcade",
+      "casino/card",
+      "fps",
+      "platformer",
+      "puzzle",
+      "racing",
+      "rhythm",
+      "rpg",
+      "simulation",
+      "sports",
+      "strategy",
+      "visual novel",
+      "other",
+    ]
+
+
 __all__ = (
     'HM_UPDATE_FREQUENCY',
     'HM_TOOLS_DIR',
     'HM_PORTS_DIR',
     'HM_DEFAULT_TOOLS_DIR',
     'HM_DEFAULT_PORTS_DIR',
+    'HM_GENRES',
     'HM_SOURCE_DEFAULTS',
     'HM_TESTING',
     'HM_PERFTEST',

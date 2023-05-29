@@ -258,7 +258,13 @@ class PortMasterV1(GitHubRawReleaseV1):
         port_info['attr']['rtr']     = raw_info['rtr']
         port_info['attr']['reqs']    = raw_info['reqs']
         port_info['attr']['runtime'] = raw_info['runtime']
-        port_info['attr']['genres']  = raw_info['genres']
+        port_info['attr']['genres']  = []
+
+        ## Fixes genres to a fixed list.
+        for genre in raw_info['genres']:
+            genre = genre.casefold().strip()
+            if genre in HM_GENRES:
+                port_info['attr']['genres'].append(genre)
 
         return port_info
 
@@ -362,7 +368,8 @@ class GitHubRepoV1(GitHubRawReleaseV1):
 
                 port_name = self.clean_name(port_name)
 
-                self._info[port_name] = port_info
+                # Clean it up.
+                self._info[port_name] = port_info_load(port_info)
 
                 self.ports.append(port_name)
 

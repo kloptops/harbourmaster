@@ -181,6 +181,14 @@ def port_info_load(raw_info, source_name=None, do_default=False):
         if port_info['items_opt'] == []:
             port_info['items_opt'] = None
 
+    if isinstance(port_info['attr'].get('genres', None), list):
+        genres = port_info['attr']['genres']
+        port_info['attr']['genres'] = []
+
+        for genre in genres:
+            if genre.casefold() in HM_GENRES:
+                port_info['attr']['genres'].append(genre.casefold())
+
     return port_info
 
 
