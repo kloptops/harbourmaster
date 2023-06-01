@@ -128,18 +128,37 @@ class GitHubRawReleaseV1(BaseSource):
         self._config['data']['utils'] = self.utils
         self._config['data']['data']  = self._data
 
+        ## HACK! :D
+        for port_name in self.ports:
+            port_md5 = port_name + '.md5'
+            if port_md5 not in self._data:
+                self._data[port_md5] = self._data[port_name].copy()
+                self._data[port_md5]['name'] += '.md5'
+                self._data[port_md5]['size'] = 33
+                self._data[port_md5]['url'] += '.md5'
+
+        for util_name in self.ports:
+            util_md5 = util_name + '.md5'
+            if util_md5 not in self._data:
+                self._data[util_md5] = self._data[util_name].copy()
+                self._data[util_md5]['name'] += '.md5'
+                self._data[util_md5]['size'] = 33
+                self._data[util_md5]['url'] += '.md5'
+
         self._config['last_checked'] = datetime.datetime.now().isoformat()
 
         self.save()
         self._did_update = True
         cprint(f"- <b>{self._config['name']}:</b> Done.")
 
-    def download(self, port_name, temp_dir=None, md5_result=None):
+    def download(self, port_name, temp_dir=None, md5_result=None, callback=None):
         if md5_result is None:
             md5_result = [None]
 
         if port_name not in self._data:
             logger.error(f"Unable to find port {port_name}")
+            if callback is not None:
+                callback.message_box(f"Unable to find {port_name}.")
             return None
 
         if temp_dir is None:
@@ -150,17 +169,21 @@ class GitHubRawReleaseV1(BaseSource):
         elif (port_name + '.md5sum') in self._data:
             md5_file = port_name + '.md5sum'
         else:
+            if callback is not None:
+                callback.message_box(f"Unable to find verification info for {port_name}.")
             logger.error(f"Unable to find md5 for {port_name}")
             return None
 
         md5_source = fetch_text(self._data[md5_file]['url'])
         if md5_source is None:
-            logger.error(f"Unable to download md5 file: {self._data[port_name + '.md5']['url']!r}")
+            logger.error(f"Unable to download md5 file: {self._data[md5_file]['url']!r}")
+            if callback is not None:
+                callback.message_box(f"Unable to download verification info for {port_name}.")
             return None
 
         md5_source = md5_source.strip().split(' ', 1)[0]
 
-        zip_file = download(temp_dir / port_name, self._data[port_name]['url'], md5_source)
+        zip_file = download(temp_dir / port_name, self._data[port_name]['url'], md5_source, callback=callback)
 
         if zip_file is not None:
             cprint("<b,g,>Success!</b,g,>")
@@ -268,9 +291,9 @@ class PortMasterV1(GitHubRawReleaseV1):
 
         return port_info
 
-    def download(self, port_name, temp_dir=None):
+    def download(self, port_name, temp_dir=None, callback=None):
         md5_result = [None]
-        zip_file = super().download(port_name, temp_dir, md5_result)
+        zip_file = super().download(port_name, temp_dir, md5_result, callback=callback)
 
         if zip_file is None:
             return None
@@ -386,9 +409,9 @@ class GitHubRepoV1(GitHubRawReleaseV1):
         self._did_update = True
         cprint(f"- <b>{self._config['name']}:</b> Done.")
 
-    def download(self, port_name, temp_dir=None):
+    def download(self, port_name, temp_dir=None, callback=None):
         md5_result = [None]
-        zip_file = super().download(port_name, temp_dir, md5_result)
+        zip_file = super().download(port_name, temp_dir, md5_result, callback=callback)
 
         if zip_file is None:
             return None
@@ -416,7 +439,7 @@ class GitHubRepoV1(GitHubRawReleaseV1):
 ################################################################################
 ## Raw Downloader
 
-def raw_download(save_path, file_url):
+def raw_download(save_path, file_url, callback=None):
     """
     This is a bit of a hack, this acts as a source of ports, but for raw urls.
     This only supports downloading so not bothering to add it as a full blown source.
@@ -429,7 +452,10 @@ def raw_download(save_path, file_url):
         ## If it is an md5 file, we assume the actual zip is sans the md5/md5sum
         md5_source = fetch_text(file_url)
         if md5_source is None:
+            if callback is not None:
+                callback.message(f"Unable to download verification file. [{r.status_code}]", wait=5)
             logger.error(f"Unable to download file: {file_url!r} [{r.status_code}]")
+            return None
 
         md5_source = md5_source.strip().split(' ', 1)[0]
 
@@ -439,13 +465,15 @@ def raw_download(save_path, file_url):
         md5_source = None
 
     if not file_name.endswith('.zip'):
+        if callback is not None:
+            callback.message(f"Unable to download non zip files.", wait=5)
         logger.error(f"Unable to download file: {file_url!r} [doesn't end with '.zip']")
         return None
 
     file_name = file_name.replace('%20', '.').replace('+', '.').replace('..', '.')
 
     md5_result = [None]
-    zip_file = download(save_path / file_name, file_url, md5_source, md5_result)
+    zip_file = download(save_path / file_name, file_url, md5_source, md5_result, callback=callback)
 
     if zip_file is None:
         return None

@@ -89,7 +89,7 @@ def nice_size(size):
     return f"{size:.02f} {suffix}"
 
 
-def download(file_name, file_url, md5_source=None, md5_result=None):
+def download(file_name, file_url, md5_source=None, md5_result=None, callback=None):
     """
     Download a file from file_url into file_name, checks the md5sum of the file against md5_source if given.
 
@@ -101,6 +101,9 @@ def download(file_name, file_url, md5_source=None, md5_result=None):
     r = requests.get(file_url, stream=True)
 
     if r.status_code != 200:
+        if callback is not None:
+            callback.message_box(f"Unable to download file. [{r.status_code}]")
+
         logger.error(f"Unable to download file: {file_url!r} [{r.status_code}]")
         return None
 
@@ -123,6 +126,9 @@ def download(file_name, file_url, md5_source=None, md5_result=None):
             fh.write(data)
             length += len(data)
 
+            if callback is not None:
+                callback.progress("Downloading file.", length, total_length)
+
             if total_length is None:
                 sys.stdout.write(f"\r[{'?' * 40}] - {nice_size(length)} / {total_length_mb} ")
             else:
@@ -132,15 +138,29 @@ def download(file_name, file_url, md5_source=None, md5_result=None):
 
         cprint("\n")
 
+        if callback is not None:
+            callback.progress("Downloading file.", length, total_length)
+
     md5_file = md5.hexdigest()
     if md5_source is not None:
         if md5_file != md5_source:
             zip_file.unlink()
             logger.error(f"File doesn't match the md5 file: {md5_file} != {md5_source}")
+
+            if callback is not None:
+                callback.message_box("Download validation failed.")
+
             return None
         else:
+
+            if callback is not None:
+                callback.message("Passed file validation.")
+
             cprint(f"<b,g,>Passed md5 check.</b,g,>")
     else:
+        if callback is not None:
+            callback.message("Unable to validate download.")
+
         logger.warning(f"No md5 to check against: {md5_file}")
 
     md5_result[0] = md5_file
@@ -253,6 +273,20 @@ def make_temp_directory():
 
     finally:
         shutil.rmtree(temp_dir)
+
+
+class Callback:
+    """
+    This is a simple class that is used by harbourmaster to cooperate with gui code.
+    """
+    def progress(self, message, amount, total=None):
+        pass
+
+    def message(self, message):
+        pass
+
+    def message_box(self, message):
+        pass
 
 
 __all__ = (

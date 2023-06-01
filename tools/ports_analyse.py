@@ -428,9 +428,10 @@ def git_rewind(root_path, all_data, state):
     try:
         counter = 0
         for i, commit_id in enumerate(commit_ids, 1):
-            subprocess.check_output(['git', 'checkout', commit_id], stderr=subprocess.STDOUT)
             if commit_id in state['git']:
                 continue
+
+            subprocess.check_output(['git', 'checkout', commit_id], stderr=subprocess.STDOUT)
 
             counter += 1
             analyse_ports(root_path, all_data, state)

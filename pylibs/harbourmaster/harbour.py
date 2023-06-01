@@ -31,7 +31,7 @@ class HarbourMaster():
         'first_run': True,
         }
 
-    def __init__(self, config, *, tools_dir=None, ports_dir=None, temp_dir=None):
+    def __init__(self, config, *, tools_dir=None, ports_dir=None, temp_dir=None, callback=None):
         """
         config = load_config()
         """
@@ -65,6 +65,7 @@ class HarbourMaster():
             'debug': config.get('debug', False),
             }
 
+        self.callback = callback
         self.ports = []
         self.utils = []
 
@@ -439,16 +440,22 @@ class HarbourMaster():
                 if file_info.filename.startswith('/'):
                     ## Sneaky
                     logger.error(f"Port {download_info['name']} has an illegal file {file_info.filename!r}, aborting.")
+                    if self.callback is not None:
+                        self.callback.message_box(f"Port {download_info['name']} has an illegal file, aborting.")
                     return 255
 
                 if file_info.filename.startswith('../'):
                     ## Little
                     logger.error(f"Port {download_info['name']} has an illegal file {file_info.filename!r}, aborting.")
+                    if self.callback is not None:
+                        self.callback.message_box(f"Port {download_info['name']} has an illegal file, aborting.")
                     return 255
 
                 if '/../' in file_info.filename:
                     ## Shits
                     logger.error(f"Port {download_info['name']} has an illegal file {file_info.filename!r}, aborting.")
+                    if self.callback is not None:
+                        self.callback.message_box(f"Port {download_info['name']} has an illegal file, aborting.")
                     return 255
 
                 if '/' in file_info.filename:
@@ -480,10 +487,16 @@ class HarbourMaster():
 
             if len(dirs) == 0:
                 logger.error(f"Port {download_info['name']} has no directories, aborting.")
+                if self.callback is not None:
+                    self.callback.message_box(f"Port {download_info['name']} has no directories, aborting.")
+
                 return 255
 
             if len(scripts) == 0:
                 logger.error(f"Port {download_info['name']} has no scripts, aborting.")
+                if self.callback is not None:
+                    self.callback.message_box(f"Port {download_info['name']} has no scripts, aborting.")
+
                 return 255
 
             ## TODO: keep a list of installed files for uninstalling?
@@ -491,11 +504,17 @@ class HarbourMaster():
             # Extract all the files to the specified directory
             # zf.extractall(self.ports_dir)
             cprint("<b>Extracting port.</b>")
+            if self.callback is not None:
+                self.callback.message(f"Installing {download_info['name']}.")
+
             for file_info in zf.infolist():
                 if file_info.file_size == 0:
                     compress_saving = 100
                 else:
                     compress_saving = file_info.compress_size / file_info.file_size * 100
+
+                if self.callback is not None:
+                    self.callback.message(f"- {file_info.filename}")
 
                 cprint(f"- <b>{file_info.filename!r}</b> <d>[{nice_size(file_info.file_size)} ({compress_saving:.0f}%)]</d>")
                 zf.extract(file_info, path=self.ports_dir)
@@ -528,11 +547,17 @@ class HarbourMaster():
         if port_info['attr'].get('runtime', None) is not None:
             return self.check_runtime(port_info['attr']['runtime'])
 
+        if self.callback is not None:
+            self.callback.message_box(f"Port {download_info['name']} installed successfully.")
+
         return 0
 
     def check_runtime(self, runtime):
         if isinstance(runtime, str):
             if '/' in runtime:
+                if self.callback is not None:
+                    self.callback.message_box(f"Port {download_info['name']} contains bad runtime.")
+
                 logger.error(f"Bad runtime {runtime}")
                 return 255
 
@@ -543,7 +568,7 @@ class HarbourMaster():
                         cprint(f"Downloading required runtime <b>{runtime}</b>.")
 
                         try:
-                            runtime_download = source.download(runtime, temp_dir=self.libs_dir)
+                            runtime_download = source.download(runtime, temp_dir=self.libs_dir, callback=self.callback)
 
                         except Exception as err:
                             ## We need to catch any errors and delete the file if it fails,
@@ -561,7 +586,7 @@ class HarbourMaster():
     def install_port(self, port_name):
         # Special HTTP download code.
         if port_name.startswith('http'):
-            download_info = raw_download(self.temp_dir, port_name)
+            download_info = raw_download(self.temp_dir, port_name, callback=self.callback)
 
             if download_info is None:
                 return 255
@@ -581,13 +606,16 @@ class HarbourMaster():
             if source.clean_name(port_name) not in source.ports:
                 continue
 
-            download_info = source.download(source.clean_name(port_name))
+            download_info = source.download(source.clean_name(port_name), callback=self.callback)
 
             if download_info is None:
                 return 255
 
             # print(f"Download Info: {download_info.to_dict()}")
             return self._install_port(download_info)
+
+        if self.callback is not None:
+            self.callback.message_box(f"Unable to find a source for {port_name}")
 
         cprint(f"Unable to find a source for <b>{port_name}</b>")
         return 255
@@ -601,6 +629,8 @@ class HarbourMaster():
             port_loc = self.broken_ports
 
             if port_info is None:
+                if self.callback is not None:
+                    self.callback.message_box(f"Unknown port {port_name}")
                 logger.error(f"Unknown port {port_name}")
                 return 255
 
@@ -628,6 +658,8 @@ class HarbourMaster():
 
         # cprint(f"{all_items}")
         cprint(f"Uninstalling <b>{port_name}</b>")
+        if self.callback is not None:
+            self.callback.message(f"Removing {port_name}")
         all_port_items = port_info['items'][:]
         if port_info.get('items_opt', None) is not None:
             all_port_items.extend(port_info['items_opt'])
@@ -645,6 +677,9 @@ class HarbourMaster():
 
             # Sneaky shits
             if (item.startswith('/') or item.startswith('../') or '/../' in item):
+                if self.callback is not None:
+                    self.callback.message_box(f"Possible bad files in port_info for {port_name}.")
+                    return 255
                 logger.error(f"- Possible bad files in port_info: {item}, skipping for safety.")
                 continue
 
@@ -655,22 +690,37 @@ class HarbourMaster():
                 try:
                     item_path.relative_to(ports_dir)
                 except ValueError:
+                    if self.callback is not None:
+                        self.callback.message_box(f"Possible bad files in port_info for {port_name}.")
+                        return 255
+
                     logger.error(f"- Trying to get outside of the ports folder: {item_path!r}, skipping.")
                     continue
             else:
                 if not item_path.is_relative_to(ports_dir):
+                    if self.callback is not None:
+                        self.callback.message_box(f"Possible bad files in port_info for {port_name}.")
+                        return 255
+
                     logger.error(f"- Trying to get outside of the ports folder: {item_path!r}, skipping.")
                     continue
 
             if item_path.exists():
                 cprint(f"- removing {item}")
+                if self.callback is not None:
+                    self.callback.message(f"- removing {item}")
+
                 if item_path.is_dir():
                     shutil.rmtree(item_path)
 
                 elif item_path.is_file():
                     item_path.unlink()
 
+        if self.callback is not None:
+            self.callback.message_box(f"Successfully uninstalled {port_name}")
+
         del port_loc[port_name.casefold()]
+        return 0
 
     def portmd(self, port_info):
         def nice_value(value):
