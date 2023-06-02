@@ -441,21 +441,21 @@ class HarbourMaster():
                     ## Sneaky
                     logger.error(f"Port {download_info['name']} has an illegal file {file_info.filename!r}, aborting.")
                     if self.callback is not None:
-                        self.callback.message_box(f"Port {download_info['name']} has an illegal file, aborting.")
+                        self.callback.message_box(f"Port {download_info['name']} has an illegal file, aborting installation.")
                     return 255
 
                 if file_info.filename.startswith('../'):
                     ## Little
-                    logger.error(f"Port {download_info['name']} has an illegal file {file_info.filename!r}, aborting.")
+                    logger.error(f"Port {download_info['name']} has an illegal file {file_info.filename!r}, aborting installation.")
                     if self.callback is not None:
-                        self.callback.message_box(f"Port {download_info['name']} has an illegal file, aborting.")
+                        self.callback.message_box(f"Port {download_info['name']} has an illegal file, aborting installation.")
                     return 255
 
                 if '/../' in file_info.filename:
                     ## Shits
                     logger.error(f"Port {download_info['name']} has an illegal file {file_info.filename!r}, aborting.")
                     if self.callback is not None:
-                        self.callback.message_box(f"Port {download_info['name']} has an illegal file, aborting.")
+                        self.callback.message_box(f"Port {download_info['name']} has an illegal file, aborting installation.")
                     return 255
 
                 if '/' in file_info.filename:
@@ -488,14 +488,14 @@ class HarbourMaster():
             if len(dirs) == 0:
                 logger.error(f"Port {download_info['name']} has no directories, aborting.")
                 if self.callback is not None:
-                    self.callback.message_box(f"Port {download_info['name']} has no directories, aborting.")
+                    self.callback.message_box(f"Port {download_info['name']} has no directories, aborting installation.")
 
                 return 255
 
             if len(scripts) == 0:
                 logger.error(f"Port {download_info['name']} has no scripts, aborting.")
                 if self.callback is not None:
-                    self.callback.message_box(f"Port {download_info['name']} has no scripts, aborting.")
+                    self.callback.message_box(f"Port {download_info['name']} has no scripts, aborting installation.")
 
                 return 255
 
@@ -556,7 +556,7 @@ class HarbourMaster():
         if isinstance(runtime, str):
             if '/' in runtime:
                 if self.callback is not None:
-                    self.callback.message_box(f"Port {download_info['name']} contains bad runtime.")
+                    self.callback.message_box(f"Port {runtime} contains a bad runtime, game may not run correctly.")
 
                 logger.error(f"Bad runtime {runtime}")
                 return 255
@@ -564,21 +564,30 @@ class HarbourMaster():
             runtime_file = (self.libs_dir / runtime)
             if not runtime_file.is_file():
                 for source_prefix, source in self.sources.items():
-                    if runtime in source.utils:
-                        cprint(f"Downloading required runtime <b>{runtime}</b>.")
+                    if runtime not in source.utils:
+                        continue
 
-                        try:
-                            runtime_download = source.download(runtime, temp_dir=self.libs_dir, callback=self.callback)
+                    cprint(f"Downloading required runtime <b>{runtime}</b>.")
 
-                        except Exception as err:
-                            ## We need to catch any errors and delete the file if it fails,
-                            ## here we are not using the temp file auto deletion.
-                            if runtime_file.is_file():
-                                runtime_file.unlink()
+                    if self.callback is not None:
+                        self.callback.message(f"Downloading runtime {runtime}.")
 
-                            raise err
+                    try:
+                        runtime_download = source.download(runtime, temp_dir=self.libs_dir, callback=self.callback)
 
-                        return 0
+                    except Exception as err:
+                        ## We need to catch any errors and delete the file if it fails,
+                        ## here we are not using the temp file auto deletion.
+                        if runtime_file.is_file():
+                            runtime_file.unlink()
+
+                        if self.callback is not None:
+                            self.callback.message_box(f"Unable to download {runtime}, game may not run correctly.")
+                            return 255
+
+                        raise err
+
+                    return 0
                 else:
                     logger.error(f"Unable to find suitable source for {runtime}.")
                     return 255

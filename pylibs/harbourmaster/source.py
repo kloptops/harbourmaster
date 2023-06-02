@@ -129,6 +129,8 @@ class GitHubRawReleaseV1(BaseSource):
         self._config['data']['data']  = self._data
 
         ## HACK! :D
+        # If the github action hasnt been run yet, the md5 files wont have been generated
+        # so we just make them and assume they will eventually be available.
         for port_name in self.ports:
             port_md5 = port_name + '.md5'
             if port_md5 not in self._data:

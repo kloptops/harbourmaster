@@ -17,7 +17,7 @@ from loguru import logger
 
 HM_TOOLS_DIR=None
 HM_PORTS_DIR=None
-HM_UPDATE_FREQUENCY=(60 * 60 * 3)  # Only check automatically every few hours.
+HM_UPDATE_FREQUENCY=(60 * 60 * 1)  # Only check automatically once per hour.
 
 HM_TESTING=False
 HM_PERFTEST=False
