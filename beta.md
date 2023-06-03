@@ -27,3 +27,9 @@ To install the beta download the PortMaster.zip from the link above, unzip it an
 | JELOS        | /storage/roms/ports/   |
 | TheRA        | /opt/tools/            |
 | UnofficialOS | /storage/roms/ports/   |
+
+If your CFW is not listed above, it will be in one of the above locations.
+
+# Feedback
+
+Please direct all feedback to the #portmaster-lounge channel in the [AmberELEC discord server](https://discord.com/invite/R9Er7hkRMe).
