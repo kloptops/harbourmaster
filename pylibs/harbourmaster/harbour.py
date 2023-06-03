@@ -409,6 +409,16 @@ class HarbourMaster():
 
         return ports
 
+    def port_images(self, port_name):
+        for source_prefix, source in self.sources.items():
+            if port_name.casefold() in source.images:
+                return {
+                    image_type: (source._image_dir / image_file)
+                    for image_type, image_file in source.images[port_name.casefold()]
+                    }
+
+        return None
+
     def _fix_permissions(self):
         path_fs = get_path_fs(self.ports_dir)
         logger.debug(f"path_fs={path_fs}")
