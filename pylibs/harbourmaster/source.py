@@ -3,6 +3,7 @@
 import datetime
 import json
 import re
+import zipfile
 
 from pathlib import Path
 from urllib.parse import urlparse, urlunparse
@@ -27,7 +28,7 @@ class BaseSource():
 
 
 class GitHubRawReleaseV1(BaseSource):
-    VERSION = 2
+    VERSION = 3
 
     def __init__(self, hm, file_name, config):
         self._hm = hm
@@ -36,6 +37,10 @@ class GitHubRawReleaseV1(BaseSource):
         self._prefix = config['prefix']
         self._did_update = False
         self._wants_update = None
+        self._image_dir = self._hm.cfg_dir / f"images_{self._prefix}"
+
+        if not self._image_dir.is_dir():
+            self._image_dir.mkdir(0o777)
 
         if config['version'] != self.VERSION:
             self._wants_update = "Cache out of date."
@@ -64,6 +69,8 @@ class GitHubRawReleaseV1(BaseSource):
         self._data = self._config.setdefault('data', {}).setdefault('data', {})
         self.ports = self._config.setdefault('data', {}).setdefault('ports', [])
         self.utils = self._config.setdefault('data', {}).setdefault('utils', [])
+        self.images = self._config.setdefault('data', {}).setdefault('images', [])
+        self.images_md5 = self._config.setdefault('data', {}).setdefault('images_md5', None)
         self._load()
 
     def save(self):
@@ -81,22 +88,28 @@ class GitHubRawReleaseV1(BaseSource):
 
     def _update(self):
         """
-        Overload to add additional loading.
+        Overload to add additional updating.
         """
         ...
 
     def _clear(self):
         """
-        Overload to add additional loading.
+        Overload to add additional clearing.
         """
         ...
 
     def update(self):
         cprint(f"<b>{self._config['name']}</b>: updating")
+
+        # We need to preserve this.
+        self.images_md5 = self._config.get('data', {}).get('images_md5', None)
+
+        # Scrap the rest
         self._clear()
         self._data = {}
         self.ports = []
         self.utils = []
+        self.images = {}
 
         if self._did_update:
             cprint(f"- <b>{self._config['name']}</b>: up to date already.")
@@ -122,30 +135,35 @@ class GitHubRawReleaseV1(BaseSource):
 
         self._update()
 
+        for file_name in self._image_dir.iterdir():
+            if file_name.suffix.casefold() not in ('.jpg', '.png'):
+                continue
+
+            if file_name.name.count('.') < 2:
+                continue
+
+            port_name, image_type, image_suffix = file_name.name.casefold().rsplit('.', 2)
+            port_name += '.zip'
+            self.images.setdefault(port_name, {})[image_type] = file_name.name
+
         self._config['version'] = self.VERSION
 
         self._config['data']['ports'] = self.ports
         self._config['data']['utils'] = self.utils
+        self._config['data']['images'] = self.images
+        self._config['data']['images_md5'] = self.images_md5
         self._config['data']['data']  = self._data
 
         ## HACK! :D
         # If the github action hasnt been run yet, the md5 files wont have been generated
         # so we just make them and assume they will eventually be available.
-        for port_name in self.ports:
-            port_md5 = port_name + '.md5'
-            if port_md5 not in self._data:
-                self._data[port_md5] = self._data[port_name].copy()
-                self._data[port_md5]['name'] += '.md5'
-                self._data[port_md5]['size'] = 33
-                self._data[port_md5]['url'] += '.md5'
-
-        for util_name in self.ports:
-            util_md5 = util_name + '.md5'
-            if util_md5 not in self._data:
-                self._data[util_md5] = self._data[util_name].copy()
-                self._data[util_md5]['name'] += '.md5'
-                self._data[util_md5]['size'] = 33
-                self._data[util_md5]['url'] += '.md5'
+        for item_name in (self.ports + self.utils):
+            item_md5 = item_name + '.md5'
+            if item_md5 not in self._data:
+                self._data[item_md5] = self._data[item_name].copy()
+                self._data[item_md5]['name'] += '.md5'
+                self._data[item_md5]['size'] = 33
+                self._data[item_md5]['url'] += '.md5'
 
         self._config['last_checked'] = datetime.datetime.now().isoformat()
 
@@ -204,7 +222,7 @@ class GitHubRawReleaseV1(BaseSource):
 
 
 class PortMasterV1(GitHubRawReleaseV1):
-    VERSION = 2
+    VERSION = 3
 
     def _load(self):
         self._info = self._config.setdefault('data', {}).setdefault('info', {})
@@ -229,6 +247,45 @@ class PortMasterV1(GitHubRawReleaseV1):
             self.ports.append(port_info['name'])
 
         self._config['data']['info']  = self._info
+
+        # if 'images.zip' not in self._data:
+        #     return
+        # images_md5 = self._data['images.zip.md5']['url']
+        # images_url = self._data['images.zip']['url']
+        images_url_md5 = "https://raw.githubusercontent.com/kloptops/pugwash/main/pugwash/data/images.zip.md5"
+        images_url_zip = "https://raw.githubusercontent.com/kloptops/pugwash/main/pugwash/data/images.zip"
+
+        images_md5 = fetch_text(images_url_md5).strip()
+        if self.images_md5 is None or images_md5 != self.images_md5:
+            logger.debug(f"images_md5={images_md5}, self.images_md5={self.images_md5}")
+            images_zip = download(self._hm.temp_dir / "images.zip", images_url_zip, images_md5, None)
+            if images_zip is None:
+                logger.debug(f"Unable to download {images_url_zip}")
+                return
+
+            images_to_delete = [
+                file_name
+                for file_name in self._image_dir.iterdir()
+                if file_name.suffix in ('.png', '.jpg')]
+
+            with zipfile.ZipFile(images_zip, 'r') as zf:
+                for zip_name in zf.namelist():
+                    if zip_name.casefold().rsplit('.')[-1] not in ('jpg', 'png'):
+                        continue
+
+                    file_name = self._image_dir / zip_name.rsplit('/', 1)[-1]
+                    logger.debug(f"adding {file_name}")
+                    with open(file_name, 'wb') as fh:
+                        fh.write(zf.read(zip_name))
+
+                    if file_name in images_to_delete:
+                        images_to_delete.remove(file_name)
+
+            for image_to_delete in images_to_delete:
+                logger.debug(f"removing {image_to_delete}")
+                image_to_delete.unlink()
+
+            self.images_md5 = images_md5
 
     def _portsmd_to_portinfo(self, text):
         # Super jank

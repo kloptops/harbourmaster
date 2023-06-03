@@ -144,7 +144,7 @@ def download(file_name, file_url, md5_source=None, md5_result=None, callback=Non
     md5_file = md5.hexdigest()
     if md5_source is not None:
         if md5_file != md5_source:
-            zip_file.unlink()
+            file_name.unlink()
             logger.error(f"File doesn't match the md5 file: {md5_file} != {md5_source}")
 
             if callback is not None:
