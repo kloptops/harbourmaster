@@ -37,10 +37,15 @@ class GitHubRawReleaseV1(BaseSource):
         self._prefix = config['prefix']
         self._did_update = False
         self._wants_update = None
-        self._image_dir = self._hm.cfg_dir / f"images_{self._prefix}"
+        self._images_dir = self._hm.cfg_dir / f"images_{self._prefix}"
+        self._images_md5_file = self._images_dir / "images.md5"
+        self._images_md5 = None
 
-        if not self._image_dir.is_dir():
-            self._image_dir.mkdir(0o777)
+        if not self._images_dir.is_dir():
+            self._images_dir.mkdir(0o777)
+
+        if self._images_md5_file.is_file():
+            self._images_md5 = self._images_md5_file.read_text().strip()
 
         if config['version'] != self.VERSION:
             self._wants_update = "Cache out of date."
@@ -69,9 +74,8 @@ class GitHubRawReleaseV1(BaseSource):
         self._data = self._config.setdefault('data', {}).setdefault('data', {})
         self.ports = self._config.setdefault('data', {}).setdefault('ports', [])
         self.utils = self._config.setdefault('data', {}).setdefault('utils', [])
-        self.images = self._config.setdefault('data', {}).setdefault('images', [])
-        self.images_md5 = self._config.setdefault('data', {}).setdefault('images_md5', None)
         self._load()
+        self._load_images()
 
     def save(self):
         with self._file_name.open('w') as fh:
@@ -79,6 +83,20 @@ class GitHubRawReleaseV1(BaseSource):
 
     def clean_name(self, text):
         return text.casefold()
+
+    def _load_images(self):
+        self.images = {}
+
+        for file_name in self._images_dir.iterdir():
+            if file_name.suffix.casefold() not in ('.jpg', '.png'):
+                continue
+
+            if file_name.name.count('.') < 2:
+                continue
+
+            port_name, image_type, image_suffix = file_name.name.casefold().rsplit('.', 2)
+            port_name += '.zip'
+            self.images.setdefault(self.clean_name(port_name), {})[image_type] = file_name.name
 
     def _load(self):
         """
@@ -100,9 +118,6 @@ class GitHubRawReleaseV1(BaseSource):
 
     def update(self):
         cprint(f"<b>{self._config['name']}</b>: updating")
-
-        # We need to preserve this.
-        self.images_md5 = self._config.get('data', {}).get('images_md5', None)
 
         # Scrap the rest
         self._clear()
@@ -135,23 +150,12 @@ class GitHubRawReleaseV1(BaseSource):
 
         self._update()
 
-        for file_name in self._image_dir.iterdir():
-            if file_name.suffix.casefold() not in ('.jpg', '.png'):
-                continue
-
-            if file_name.name.count('.') < 2:
-                continue
-
-            port_name, image_type, image_suffix = file_name.name.casefold().rsplit('.', 2)
-            port_name += '.zip'
-            self.images.setdefault(port_name, {})[image_type] = file_name.name
+        self._load_images()
 
         self._config['version'] = self.VERSION
 
         self._config['data']['ports'] = self.ports
         self._config['data']['utils'] = self.utils
-        self._config['data']['images'] = self.images
-        self._config['data']['images_md5'] = self.images_md5
         self._config['data']['data']  = self._data
 
         ## HACK! :D
@@ -248,6 +252,8 @@ class PortMasterV1(GitHubRawReleaseV1):
 
         self._config['data']['info']  = self._info
 
+        ## Download latest images.zip if needed.
+        ## Uncomment after images has been added to PortMaster.
         # if 'images.zip' not in self._data:
         #     return
         # images_md5 = self._data['images.zip.md5']['url']
@@ -256,7 +262,7 @@ class PortMasterV1(GitHubRawReleaseV1):
         images_url_zip = "https://raw.githubusercontent.com/kloptops/pugwash/main/pugwash/data/images.zip"
 
         images_md5 = fetch_text(images_url_md5).strip()
-        if self.images_md5 is None or images_md5 != self.images_md5:
+        if self._images_md5 is None or images_md5 != self._images_md5:
             logger.debug(f"images_md5={images_md5}, self.images_md5={self.images_md5}")
             images_zip = download(self._hm.temp_dir / "images.zip", images_url_zip, images_md5, None)
             if images_zip is None:
@@ -265,7 +271,7 @@ class PortMasterV1(GitHubRawReleaseV1):
 
             images_to_delete = [
                 file_name
-                for file_name in self._image_dir.iterdir()
+                for file_name in self._images_dir.iterdir()
                 if file_name.suffix in ('.png', '.jpg')]
 
             with zipfile.ZipFile(images_zip, 'r') as zf:
@@ -273,7 +279,7 @@ class PortMasterV1(GitHubRawReleaseV1):
                     if zip_name.casefold().rsplit('.')[-1] not in ('jpg', 'png'):
                         continue
 
-                    file_name = self._image_dir / zip_name.rsplit('/', 1)[-1]
+                    file_name = self._images_dir / zip_name.rsplit('/', 1)[-1]
                     logger.debug(f"adding {file_name}")
                     with open(file_name, 'wb') as fh:
                         fh.write(zf.read(zip_name))
@@ -285,7 +291,7 @@ class PortMasterV1(GitHubRawReleaseV1):
                 logger.debug(f"removing {image_to_delete}")
                 image_to_delete.unlink()
 
-            self.images_md5 = images_md5
+            self._images_md5_file.write_text(images_md5)
 
     def _portsmd_to_portinfo(self, text):
         # Super jank

@@ -89,6 +89,19 @@ def nice_size(size):
     return f"{size:.02f} {suffix}"
 
 
+def hash_file(file_name):
+    if isinstance(file_name, str):
+        file_name = pathlib.Path(file_name)
+    elif not isinstance(file_name, pathlib.PurePath):
+        raise ValueError(file_name)
+
+    md5 = hashlib.md5()
+    with file_name.open('rb') as fh:
+        md5.update(fh.read())
+
+    return md5.hexdigest()
+
+
 def download(file_name, file_url, md5_source=None, md5_result=None, callback=None):
     """
     Download a file from file_url into file_name, checks the md5sum of the file against md5_source if given.
@@ -290,18 +303,19 @@ class Callback:
 
 
 __all__ = (
-    'add_list_unique',
     'add_dict_list_unique',
-    'get_dict_list',
-    'get_path_fs',
+    'add_list_unique',
+    'datetime_compare',
+    'download',
     'fetch_data',
     'fetch_json',
     'fetch_text',
+    'get_dict_list',
+    'get_path_fs',
+    'hash_file',
     'json_safe_load',
     'json_safe_loads',
     'make_temp_directory',
-    'download',
-    'datetime_compare',
-    'timeit',
     'nice_size',
+    'timeit',
     )
