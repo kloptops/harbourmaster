@@ -263,7 +263,7 @@ class PortMasterV1(GitHubRawReleaseV1):
 
         images_md5 = fetch_text(images_url_md5).strip()
         if self._images_md5 is None or images_md5 != self._images_md5:
-            logger.debug(f"images_md5={images_md5}, self.images_md5={self.images_md5}")
+            logger.debug(f"images_md5={images_md5}, self.images_md5={self._images_md5}")
             images_zip = download(self._hm.temp_dir / "images.zip", images_url_zip, images_md5, None)
             if images_zip is None:
                 logger.debug(f"Unable to download {images_url_zip}")
@@ -292,6 +292,7 @@ class PortMasterV1(GitHubRawReleaseV1):
                 image_to_delete.unlink()
 
             self._images_md5_file.write_text(images_md5)
+            self._images_md5 = images_md5
 
     def _portsmd_to_portinfo(self, text):
         # Super jank
