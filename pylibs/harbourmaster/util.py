@@ -89,7 +89,7 @@ def nice_size(size):
     return f"{size:.02f} {suffix}"
 
 
-@functools.cache
+@functools.lru_cache(maxsize=512)
 def name_cleaner(text):
     temp = re.sub(r'[^a-zA-Z0-9, _\-\.]+', '', text.strip().casefold())
     return re.sub(r'[ \.\-]+', '.', temp)
