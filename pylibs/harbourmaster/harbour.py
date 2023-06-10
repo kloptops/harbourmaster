@@ -339,8 +339,6 @@ class HarbourMaster():
                     if pm_signature is None:
                         logger.debug(f"add_pm_signature({file_item!r}, [{port_owners[0]!r}, {file_name!r}])")
                         add_pm_signature(file_item, [port_owners[0], file_name])
-                    else:
-                        logger.debug(f"load_pm_signature({file_item!r}) = {pm_signature}")
                 continue
 
             if not file_name.endswith('/'):
