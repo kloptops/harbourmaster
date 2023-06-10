@@ -107,21 +107,21 @@ HM_SOURCE_DEFAULTS = {
 
 
 HM_GENRES = [
-      "action",
-      "adventure",
-      "arcade",
-      "casino/card",
-      "fps",
-      "platformer",
-      "puzzle",
-      "racing",
-      "rhythm",
-      "rpg",
-      "simulation",
-      "sports",
-      "strategy",
-      "visual novel",
-      "other",
+    "action",
+    "adventure",
+    "arcade",
+    "casino/card",
+    "fps",
+    "platformer",
+    "puzzle",
+    "racing",
+    "rhythm",
+    "rpg",
+    "simulation",
+    "sports",
+    "strategy",
+    "visual novel",
+    "other",
     ]
 
 

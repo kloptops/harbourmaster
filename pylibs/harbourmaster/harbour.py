@@ -25,6 +25,8 @@ from .source import *
 ################################################################################
 ## Config loading
 class HarbourMaster():
+    __PORTS_INFO = None
+
     CONFIG_VERSION = 1
     DEFAULT_CONFIG = {
         'version': CONFIG_VERSION,
@@ -81,6 +83,14 @@ class HarbourMaster():
         self.load_ports()
 
     @timeit
+    def __ports_info(self):
+        if self.__PORTS_INFO is None:
+            from ports_info import ports_info
+            self.__PORTS_INFO = ports_info
+
+        return self.__PORTS_INFO
+
+    @timeit
     def load_sources(self):
         source_files = list(self.cfg_dir.glob('*.source.json'))
         source_files.sort()
@@ -112,6 +122,113 @@ class HarbourMaster():
 
             self.sources[source_data['prefix']] = source
 
+
+    def _get_pm_signature(self, file_name):
+        """
+        Returns (file_name, original_file_name, port_name)
+
+        This handles files being renamed, hopefully.
+        """
+        if not str(file_name).lower().endswith('.sh'):
+            return None
+
+        # See if the file has a signature
+        pm_signature = load_pm_signature(file_name)
+
+        if pm_signature is None:
+            ports_info = self.__ports_info()
+
+            # If not look it up by name
+            port_owners = get_dict_list(ports_info['items'], file_name.name)
+            if len(port_owners) > 0:
+                add_pm_signature(file_name, [port_owners[0], file_name.name])
+                return (file_name.name, file_name.name, port_owners[0])
+
+            # Finally try by the md5sum of the file
+            md5 = hash_file(file_name)
+            if md5 in ports_info['md5']:
+                other_name = ports_info['md5'][md5]
+
+                port_owners = get_dict_list(ports_info['items'], other_name)
+
+                if len(port_owners) > 0:
+                    add_pm_signature(file_name, [port_owners[0], other_name])
+                    return (other_name, file_name.name, port_owners[0])
+
+            return (file_name.name, file_name.name, None)
+
+        return (file_name.name, pm_signature[1], pm_signature[0])
+
+    def _load_port_info(self, port_file):
+        """
+        Loads a <blah>.port.json file.
+
+        It will try its best to recover the data into a usable state.
+
+        returns None if it is unusuable.
+        """
+        port_info = port_info_load(port_file, do_default=True)
+
+        ports_info = self.__ports_info()
+        changed = False
+
+        # Its possible for the port_info to be in a bad way, lets try and fix it.
+        if port_info.get('name', None) is None:
+            # No name, check the items and see if it matches our internal database, we can get the port name from a script.
+            logger.error(f"No 'name' in {port_file!r}")
+            if port_info.get('items', None) is None:
+                # Can't do shit if the items is empty. :(
+                logger.error(f"Unable to load {port_file}, missing 'name' and 'items' keys.")
+                return None
+
+            for item in port_info['items']:
+                port_temp = ports_info['items'].get(item.casefold(), None)
+                if isinstance(port_temp, str):
+                    break
+            else:
+                # Couldn't find the port.
+                logger.error(f"Unable to load {port_file}, unknown items.")
+                return None
+
+            changed = True
+            port_info['name'] = port_temp[0].casefold()
+
+        # Force the port_info['name'] to be lowercase/casefolded.
+        if port_info['name'] != port_info['name'].casefold():
+            port_info['name'] = port_info['name'].casefold()
+            changed = True
+
+        if port_info.get('items', None) is None:
+            # This shouldn't happen, but we can restore it.
+            logger.error(f"No 'items' in {port_info!r} for {port_file}")
+
+            if port_info['name'] not in ports_info['ports']:
+                # Sorry, cant work it out.
+                logger.error(f"Unable to figure it out, unknown port {port_info['name']}")
+                return None
+
+            changed = True
+            port_info['items'] = ports_info['ports'][port_info['name']]['items'][:]
+
+        if port_info['attr']['title'] in ("", None):
+            for item in port_info['items']:
+                if item.casefold().endswith('.sh'):
+                    port_info['attr']['title'] = item[:-3]
+                    changed = True
+                    break
+
+        if port_info.get('status', None) is None:
+            changed = True
+            port_info['status'] = {
+                'source': 'Unknown',
+                'md5': None,
+                'status': 'Unknown',
+                }
+
+        port_info['changed'] = changed
+
+        return port_info
+
     @timeit
     def load_ports(self):
         """
@@ -126,101 +243,68 @@ class HarbourMaster():
         all_items = {}
         unknown_files = []
 
-        ports_info = None
+        all_ports = {}
+        ports_files = {}
+        file_renames = {}
 
-        ## Load all the known ports with port.json files
+        ports_info = self.__ports_info()
+
+        """
+        This is a bit of a heavy function but it does the following.
+
+        Phase 1:
+        - Load all *.port.json files, fix any issues with them
+    
+        Phase 2:
+        - Check all files/dirs in the ports_dir, see if they are "owned" by a port, find any renamed files.
+
+        Phase 3:
+        - Find any new ports, create the port.json files as necessary.
+
+        Phase 4:
+        - Finalise any data, figure out if the ports are broken etc.
+
+        DONE.
+
+        """
+
+        ## Phase 1: Load all the known ports with port.json files
         for port_file in port_files:
             changed = False
-            port_info = port_info_load(port_file, do_default=True)
+            port_info = self._load_port_info(port_file)
 
-            # logger.info(f"Port Info: {port_info!r}")
+            if port_info is None:
+                continue
 
-            # Its possible for the port_info to be in a bad way, lets try and fix it.
-            if port_info.get('name', None) is None:
-                # No name, check the items and see if it matches our internal database, we can get the port name from a script.
-                logger.error(f"No 'name' in {port_info!r}")
-                if port_info.get('items', None) is None:
-                    # Can't do shit if the items is empty. :(
-                    continue
-
-                if ports_info is None:
-                    from ports_info import ports_info
-
-                for item in port_info['items']:
-                    port_temp = ports_info['items'].get(item.casefold(), None)
-                    if isinstance(port_temp, str):
-                        break
-                else:
-                    # Couldn't find the port.
-                    logger.error(f"Unable to figure it out.")
-                    continue
-
-                changed = True
-                port_info['name'] = port_temp[0]
-
-            if port_info.get('items', None) is None:
-                # This shouldn't happen, but we can restore it.
-                logger.error(f"No 'items' in {port_info!r}")
-
-                if ports_info is None:
-                    from ports_info import ports_info
-
-                if port_info['name'] not in ports_info['ports']:
-                    # Sorry, cant work it out.
-                    logger.error(f"Unable to figure it out.")
-                    continue
-
-                changed = True
-                port_info['items'] = ports_info['ports'][port_info['name']]['items'][:]
-
-            if port_info['attr']['title'] in ("", None):
-                for item in port_info['items']:
-                    if item.casefold().endswith('.sh'):
-                        port_info['attr']['title'] = item[:-3]
-                        changed = True
-                        break
+            # The files attribute keeps track of file renames.
+            if 'files' not in port_info:
+                port_info['files'] = {
+                    'port.json': str(port_file.relative_to(self.ports_dir)),
+                    }
+                port_info['changed'] = True
 
             # Add all the root dirs/scripts in the port
             for item in port_info['items']:
                 add_dict_list_unique(all_items, item, port_info['name'])
 
+                if (self.ports_dir / item).exists():
+                    if item not in get_dict_list(port_info['files'], item):
+                        add_dict_list_unique(port_info['files'], item, item)
+                        port_info['changed'] = True
+
             # And any optional ones.
             for item in get_dict_list(port_info, 'items_opt'):
                 add_dict_list_unique(all_items, item, port_info['name'])
 
-            if port_info.get('status', None) is None:
-                changed = True
-                port_info['status'] = {
-                    'source': 'Unknown',
-                    'md5': None,
-                    'status': 'Unknown'
-                    }
+                if (self.ports_dir / item).exists():
+                    if item not in get_dict_list(port_info['files'], item):
+                        add_dict_list_unique(port_info['files'], item, item)
+                        port_info['changed'] = True
 
-            bad = False
-            for item in port_info['items']:
-                if not (self.ports_dir / item).exists():
-                    logger.info(f"Port {port_info['name']} missing file: {item}")
-                    bad = True
-                    break
+            all_ports[port_info['name']] = port_info
+            ports_files[port_info['name']] = port_file
 
-            if bad:
-                if port_info['status'].get('status', 'Unknown') != 'Broken':
-                    port_info['status']['status'] = 'Broken'
-                    changed = True
-
-                self.broken_ports[port_info['name'].casefold()] = port_info
-            else:
-                if port_info['status'].get('status', 'Unknown') != 'Installed':
-                    port_info['status']['status'] = 'Installed'
-                    changed = True
-
-                self.installed_ports[port_info['name'].casefold()] = port_info
-
-            if changed:
-                with port_file.open('wt') as fh:
-                    json.dump(port_info, fh, indent=4)
-
-        ## Check all files
+        ## Phase 2: Check all files
         for file_item in self.ports_dir.iterdir():
             ## Skip these
             if file_item.name.casefold() in (
@@ -241,38 +325,83 @@ class HarbourMaster():
             if file_item.is_dir():
                 file_name += '/'
 
+            elif file_item.suffix.casefold() not in ('.sh', ):
+                # Ignore non bash files.
+                continue
+
             port_owners = get_dict_list(all_items, file_name)
 
-            if len(port_owners) == 0:
-                unknown_files.append(file_name)
+            if len(port_owners) > 0:
+                # We know what port this file belongs to.
+                continue
 
-        ## Find any ports that match the files we couldnt find matchting a port.json file
+            if not file_name.endswith('/'):
+                # See if the file has been renamed, thanks Christian!
+                pm_signature = self._get_pm_signature(file_item)
+                if pm_signature is None:
+                    # Shouldn't happen
+                    unknown_files.append(file_name)
+                    continue
+
+                if pm_signature[0] != pm_signature[1]:
+                    # We atleast know the file is renamed.
+                    file_renames[pm_signature[1]] = pm_signature[0]
+
+                if pm_signature[2] is None:
+                    # Unknown port?
+                    unknown_files.append(file_name)
+                    continue
+
+                if pm_signature[2] in all_ports:
+                    port_info = all_ports[pm_signature[2]]
+                    add_dict_list_unique(all_items, pm_signature[0], pm_signature[2])
+
+                    if pm_signature[0] not in get_dict_list(port_info['files'], pm_signature[1]):
+                        add_dict_list_unique(port_info['files'], pm_signature[1], pm_signature[0])
+                        port_info["changed"] = True
+
+                    continue
+
+            unknown_files.append(file_name)
+
+        from pprint import pprint
+        pprint(all_items)
+        pprint(file_renames)
+        pprint(unknown_files)
+
+        ## Create new ports.
         new_ports = []
         for unknown_file in unknown_files:
-            if ports_info is None:
-                from ports_info import ports_info
-
             port_owners = get_dict_list(ports_info['items'], unknown_file)
 
             if len(port_owners) == 1:
                 add_list_unique(new_ports, port_owners[0])
 
             elif len(port_owners) == 0:
-                if unknown_file.endswith('.sh'):
+                if unknown_file.casefold().endswith('.sh'):
+                    re_name = file_renames.get(unknown_file, None)
+                    if re_name is not None:
+                        port_owners = get_dict_list(ports_info['items'], re_name)
+
+                        if len(port_owners) == 1:
+                            logger.debug(f"-- {unknown_file} -> {re_name}")
+                            if port_owners[0] in all_ports:
+                                add_list_unique(all_ports[port_owners[0]]['items'], unknown_file)
+                            else:
+                                add_list_unique(new_ports, port_owners[0])
+                            continue
+
                     ## Keep track of unknown bash scripts.
                     logger.info(f"Unknown port: {unknown_file}")
                     self.unknown_ports.append(unknown_file)
 
         ## Create new port.json files for any new ports, these only contain the most basic of information.
         for new_port in new_ports:
-            if ports_info is None:
-                from ports_info import ports_info
-
             port_info_raw = ports_info['ports'][new_port]
 
             port_info = port_info_load(port_info_raw)
 
-            port_json = self.ports_dir / port_info_raw['file']
+            port_file = self.ports_dir / port_info_raw['file']
 
             ## Load extra info
             for source in self.sources.values():
@@ -291,46 +420,80 @@ class HarbourMaster():
             if port_info.get('status', None) is None:
                 port_info['status'] = {}
 
-            port_name = port_info['name'].casefold()
+            port_info['name'] = port_info['name'].casefold()
 
             port_info['status']['source'] = "Unknown"
             port_info['status']['md5'] = None
+            port_info['status']['status'] = "Unknown"
 
-            if not port_json.parent.is_dir():
-                ## CEBION WAS HERE!
-                if port_name in self.installed_ports:
-                    del self.installed_ports[port_name]
+            port_info['files'] = {
+                'port.json': port_info_raw['file'],
+                }
 
-                logger.info(f"Broken port: {port_info}")
-                port_info['status']['status'] = "Broken"
-                self.broken_ports[port_info['name'].casefold()] = port_info
-                continue
+            # Add all the root dirs/scripts in the port
+            for item in port_info['items']:
+                if (self.ports_dir / item).exists():
+                    if item not in get_dict_list(port_info['files'], item):
+                        add_dict_list_unique(port_info['files'], item, item)
+
+                if item in file_renames:
+                    item_rename = file_renames[item]
+                    if (self.ports_dir / item_rename).exists():
+                        if item_rename not in get_dict_list(port_info['files'], item):
+                            add_dict_list_unique(port_info['files'], item, item_rename)
+
+            # And any optional ones.
+            for item in get_dict_list(port_info, 'items_opt'):
+                if (self.ports_dir / item).exists():
+                    if item not in get_dict_list(port_info['files'], item):
+                        add_dict_list_unique(port_info['files'], item, item)
+
+                if item in file_renames:
+                    item_rename = file_renames[item]
+                    if (self.ports_dir / item_rename).exists():
+                        if item_rename not in get_dict_list(port_info['files'], item):
+                            add_dict_list_unique(port_info['files'], item, item_rename)
+
+            port_info['changed'] = True
+
+            all_ports[port_info['name']] = port_info
+            ports_files[port_info['name']] = port_file
+
+        for port_name in all_ports:
+            port_info = all_ports[port_name]
 
             bad = False
+            for port_file in list(port_info['files']):
+                file_names = get_dict_list(port_info['files'], port_file)
+
+                for file_name in list(file_names):
+                    if not (self.ports_dir / file_name).exists():
+                        logger.error(f"Port {port_name} missing {port_file}.")
+                        remove_dict_list(port_info['files'], port_file, port_file)
+
             for item in port_info['items']:
-                if not (self.ports_dir / item).exists():
-                    logger.info(f"Port {port_info['name']} missing file: {item}")
+                if len(get_dict_list(port_info['files'], item)) == 0:
                     bad = True
 
             if bad:
-                if port_name in self.installed_ports:
-                    del self.installed_ports[port_name]
-
                 if port_info['status'].get('status', 'Unknown') != 'Broken':
                     port_info['status']['status'] = 'Broken'
+                    port_info['changed'] = True
 
                 self.broken_ports[port_name] = port_info
             else:
-                if port_name in self.broken_ports:
-                    del self.broken_ports[port_name]
-
                 if port_info['status'].get('status', 'Unknown') != 'Installed':
                     port_info['status']['status'] = 'Installed'
+                    port_info['changed'] = True
 
                 self.installed_ports[port_name] = port_info
 
-            with port_json.open('w') as fh:
-                json.dump(port_info, fh, indent=4)
+            changed = port_info['changed']
+            del port_info['changed']
+
+            if changed:
+                with ports_files[port_name].open('wt') as fh:
+                    json.dump(port_info, fh, indent=4)
 
     def port_info_attrs(self, port_info):
         runtime_fix = {
@@ -540,6 +703,7 @@ class HarbourMaster():
         port_info_merge(port_info, download_info)
 
         ## These two are always overriden.
+        port_info['name'] = name_cleaner(download_info['zip_file'].name)
         port_info['items'] = items
         port_info['status'] = download_info['status'].copy()
         port_info['status']['status'] = 'Installed'
@@ -547,6 +711,27 @@ class HarbourMaster():
         if port_info_file is None:
             port_info_file = self.ports_dir / dirs[0] / (download_info['zip_file'].stem + '.port.json')
 
+        port_info['files'] = {
+            'port.json': str(port_info_file.relative_to(self.ports_dir)),
+            }
+
+        # Add all the root dirs/scripts in the port
+        for item in port_info['items']:
+            if (self.ports_dir / item).exists():
+                if item not in get_dict_list(port_info['files'], item):
+                    add_dict_list_unique(port_info['files'], item, item)
+
+                if item.casefold().endswith('.sh'):
+                    add_pm_signature(self.ports_dir / item, [port_info['name'], item])
+
+        # And any optional ones.
+        for item in get_dict_list(port_info, 'items_opt'):
+            if (self.ports_dir / item).exists():
+                if item not in get_dict_list(port_info['files'], item):
+                    add_dict_list_unique(port_info['files'], item, item)
+
+                if item.casefold().endswith('.sh'):
+                    add_pm_signature(self.ports_dir / item, [port_info['name'], item])
         # print(f"Merged Info: {port_info}")
 
         with open(port_info_file, 'w') as fh:
@@ -659,29 +844,33 @@ class HarbourMaster():
         # so we only delete the ones that will no longer be associaed with any ports.
         for item_name, item_info in self.installed_ports.items():
             # Add all the root dirs/scripts in the port
-            for item in item_info['items']:
-                add_dict_list_unique(all_items, item, item_info['name'])
+            for item in item_info['files']:
+                if item in ('port.json', ):
+                    continue
 
-            # And any optional ones.
-            for item in get_dict_list(item_info, 'items_opt'):
-                add_dict_list_unique(all_items, item, item_info['name'])
+                for name in get_dict_list(item_info['files'], item):
+                    add_dict_list_unique(all_items, name, item_name)
 
         for item_name, item_info in self.broken_ports.items():
             # Add all the root dirs/scripts in the port
-            for item in item_info['items']:
-                add_dict_list_unique(all_items, item, item_info['name'])
+            for item in item_info['files']:
+                if item in ('port.json', ):
+                    continue
 
-            # And any optional ones.
-            for item in get_dict_list(item_info, 'items_opt'):
-                add_dict_list_unique(all_items, item, item_info['name'])
+                for name in get_dict_list(item_info['files'], item):
+                    add_dict_list_unique(all_items, name, item_name)
+
+        from pprint import pprint
+        pprint(all_items)
 
         # cprint(f"{all_items}")
         cprint(f"Uninstalling <b>{port_name}</b>")
         if self.callback is not None:
             self.callback.message(f"Removing {port_name}")
-        all_port_items = port_info['items'][:]
-        if port_info.get('items_opt', None) is not None:
-            all_port_items.extend(port_info['items_opt'])
+
+        all_port_items = []
+        for port_file in port_info['files']:
+            all_port_items.extend(get_dict_list(port_info['files'], port_file))
 
         ports_dir = self.ports_dir
 
@@ -691,38 +880,10 @@ class HarbourMaster():
         for item in all_port_items:
             # Only delete files/scripts with only 1 owner.
             item_owners = get_dict_list(all_items, item)
-            if len(item_owners) != 1:
-                continue
-
-            # Sneaky shits
-            if (item.startswith('/') or item.startswith('../') or '/../' in item):
-                if self.callback is not None:
-                    self.callback.message_box(f"Possible bad files in port_info for {port_name}.")
-                    return 255
-                logger.error(f"- Possible bad files in port_info: {item}, skipping for safety.")
+            if len(item_owners) > 1:
                 continue
 
             item_path = self.ports_dir / item
-            # Stop it! >:O
-            if not hasattr(item_path, 'is_relative_to'):
-                ## Fix for older versions of python which don't have is_relative_to.
-                try:
-                    item_path.relative_to(ports_dir)
-                except ValueError:
-                    if self.callback is not None:
-                        self.callback.message_box(f"Possible bad files in port_info for {port_name}.")
-                        return 255
-
-                    logger.error(f"- Trying to get outside of the ports folder: {item_path!r}, skipping.")
-                    continue
-            else:
-                if not item_path.is_relative_to(ports_dir):
-                    if self.callback is not None:
-                        self.callback.message_box(f"Possible bad files in port_info for {port_name}.")
-                        return 255
-
-                    logger.error(f"- Trying to get outside of the ports folder: {item_path!r}, skipping.")
-                    continue
 
             if item_path.exists():
                 cprint(f"- removing {item}")

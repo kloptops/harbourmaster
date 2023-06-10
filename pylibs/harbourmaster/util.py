@@ -89,6 +89,103 @@ def nice_size(size):
     return f"{size:.02f} {suffix}"
 
 
+@functools.cache
+def name_cleaner(text):
+    temp = re.sub(r'[^a-zA-Z0-9, _\-\.]+', '', text.strip().casefold())
+    return re.sub(r'[ \.\-]+', '.', temp)
+
+
+def load_pm_signature(file_name):
+    ## Adds the portmaster signature to a bash script.
+    if isinstance(file_name, str):
+        file_name = pathlib.Path(file_name)
+
+    elif not isinstance(file_name, pathlib.PurePath):
+        raise ValueError(file_name)
+
+    if not file_name.is_file():
+        return None
+
+    if file_name.suffix.casefold() != '.sh':
+        return None
+
+    for line in file_name.read_text().split('\n'):
+        if not line.strip().startswith('#'):
+            continue
+
+        if 'PORTMASTER:' not in line:
+            continue
+
+        return [
+            item.strip()
+            for item in line.split(':', 1)[1].strip().split(',')]
+
+    return None
+
+def add_pm_signature(file_name, info):
+    ## Adds the portmaster signature to a bash script.
+
+    if isinstance(file_name, str):
+        file_name = pathlib.Path(file_name)
+
+    elif not isinstance(file_name, pathlib.PurePath):
+        raise ValueError(file_name)
+
+    if not file_name.is_file():
+        return
+
+    if file_name.suffix.casefold() != '.sh':
+        return
+
+    # See if it has some info already.
+    old_info = load_pm_signature(file_name)
+    if old_info is not None:
+        # Info is the same, ignore it
+        if old_info == info:
+            return
+
+        file_data = [
+            line
+            for line in file_name.read_text().split('\n')
+            if not (line.strip().startswith('#') and 'PORTMASTER:' in line)]
+    else:
+        file_data = [
+            line
+            for line in file_name.read_text().split('\n')]
+
+    file_data.insert(1, f"# PORTMASTER: {', '.join(info)}")
+
+    with file_name.open('w') as fh:
+        fh.write("\n".join(file_data))
+
+def remove_pm_signature(file_name):
+    ## Removes the portmaster signature to a bash script.
+
+    if isinstance(file_name, str):
+        file_name = pathlib.Path(file_name)
+
+    elif not isinstance(file_name, pathlib.PurePath):
+        raise ValueError(file_name)
+
+    if not file_name.is_file():
+        return
+
+    if file_name.suffix.casefold() != '.sh':
+        return
+
+    # See if it has some info already.
+    old_info = load_pm_signature(file_name)
+    if old_info is None:
+        return
+
+    file_data = [
+        line
+        for line in file_name.read_text().split('\n')
+        if not (line.strip().startswith('#') and 'PORTMASTER:' in line)]
+
+    with file_name.open('w') as fh:
+        fh.write("\n".join(file_data))
+
 def hash_file(file_name):
     if isinstance(file_name, str):
         file_name = pathlib.Path(file_name)
@@ -227,6 +324,25 @@ def get_dict_list(base_dict, key):
 
     return result
 
+def remove_dict_list(base_dict, key, value):
+    if key not in base_dict:
+        return
+
+    result = base_dict[key]
+    if isinstance(result, str):
+        if value == result:
+            del base_dict[key]
+
+        return
+
+    if value in result:
+        result.remove(value)
+
+        if len(result) == 0:
+            del base_dict[key]
+
+        elif len(result) == 1:
+            base_dict[key] = result[0]
 
 def get_path_fs(path):
     """
@@ -305,6 +421,7 @@ class Callback:
 __all__ = (
     'add_dict_list_unique',
     'add_list_unique',
+    'add_pm_signature',
     'datetime_compare',
     'download',
     'fetch_data',
@@ -315,7 +432,11 @@ __all__ = (
     'hash_file',
     'json_safe_load',
     'json_safe_loads',
+    'load_pm_signature',
     'make_temp_directory',
+    'name_cleaner',
     'nice_size',
+    'remove_dict_list',
+    'remove_pm_signature',
     'timeit',
     )

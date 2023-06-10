@@ -82,7 +82,7 @@ class GitHubRawReleaseV1(BaseSource):
             json.dump(self._config, fh, indent=4)
 
     def clean_name(self, text):
-        return text.casefold()
+        return name_cleaner(text)
 
     def _load_images(self):
         self.images = {}
@@ -95,7 +95,10 @@ class GitHubRawReleaseV1(BaseSource):
                 continue
 
             port_name, image_type, image_suffix = file_name.name.casefold().rsplit('.', 2)
-            port_name += '.zip'
+            port_name = self.clean_name(port_name + '.zip')
+            if port_name not in self._data:
+                logger.warning(f"Port image {port_name} - {image_type} for unknown port.")
+
             self.images.setdefault(self.clean_name(port_name), {})[image_type] = file_name.name
 
     def _load(self):
