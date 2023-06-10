@@ -191,11 +191,11 @@ class HarbourMaster():
                 return None
 
             changed = True
-            port_info['name'] = port_temp[0].casefold()
+            port_info['name'] = name_cleaner(port_temp[0])
 
         # Force the port_info['name'] to be lowercase/casefolded.
-        if port_info['name'] != port_info['name'].casefold():
-            port_info['name'] = port_info['name'].casefold()
+        if port_info['name'] != name_cleaner(port_info['name']):
+            port_info['name'] = name_cleaner(port_info['name'])
             changed = True
 
         if port_info.get('items', None) is None:
