@@ -526,6 +526,7 @@ def do_help(hm, argv):
 fifo_commands = {
     'portsmd': do_portsmd,
     'reload': do_reload,
+    'update': do_update,
     'auto_update': do_auto_update,
     }
 
