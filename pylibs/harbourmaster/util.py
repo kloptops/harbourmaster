@@ -106,7 +106,7 @@ def load_pm_signature(file_name):
     if not file_name.is_file():
         return None
 
-    if file_name.suffix.casefold() != '.sh':
+    if file_name.suffix.casefold() not in ('.sh', ):
         return None
 
     for line in file_name.read_text().split('\n'):
