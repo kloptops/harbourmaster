@@ -364,10 +364,10 @@ class HarbourMaster():
 
             unknown_files.append(file_name)
 
-        from pprint import pprint
-        pprint(all_items)
-        pprint(file_renames)
-        pprint(unknown_files)
+        # from pprint import pprint
+        # pprint(all_items)
+        # pprint(file_renames)
+        # pprint(unknown_files)
 
         ## Create new ports.
         new_ports = []
@@ -860,8 +860,8 @@ class HarbourMaster():
                 for name in get_dict_list(item_info['files'], item):
                     add_dict_list_unique(all_items, name, item_name)
 
-        from pprint import pprint
-        pprint(all_items)
+        # from pprint import pprint
+        # pprint(all_items)
 
         # cprint(f"{all_items}")
         cprint(f"Uninstalling <b>{port_name}</b>")
