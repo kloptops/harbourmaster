@@ -236,7 +236,8 @@ def clean_name(file_name, attr='name'):
     else:
         name = str(file_name)
 
-    return name.lower().replace(" ", ".").replace("..", ".")
+    name = re.sub(r'[^a-zA-Z0-9, _\-\.]+', '', name.strip().casefold())
+    return re.sub(r'[ \.]+', '.', name)
 
 def add_nicely(base_dict, key, value):
     if key not in base_dict:
@@ -362,7 +363,8 @@ def analyse_port(file_name, all_data, state):
             with zf.open(script, "r") as fh:
                 md5sum = hash_text(fh.read())
                 # print(script, md5sum)
-                add_nicely(all_data['md5'], md5sum, script)
+                if md5sum not in all_data['md5']:
+                    all_data['md5'] = script
 
         if port_info_file is not None:
             with zf.open(port_info_file, "r") as fh:

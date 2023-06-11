@@ -270,14 +270,13 @@ class HarbourMaster():
 
         ## Phase 1: Load all the known ports with port.json files
         for port_file in port_files:
-            changed = False
             port_info = self._load_port_info(port_file)
 
             if port_info is None:
                 continue
 
             # The files attribute keeps track of file renames.
-            if 'files' not in port_info:
+            if port_info.get('files', None) is None:
                 port_info['files'] = {
                     'port.json': str(port_file.relative_to(self.ports_dir)),
                     }
@@ -336,9 +335,20 @@ class HarbourMaster():
                 # Add signature to files
                 if file_item.suffix.casefold() in ('.sh', ):
                     pm_signature = load_pm_signature(file_item)
+
                     if pm_signature is None:
                         logger.debug(f"add_pm_signature({file_item!r}, [{port_owners[0]!r}, {file_name!r}])")
                         add_pm_signature(file_item, [port_owners[0], file_name])
+                        continue
+
+                    if pm_signature[0] in all_ports:
+                        port_info = all_ports[pm_signature[0]]
+                        print(file_name, pm_signature)
+                        if file_name not in get_dict_list(port_info['files'], pm_signature[1]):
+                            add_dict_list_unique(port_info['files'], pm_signature[1], file_name)
+                            print("added")
+                            port_info["changed"] = True
+
                 continue
 
             if not file_name.endswith('/'):
@@ -390,11 +400,15 @@ class HarbourMaster():
                         port_owners = get_dict_list(ports_info['items'], re_name)
 
                         if len(port_owners) == 1:
-                            logger.debug(f"-- {unknown_file} -> {re_name}")
                             if port_owners[0] in all_ports:
-                                add_list_unique(all_ports[port_owners[0]]['items'], unknown_file)
+                                port_info = all_ports[port_owners[0]]
+                                if unknown_file not in get_dict_list(port_info['files'], re_name):
+                                    add_dict_list_unique(port_info['files'], re_name, unknown_file)
+                                    port_info['changed'] = True
+
                             else:
                                 add_list_unique(new_ports, port_owners[0])
+
                             continue
 
                     ## Keep track of unknown bash scripts.
@@ -441,24 +455,28 @@ class HarbourMaster():
                 if (self.ports_dir / item).exists():
                     if item not in get_dict_list(port_info['files'], item):
                         add_dict_list_unique(port_info['files'], item, item)
+                        port_info['changed'] = True
 
                 if item in file_renames:
                     item_rename = file_renames[item]
                     if (self.ports_dir / item_rename).exists():
                         if item_rename not in get_dict_list(port_info['files'], item):
                             add_dict_list_unique(port_info['files'], item, item_rename)
+                            port_info['changed'] = True
 
             # And any optional ones.
             for item in get_dict_list(port_info, 'items_opt'):
                 if (self.ports_dir / item).exists():
                     if item not in get_dict_list(port_info['files'], item):
                         add_dict_list_unique(port_info['files'], item, item)
+                        port_info['changed'] = True
 
                 if item in file_renames:
                     item_rename = file_renames[item]
                     if (self.ports_dir / item_rename).exists():
                         if item_rename not in get_dict_list(port_info['files'], item):
                             add_dict_list_unique(port_info['files'], item, item_rename)
+                            port_info['changed'] = True
 
             port_info['changed'] = True
 
@@ -474,11 +492,12 @@ class HarbourMaster():
 
                 for file_name in list(file_names):
                     if not (self.ports_dir / file_name).exists():
-                        logger.error(f"Port {port_name} missing {port_file}.")
-                        remove_dict_list(port_info['files'], port_file, port_file)
+                        remove_dict_list(port_info['files'], port_file, file_name)
+                        port_info['changed'] = True
 
             for item in port_info['items']:
                 if len(get_dict_list(port_info['files'], item)) == 0:
+                    logger.error(f"Port {port_name} missing {item}.")
                     bad = True
 
             if bad:
@@ -498,6 +517,7 @@ class HarbourMaster():
             del port_info['changed']
 
             if changed:
+                logger.debug(f"Dumping {str(ports_files[port_name])}: {port_info}")
                 with ports_files[port_name].open('wt') as fh:
                     json.dump(port_info, fh, indent=4)
 

@@ -91,7 +91,7 @@ def nice_size(size):
 
 @functools.lru_cache(maxsize=512)
 def name_cleaner(text):
-    temp = re.sub(r'[^a-zA-Z0-9, _\-\.]+', '', text.strip().casefold())
+    temp = re.sub(r'[^a-zA-Z0-9 _\-\.]+', '', text.strip().casefold())
     return re.sub(r'[ \.]+', '.', temp)
 
 
@@ -134,7 +134,7 @@ def add_pm_signature(file_name, info):
     if not file_name.is_file():
         return
 
-    if file_name.suffix.casefold() != '.sh':
+    if file_name.suffix.casefold() not in ('.sh', ):
         return
 
     # See if it has some info already.
@@ -170,7 +170,7 @@ def remove_pm_signature(file_name):
     if not file_name.is_file():
         return
 
-    if file_name.suffix.casefold() != '.sh':
+    if file_name.suffix.casefold() not in ('.sh', ):
         return
 
     # See if it has some info already.

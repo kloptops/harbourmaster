@@ -20,6 +20,7 @@ PORT_INFO_ROOT_ATTRS = {
     'items_opt': None,
     'attr': {},
     'status': None,
+    'files': None,
     }
 
 PORT_INFO_ATTR_ATTRS = {
@@ -31,7 +32,7 @@ PORT_INFO_ATTR_ATTRS = {
     'image': {},
     'rtr': False,
     'runtime': None,
-    'reqs': {},
+    'reqs': [],
     }
 
 
@@ -112,6 +113,11 @@ def port_info_load(raw_info, source_name=None, do_default=False):
         # WHOOPS! :O
         if info.get('attr', {}).get('runtime', None) == "blank":
             info['attr']['runtime'] = None
+
+    if isinstance(info.get('attr', {}).get('reqs', None), dict):
+        info['attr']['reqs'] = [
+            key
+            for key in info['attr']['reqs']]
 
     # This strips out extra stuff
     port_info = {}
