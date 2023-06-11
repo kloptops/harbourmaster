@@ -343,7 +343,7 @@ class HarbourMaster():
 
                     if pm_signature[0] in all_ports:
                         port_info = all_ports[pm_signature[0]]
-                        print(file_name, pm_signature)
+                        # print(file_name, pm_signature)
                         if file_name not in get_dict_list(port_info['files'], pm_signature[1]):
                             add_dict_list_unique(port_info['files'], pm_signature[1], file_name)
                             print("added")

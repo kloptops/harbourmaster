@@ -10,18 +10,26 @@ from .config import (
     )
 
 from .util import (
-    add_list_unique,
     add_dict_list_unique,
-    get_dict_list,
+    add_list_unique,
+    add_pm_signature,
+    datetime_compare,
+    download,
     fetch_data,
     fetch_json,
     fetch_text,
+    get_dict_list,
+    get_path_fs,
+    hash_file,
     json_safe_load,
     json_safe_loads,
+    load_pm_signature,
     make_temp_directory,
-    download,
-    datetime_compare,
+    name_cleaner,
     nice_size,
+    remove_dict_list,
+    remove_pm_signature,
+    timeit,
     )
 
 from .info import (
@@ -33,6 +41,11 @@ from .source import (
     BaseSource,
     raw_download,
     HM_SOURCE_APIS,
+    )
+
+from .hardware import (
+    hardware_features,
+    os_info,
     )
 
 from .harbour import (
