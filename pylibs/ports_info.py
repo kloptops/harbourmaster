@@ -834,7 +834,7 @@ ports_info = {
     "dd3a1d3d35c058b4139f8c3172ec262c": "Openomf.sh",
     "dd48af495545b6f0da4ba13db4ed9808": "Quake 3.sh",
     "de99b33f0afd943fe755d0b87780ef9b": "SDLPoP.sh",
-    "deca7765f09160c7366428d8b08d1265": ["Open Great Giana Sisters.sh", "OpenGGS.sh"],
+    "deca7765f09160c7366428d8b08d1265": "Open Great Giana Sisters.sh",
     "dee65e5b591f8550b6679e6f045cd479": "VVVVVV.sh",
     "df0dfe0b4df2fd20ce3fd9a999c1528f": "RigelEngine.sh",
     "df6d749c14dd655b48640d2e3bbe2002": "Blake Stone - Aliens of Gold.sh",

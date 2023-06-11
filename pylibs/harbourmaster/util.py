@@ -118,7 +118,7 @@ def load_pm_signature(file_name):
 
         return [
             item.strip()
-            for item in line.split(':', 1)[1].strip().split(',')]
+            for item in line.split(':', 1)[1].strip().split(',', 1)]
 
     return None
 
