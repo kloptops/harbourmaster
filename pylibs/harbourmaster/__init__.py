@@ -45,7 +45,7 @@ from .source import (
 
 from .hardware import (
     hardware_features,
-    os_info,
+    device_info,
     )
 
 from .harbour import (
