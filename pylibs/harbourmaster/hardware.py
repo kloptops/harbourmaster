@@ -42,7 +42,7 @@ def file_exists(file_name):
 def device_info():
     if HM_TESTING:
         return {
-            'system': platform.system(),
+            'name': platform.system(),
             'version': platform.release(),
             'device': 'PC',
             }
