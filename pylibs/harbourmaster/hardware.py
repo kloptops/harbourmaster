@@ -2,6 +2,7 @@
 # System imports
 import datetime
 import json
+import math
 import pathlib
 import platform
 import re
@@ -81,22 +82,24 @@ def hardware_features():
     device = device_info()
     hardware = {
         'analogsticks': 2,
-        'resolution': '640x480',
+        'resolution': (640, 480),
         'device': 'unknown',
         'joystick': 'unknown',
         'hotkey': None,
+        'features': [],
         }
 
     if file_exists('/dev/input/by-path/platform-ff300000.usb-usb-0:1.2:1.0-event-joystick'):
         # RG351P/M
         hardware['joystick'] = "03000000091200000031000011010000"
-        hardware['device'] = "anbernic"
-        hardware['resolution'] = '480x320'
+        hardware['device'] = "rg351p"
+        hardware['resolution'] = (480, 320)
 
         if file_exists('/boot/rk3326-rg351v-linux.dtb') or safe_cat("/storage/.config/.OS_ARCH").strip().casefold() == "rg351v":
             # RG351V
+            hardware['device'] = "rg351v"
             hardware['analogsticks'] = 1
-            hardware['resolution'] = '640x480'
+            hardware['resolution'] = (640, 480)
 
     elif file_exists('/dev/input/by-path/platform-odroidgo2-joypad-event-joystick'):
         if "190000004b4800000010000001010000" in safe_cat('/etc/emulationstation/es_input.cfg'):
@@ -111,12 +114,12 @@ def hardware_features():
 
             hardware['device'] = "rk2020"
 
-        hardware['resolution'] = '480x320'
+        hardware['resolution'] = (480, 320)
         hardware['analogsticks'] = 1
 
     elif file_exists('/dev/input/by-path/platform-odroidgo3-joypad-event-joystick'):
-        hardware['device'] = "190000004b4800000011000000010000"
-        hardware['param_device'] = "ogs"
+        hardware['joystick'] = "190000004b4800000011000000010000"
+        hardware['device'] = "ogs"
 
         if (
                 safe_cat('/etc/emulationstation/es_input.cfg').strip().casefold() == "arkos" and
@@ -125,9 +128,9 @@ def hardware_features():
 
         if file_exists('/opt/.retrooz/device'):
             hardware['device'] = safe_cat("/opt/.retrooz/device").strip().casefold()
-            if "rgb10max2native" in hardware['param_device']:
+            if "rgb10max2native" in hardware['device']:
                 hardware['device'] = "rgb10maxnative"
-            if "rgb10max2top" in hardware['param_device']:
+            if "rgb10max2top" in hardware['device']:
                 hardware['device'] = "rgb10max2top"
 
     elif file_exists('/dev/input/by-path/platform-gameforce-gamepad-event-joystick'):
@@ -139,10 +142,21 @@ def hardware_features():
         hardware['joystick'] = "190000004b4800000111000000010000"
         hardware['device']   = device['device'].casefold()
         if device['device'].casefold() in ('rg552'):
-            hardware['resolution'] = '1920x1152'
+            hardware['resolution'] = (1920, 1152)
+
+        hardware['features'].append('power')
 
     ## TODO: figure out features based on OS & Hardware.
-    hardware['features'] = []
+    if hardware['resolution'][0] < 640:
+        hardware['features'].append('lowres')
+
+    if hardware['resolution'][0] > 640:
+        hardware['features'].append('hires')
+
+    gcd = math.gcd(hardware['resolution'][0], hardware['resolution'][1])
+
+    hardware['features'].append(f"{hardware['resolution'][0] // gcd}:{hardware['resolution'][1] // gcd}")
+    hardware['features'].append(f"{hardware['resolution'][0]}x{hardware['resolution'][1]}")
 
     return hardware
 
