@@ -364,7 +364,7 @@ def analyse_port(file_name, all_data, state):
                 md5sum = hash_text(fh.read())
                 # print(script, md5sum)
                 if md5sum not in all_data['md5']:
-                    all_data['md5'] = script
+                    all_data['md5'][md5sum] = script
 
         if port_info_file is not None:
             with zf.open(port_info_file, "r") as fh:
