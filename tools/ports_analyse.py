@@ -415,6 +415,20 @@ def analyse_ports(root_path, all_data, state):
 
 
 def git_rewind(root_path, all_data, state):
+    month_to_num = {
+        'jan': 1,
+        'feb': 2,
+        'mar': 3,
+        'apr': 4,
+        'may': 5,
+        'jun': 6,
+        'jul': 7,
+        'aug': 8,
+        'sep': 9,
+        'oct': 10,
+        'nov': 11,
+        'dec': 12,
+        }
     commits = []
 
     commit_ids = []
@@ -427,9 +441,12 @@ def git_rewind(root_path, all_data, state):
 
         commit_ids.append(commit_id)
 
+    all_zips = set()
+
     try:
         counter = 0
         for i, commit_id in enumerate(commit_ids, 1):
+
             if commit_id in state['git']:
                 continue
 
@@ -449,6 +466,27 @@ def git_rewind(root_path, all_data, state):
         pass
 
     subprocess.check_output(['git', 'checkout', 'main'])
+
+    for sub_file in root_path.glob('*.zip'):
+        first_date = None
+        last_date = None
+
+        zip_name = clean_name(sub_file)
+
+        if zip_name in ('portmaster.zip', 'fallout.1.zip', 'alephone.zip'):
+            continue
+
+        for line in subprocess.check_output(['git', 'log', '--', sub_file.name]).decode('utf-8').split('\n'):
+            match = re.match(r'Date:\s+\w+ (\w+) (\d+) \d+:\d+:\d+ (\d+)', line, re.I)
+            if not match:
+                continue
+
+            first_date = f"{match.group(3)}-{month_to_num[match.group(1).casefold()]:02d}-{int(match.group(2)):02d}"
+            if last_date is None:
+                last_date = first_date
+
+        print(f"{zip_name}: {first_date} - {last_date}")
+        all_data['ports'][zip_name]['date'] = [first_date, last_date]
 
 def main():
     ## The local portmaster repo
