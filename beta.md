@@ -30,6 +30,10 @@ To install the beta download the PortMaster.zip from the link above, unzip it an
 
 If your CFW is not listed above, it will be in one of the above locations.
 
+# Things to know
+
+Currently it wont auto update, for now that is disabled. If you decide you'd like to go back you can just delete your PortMaster folder and download the latest version from the PortMaster repo.
+
 # Feedback
 
 Please direct all feedback to the #portmaster-lounge channel in the [AmberELEC discord server](https://discord.com/invite/R9Er7hkRMe).
