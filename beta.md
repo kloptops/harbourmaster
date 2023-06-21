@@ -23,7 +23,7 @@ To install the beta download the PortMaster.zip from the link above, unzip it an
 | CFW          | Location               |
 |--------------|------------------------|
 | AmberElec    | /storage/roms/ports/   |
-| ArkOS        | /opt/system/Tools/     |
+| ArkOS        | /roms(or roms2)/Tools/ |
 | JELOS        | /storage/roms/ports/   |
 | TheRA        | /opt/tools/            |
 | UnofficialOS | /storage/roms/ports/   |
