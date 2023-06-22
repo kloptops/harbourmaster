@@ -823,6 +823,26 @@ class HarbourMaster():
 
             return self._install_port(download_info)
 
+        # Special case for a local file.
+        if port_name.startswith('./') or port_name.startswith('../') or port_name.startswith('/'):
+            port_file = Path(port_name)
+            if not port_file.is_file():
+                logger.error(f"Unable to find local file {port_name} for installation.")
+                return 255
+
+            md5_result = hash_file(port_file)
+            port_info = port_info_load({})
+
+            port_info['name'] = name_cleaner(port_file.name)
+            port_info['zip_file'] = port_file
+            port_info['status'] = {
+                'source': 'file',
+                'md5': md5_result,
+                'status': 'downloaded',
+                }
+
+            return self._install_port(port_info)
+
         if '/' in port_name:
             repo, port_name = port_name.split('/', 1)
         else:

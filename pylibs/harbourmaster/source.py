@@ -491,7 +491,7 @@ class GitHubRepoV1(GitHubRawReleaseV1):
 
         zip_info = port_info_load({})
 
-        zip_info['name'] = port_name
+        zip_info['name'] = name_cleaner(port_name)
         zip_info['status'] = {
             'source': self._config['name'],
             'md5':    md5_result[0],
@@ -549,7 +549,7 @@ def raw_download(save_path, file_url, callback=None):
 
     zip_info = port_info_load({})
 
-    zip_info['name'] = zip_file.name
+    zip_info['name'] = name_cleaner(zip_file.name)
     zip_info['zip_file'] = zip_file
     zip_info['status'] = {
         'source': 'url',

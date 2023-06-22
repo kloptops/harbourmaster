@@ -339,6 +339,7 @@ def do_install(hm, argv):
     {command} install pm/Half-Life.zip            # Install specifically from Portmaster repo
     {command} install klops/Half-Life.zip         # Install specifically from Kloptops repo
     {command} install https://example.com/example_port.zip # Download a port from a url
+    {command} install ./Half-Life.zip             # Install port from local file
     """
     if len(argv) == 0:
         cprint("Missing arguments.")
