@@ -64,7 +64,7 @@ def port_info_load(raw_info, source_name=None, do_default=False):
         elif Path(raw_info).is_file():
             source_name = raw_info
 
-            with open(rawinfo, 'r') as fh:
+            with open(raw_info, 'r') as fh:
                 info = json_safe_load(fh)
                 if info is None or not isinstance(info, dict):
                     if do_default:
@@ -201,7 +201,7 @@ def port_info_load(raw_info, source_name=None, do_default=False):
 @timeit
 def port_info_merge(port_info, other):
     if isinstance(other, (str, pathlib.PurePath)):
-        other_info = port_info_parse(other)
+        other_info = port_info_load(other)
     elif isinstance(other, dict):
         other_info = other
     else:
