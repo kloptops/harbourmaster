@@ -58,6 +58,26 @@ DEFAULT_CONFIG_DATA = {
     }
 
 ################################################################################
+## Config stuff.
+HM_GENRES = [
+    "action",
+    "adventure",
+    "arcade",
+    "casino/card",
+    "fps",
+    "platformer",
+    "puzzle",
+    "racing",
+    "rhythm",
+    "rpg",
+    "simulation",
+    "sports",
+    "strategy",
+    "visual novel",
+    "other",
+    ]
+
+################################################################################
 ## Utils
 def add_unique(items, item):
     if isinstance(items, list) and item not in items:
@@ -119,7 +139,8 @@ def clean_name(file_name, attr='name'):
     else:
         name = str(file_name)
 
-    return name.lower().replace(" ", ".").replace("..", ".")
+    temp = re.sub(r'[^a-zA-Z0-9 _\-\.]+', '', name.strip().casefold())
+    return re.sub(r'\.{2,}', '.', temp)
 
 
 def delete_from_zip(zip_name, *files_to_delete):
@@ -135,7 +156,6 @@ PORT_INFO_ROOT_ATTRS = {
     'items': None,
     'items_opt': None,
     'attr': {},
-    'status': None,
     }
 
 PORT_INFO_ATTR_ATTRS = {
@@ -147,7 +167,7 @@ PORT_INFO_ATTR_ATTRS = {
     'image': {},
     'rtr': False,
     'runtime': None,
-    'reqs': {},
+    'reqs': [],
     }
 
 
@@ -228,6 +248,11 @@ def port_info_load(raw_info, source_name=None, do_default=False):
         if info.get('attr', {}).get('runtime', None) == "blank":
             info['attr']['runtime'] = None
 
+    if isinstance(info.get('attr', {}).get('reqs', None), dict):
+        info['attr']['reqs'] = [
+            key
+            for key in info['attr']['reqs']]
+
     # This strips out extra stuff
     port_info = {}
 
@@ -248,19 +273,23 @@ def port_info_load(raw_info, source_name=None, do_default=False):
         while i < len(port_info['items']):
             item = port_info['items'][i]
             if item.startswith('/'):
-                print(f"- port_info['items'] contains bad name {item}")
+                print(f"port_info['items'] contains bad name {item!r}")
                 del port_info['items'][i]
                 continue
 
             if item.startswith('../'):
-                print(f"- port_info['items'] contains bad name {item}")
+                print(f"port_info['items'] contains bad name {item!r}")
                 del port_info['items'][i]
                 continue
 
             if '/../' in item:
-                print(f"- port_info['items'] contains bad name {item}")
+                print(f"port_info['items'] contains bad name {item!r}")
                 del port_info['items'][i]
                 continue
+
+            if item == "":
+                print(f"port_info['items'] contains bad name {item!r}")
+                del port_info['items'][i]
 
             i += 1
 
@@ -269,21 +298,36 @@ def port_info_load(raw_info, source_name=None, do_default=False):
         while i < len(port_info['items_opt']):
             item = port_info['items_opt'][i]
             if item.startswith('/'):
-                print(f"- port_info['items_opt'] contains bad name {item}")
+                logger.error(f"port_info['items_opt'] contains bad name {item}")
                 del port_info['items_opt'][i]
                 continue
 
             if item.startswith('../'):
-                print(f"- port_info['items_opt'] contains bad name {item}")
+                logger.error(f"port_info['items_opt'] contains bad name {item}")
                 del port_info['items_opt'][i]
                 continue
 
             if '/../' in item:
-                print(f"- port_info['items_opt'] contains bad name {item}")
-                del port_info['items'][i]
+                logger.error(f"port_info['items_opt'] contains bad name {item}")
+                del port_info['items_opt'][i]
                 continue
 
+            if item == "":
+                logger.error(f"port_info['items'] contains bad name {item!r}")
+                del port_info['items_opt'][i]
+
             i += 1
+
+        if port_info['items_opt'] == []:
+            port_info['items_opt'] = None
+
+    if isinstance(port_info['attr'].get('genres', None), list):
+        genres = port_info['attr']['genres']
+        port_info['attr']['genres'] = []
+
+        for genre in genres:
+            if genre.casefold() in HM_GENRES:
+                port_info['attr']['genres'].append(genre.casefold())
 
     return port_info
 

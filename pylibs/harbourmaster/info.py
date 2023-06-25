@@ -76,7 +76,7 @@ def port_info_load(raw_info, source_name=None, do_default=False):
             if source_name is None:
                 source_name = "<str>"
 
-            logger.error(f'Unable to load port_info from {source_name!r}: {raw_inf!r}')
+            logger.error(f'Unable to load port_info from {source_name!r}: {raw_info!r}')
             if do_default:
                 info = {}
             else:
@@ -89,7 +89,7 @@ def port_info_load(raw_info, source_name=None, do_default=False):
         info = raw_info
 
     else:
-        logger.error(f'Unable to load port_info from {source_name!r}: {raw_in!r}')
+        logger.error(f'Unable to load port_info from {source_name!r}: {raw_info!r}')
         if do_default:
             info = {}
         else:
