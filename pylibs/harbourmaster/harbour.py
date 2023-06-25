@@ -517,9 +517,12 @@ class HarbourMaster():
             del port_info['changed']
 
             if changed:
-                logger.debug(f"Dumping {str(ports_files[port_name])}: {port_info}")
-                with ports_files[port_name].open('wt') as fh:
-                    json.dump(port_info, fh, indent=4)
+                if ports_files[port_name].parent.is_file():
+                    logger.debug(f"Dumping {str(ports_files[port_name])}: {port_info}")
+                    with ports_files[port_name].open('wt') as fh:
+                        json.dump(port_info, fh, indent=4)
+                else:
+                    logger.debug(f"Unable to dump {str(ports_files[port_name])}: {port_info}")
 
     def port_info_attrs(self, port_info):
         runtime_fix = {
@@ -735,7 +738,7 @@ class HarbourMaster():
         port_info['status']['status'] = 'Installed'
 
         if port_info_file is None:
-            port_info_file = self.ports_dir / dirs[0] / (download_info['zip_file'].stem + '.port.json')
+            port_info_file = self.ports_dir / dirs[0] / (port_info['name'] + '.port.json')
 
         port_info['files'] = {
             'port.json': str(port_info_file.relative_to(self.ports_dir)),
