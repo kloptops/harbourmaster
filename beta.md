@@ -1,4 +1,4 @@
-# PortMaster w/ HarbourMaster - Public Beta v0.4.3
+# PortMaster w/ HarbourMaster - Public Beta v0.4.4
 
 PortMaster is a convenient script designed to facilitate the downloading and installation of ports for handheld devices. As the number of available ports has increased, the original interface has become progressively cumbersome. However, we have been diligently working on developing an enhanced backend to transform PortMaster into a more advanced frontend, ultimately incorporating a graphical user interface (GUI) which will make showcasing, discovery and installation of ports.
 
@@ -33,6 +33,8 @@ If your CFW is not listed above, it will be in one of the above locations.
 # Things to know
 
 Currently it wont auto update, for now that is disabled. If you decide you'd like to go back you can just delete your PortMaster folder and download the latest version from the PortMaster repo.
+
+However PortMaster can now update the HarbourMaster backend by going to `Settings -> Upgrade HarbourMaster`
 
 # Feedback
 
