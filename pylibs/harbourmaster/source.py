@@ -259,10 +259,10 @@ class PortMasterV1(GitHubRawReleaseV1):
         ## Uncomment after images has been added to PortMaster.
         # if 'images.zip' not in self._data:
         #     return
-        # images_md5 = self._data['images.zip.md5']['url']
-        # images_url = self._data['images.zip']['url']
-        images_url_md5 = "https://raw.githubusercontent.com/kloptops/pugwash/main/pugwash/data/images.zip.md5"
-        images_url_zip = "https://raw.githubusercontent.com/kloptops/pugwash/main/pugwash/data/images.zip"
+        images_url_md5 = self._data['images.zip.md5']['url']
+        images_url_zip = self._data['images.zip']['url']
+        # images_url_md5 = "https://raw.githubusercontent.com/kloptops/pugwash/main/pugwash/data/images.zip.md5"
+        # images_url_zip = "https://raw.githubusercontent.com/kloptops/pugwash/main/pugwash/data/images.zip"
 
         images_md5 = fetch_text(images_url_md5).strip()
         if self._images_md5 is None or images_md5 != self._images_md5:
