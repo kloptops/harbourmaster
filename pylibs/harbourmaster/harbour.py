@@ -71,6 +71,12 @@ class HarbourMaster():
         self.ports = []
         self.utils = []
 
+        if self.callback:
+            self.callback.messages_begin()
+
+        if self.callback:
+            self.callback.message("Loading...")
+
         if not self.cfg_dir.is_dir():
             self.cfg_dir.mkdir(0o755, parents=True)
 
@@ -81,6 +87,9 @@ class HarbourMaster():
         self.load_sources()
 
         self.load_ports()
+
+        if self.callback:
+            self.callback.messages_end()
 
     @timeit
     def __ports_info(self):
@@ -94,6 +103,9 @@ class HarbourMaster():
     def load_sources(self):
         source_files = list(self.cfg_dir.glob('*.source.json'))
         source_files.sort()
+
+        if self.callback:
+            self.callback.message("- Loading Sources.")
 
         check_keys = {'version': None, 'prefix': None, 'api': HM_SOURCE_APIS, 'name': None, 'last_checked': None, 'data': None}
         for source_file in source_files:
@@ -248,6 +260,9 @@ class HarbourMaster():
         file_renames = {}
 
         ports_info = self.__ports_info()
+
+        if self.callback:
+            self.callback.message("- Loading Ports.")
 
         """
         This is a bit of a heavy function but it does the following.
@@ -738,7 +753,7 @@ class HarbourMaster():
         port_info['status']['status'] = 'Installed'
 
         if port_info_file is None:
-            port_info_file = self.ports_dir / dirs[0] / (port_info['name'] + '.port.json')
+            port_info_file = self.ports_dir / dirs[0] / (port_info['name'].rsplit('.', 1)[0] + '.port.json')
 
         port_info['files'] = {
             'port.json': str(port_info_file.relative_to(self.ports_dir)),

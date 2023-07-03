@@ -411,6 +411,12 @@ class Callback:
     def progress(self, message, amount, total=None):
         pass
 
+    def messages_begin(self):
+        pass
+
+    def messages_end(self):
+        pass
+
     def message(self, message):
         pass
 
@@ -419,6 +425,7 @@ class Callback:
 
 
 __all__ = (
+    'Callback',
     'add_dict_list_unique',
     'add_list_unique',
     'add_pm_signature',
