@@ -831,7 +831,7 @@ class FontManager():
 
         sdl2.SDL_SetTextureAlphaMod(texture.tx, alpha or 255)
         color = color or (255,255,255)
-        sdl2.SDL_SetTextureColorMod(texture.tx, *color)
+        sdl2.SDL_SetTextureColorMod(texture.tx, *color[:3])
 
         for c in text:
             src = cmap.get(c, self.blank)
