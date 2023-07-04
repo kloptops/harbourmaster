@@ -1,0 +1,152 @@
+{
+    "#base": {
+        "font": "DejaVuSans.ttf"
+    },
+    "#pallet": {
+        "background": [200, 200, 200, 255]
+    },
+    "#resources": {
+        "nine.png": {
+            "button": [0,0,320,167],
+            "dialog": [0,169,320,161],
+            "box": [0,332,320,106],
+            "boxfill": [0,439,320,106],
+            "arrow_r": [11,559,42,42],
+            "arrow_l": [11,559,42,42,1],
+            "circle": [64,547,62,62],
+            "bar": [373,225,222,18]
+        },
+        "buttons.png": {
+            "_A":        [  0,   0, 180, 180],
+            "_B":        [180,   0, 180, 180],
+            "_X":        [360,   0, 180, 180],
+            "_Y":        [540,   0, 180, 180],
+            "start":     [  0, 180, 360, 180],
+            "select":    [360, 180, 360, 180],
+            "_L":        [  0, 360, 270, 180],
+            "_R":        [270, 360, 270, 180],
+            "unchecked": [720,   0, 180, 180],
+            "checked":   [900,   0, 180, 180],
+            "more":      [720, 180, 180, 180],
+            "left":      [900, 180,  90, 180],
+            "right":     [990, 180,  90, 180],
+            "up":        [900, 360, 180,  90],
+            "down":      [900, 450, 180,  90]
+        }
+    },
+    "#elements": {
+        "background": {
+            "area": [0.0, 0.0, 1.0, 1.0],
+            "fill": "background",
+            "borderx": 8,
+            "fontsize": 36,
+            "fontcolor": [0, 0, 0]
+        },
+        "button_bar": {
+            "area": [0.60, 0.93, 0.95, 1.0],
+            "fontsize": 16,
+            "fontcolor": [0, 0, 0],
+            "bar": [
+                "_A", "Install",
+                "_B", "Back",
+                "_X", "Filter"
+            ]
+        }
+    },
+    "ports_list": {
+        "#element:background": {},
+
+        "port_info": {
+            "area": [0.52, 0.05, 0.95, 0.95],
+            "fill": [230, 230, 230],
+            "roundness": 20,
+            "thickness": 6,
+            "border": 8,
+            "fontsize": 24,
+            "fontcolor": [0,0,0],
+            "wrap": true
+        },
+
+        "ports_list": {
+            "area": [0.1, 0.1, 0.30, 0.75],
+            "borderx": 14,
+            "roundness": 10,
+            "fontsize": 12,
+            "fontcolor": [0, 0, 0],
+            "select": [100, 100, 100]
+        },
+
+        "port_desc": {
+            "area": [0.1, 0.75, 0.8, 0.9],
+            "fontsize": 24,
+            "fontcolor": [0, 0, 0],
+            "autoscroll": 0,
+            "wrap": true
+        },
+
+        "port_title": {
+            "area": [0.00, 0.00, 1.00, 0.10],
+            "fontsize": 24,
+            "fontcolor": [0, 0, 0],
+            "autoscroll": 0,
+            "wrap": true
+        },
+
+        "port_image": {
+            "area": [0.45, 0.1, 1.0, 0.65],
+            "image": "no-image.jpg"
+        },
+
+        "#element:button_bar": {}
+    },
+
+    "main_menu": {
+        "#element:background": {},
+
+        "option_list": {
+            "area": [0.25, 0.25, 0.75, 0.75],
+            "fill": [230, 230, 230],
+            "border": 8,
+            "fontsize": 30,
+            "fontcolor": [0, 0, 0],
+            "select": [78, 78, 78],
+
+            "list": [
+                "Install Port",
+                "Uninstall Port",
+                "Option Menu",
+                "Exit"
+            ],
+
+            "info": [
+                "Install a new port onto your device.",
+                "Remove a port that has been installed onto your device",
+                "Update port data including the list of ports and screenshots.",
+                "Exit Portmaster and return to your game list."
+            ],
+
+            "thickness": 6
+        },
+
+        "#element:button_bar": {}
+    },
+
+    "message_window": {
+        "#element:background": {},
+
+        "message_text": {
+            "area": [0.05, 0.05, 0.95, 0.95],
+            "fill": [230,230,230],
+            "roundness": 20,
+            "thickness": 6,
+            "border": 8,
+            "fontsize": 24,
+            "fontcolor": [0,0,0],
+            "align": "topleft",
+            "text": "",
+            "wrap": true
+        },
+
+        "#element:button_bar": {}
+    }
+}

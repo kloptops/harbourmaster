@@ -64,6 +64,9 @@ class GitHubRawReleaseV1(BaseSource):
     def auto_update(self):
         if self._wants_update is not None:
             cprint(f"<b>{self._config['name']}</b>: {self._wants_update}")
+            if self._hm.callback is not None:
+                self._hm.callback.message(f"{self._config['name']}: {self._wants_update}")
+
             self.update()
             self._wants_update = None
 
@@ -121,6 +124,8 @@ class GitHubRawReleaseV1(BaseSource):
 
     def update(self):
         cprint(f"<b>{self._config['name']}</b>: updating")
+        if self._hm.callback is not None:
+            self._hm.callback.message(f"{self._config['name']}: updating")
 
         # Scrap the rest
         self._clear()
@@ -131,9 +136,14 @@ class GitHubRawReleaseV1(BaseSource):
 
         if self._did_update:
             cprint(f"- <b>{self._config['name']}</b>: up to date already.")
+            if self._hm.callback is not None:
+                self._hm.callback.message(f"- {self._config['name']}: up to date already")
+
             return
 
         cprint(f"- <b>{self._config['name']}</b>: Fetching latest ports")
+        if self._hm.callback is not None:
+            self._hm.callback.message(f"- {self._config['name']}: Fetching latest ports")
         data = fetch_json(self._config['url'])
         if data is None:
             return
@@ -177,8 +187,10 @@ class GitHubRawReleaseV1(BaseSource):
         self.save()
         self._did_update = True
         cprint(f"- <b>{self._config['name']}:</b> Done.")
+        if self._hm.callback is not None:
+            self._hm.callback.message(f"- {self._config['name']}: Done.")
 
-    def download(self, port_name, temp_dir=None, md5_result=None, callback=None):
+    def download(self, port_name, temp_dir=None, md5_result=None):
         if md5_result is None:
             md5_result = [None]
 
@@ -210,10 +222,13 @@ class GitHubRawReleaseV1(BaseSource):
 
         md5_source = md5_source.strip().split(' ', 1)[0]
 
-        zip_file = download(temp_dir / port_name, self._data[port_name]['url'], md5_source, callback=callback)
+        zip_file = download(temp_dir / port_name, self._data[port_name]['url'], md5_source, callback=self._hm.callback)
 
         if zip_file is not None:
             cprint("<b,g,>Success!</b,g,>")
+
+            if self._hm.callback is not None:
+                self._hm.callback.message(f"- Success!")
 
         md5_result[0] = md5_source
 
@@ -240,6 +255,9 @@ class PortMasterV1(GitHubRawReleaseV1):
     def _update(self):
 
         cprint(f"- <b>{self._config['name']}</b>: Fetching info")
+        if self._hm.callback is not None:
+            self._hm.callback.message(f"- {self._config['name']}: Fetching info")
+
         # portsmd_url = "https://raw.githubusercontent.com/kloptops/PortMaster/main/ports.md"
         portsmd_url = self._data['ports.md']['url']
         for line in fetch_text(portsmd_url).split('\n'):
@@ -267,7 +285,7 @@ class PortMasterV1(GitHubRawReleaseV1):
         images_md5 = fetch_text(images_url_md5).strip()
         if self._images_md5 is None or images_md5 != self._images_md5:
             logger.debug(f"images_md5={images_md5}, self.images_md5={self._images_md5}")
-            images_zip = download(self._hm.temp_dir / "images.zip", images_url_zip, images_md5, None)
+            images_zip = download(self._hm.temp_dir / "images.zip", images_url_zip, images_md5, callback=self._hm.callback)
             if images_zip is None:
                 logger.debug(f"Unable to download {images_url_zip}")
                 return
@@ -360,9 +378,9 @@ class PortMasterV1(GitHubRawReleaseV1):
 
         return port_info
 
-    def download(self, port_name, temp_dir=None, callback=None):
+    def download(self, port_name, temp_dir=None):
         md5_result = [None]
-        zip_file = super().download(port_name, temp_dir, md5_result, callback=callback)
+        zip_file = super().download(port_name, temp_dir, md5_result)
 
         if zip_file is None:
             return None
@@ -416,6 +434,9 @@ class GitHubRepoV1(GitHubRawReleaseV1):
         git_url = f"https://api.github.com/repos/{user_name}/{repo_name}/git/trees/{branch_name}?recursive=true"
 
         cprint(f"- <b>{self._config['name']}</b>: Fetching latest ports")
+        if self._hm.callback is not None:
+            self._hm.callback.message(f"- {self._config['name']}: Fetching latest ports")
+
         git_info = fetch_json(git_url)
         if git_info is None:
             return None

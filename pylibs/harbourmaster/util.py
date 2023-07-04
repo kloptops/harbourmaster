@@ -30,7 +30,7 @@ def json_safe_loads(*args):
     try:
         return json.loads(*args)
     except json.JSONDecodeError as err:
-        logger.error(f"Unable to load json_data {err.doc}:{err.pos}")
+        logger.error(f"Unable to load json_data {err.doc}:{err.pos}:{err.lineno}:{err.colno}")
         return None
 
 
@@ -38,7 +38,7 @@ def json_safe_load(*args):
     try:
         return json.load(*args)
     except json.JSONDecodeError as err:
-        logger.error(f"Unable to load json_data {err.doc}:{err.pos}")
+        logger.error(f"Unable to load json_data {err.doc}:{err.pos}:{err.lineno}:{err.colno}")
         return None
 
 
@@ -228,6 +228,8 @@ def download(file_name, file_url, md5_source=None, md5_result=None, callback=Non
     md5 = hashlib.md5()
 
     cprint(f"Downloading <b>{file_url!r}</b> - <b>{total_length_mb}</b>")
+    if callback is not None:
+        callback.message(f"Downloading {file_url!r} - ({total_length_mb})")
 
     length = 0
     with file_name.open('wb') as fh:
@@ -237,7 +239,7 @@ def download(file_name, file_url, md5_source=None, md5_result=None, callback=Non
             length += len(data)
 
             if callback is not None:
-                callback.progress("Downloading file.", length, total_length)
+                callback.progress("Downloading file.", nice_size(length), total_length_mb)
 
             if total_length is None:
                 sys.stdout.write(f"\r[{'?' * 40}] - {nice_size(length)} / {total_length_mb} ")
@@ -249,7 +251,7 @@ def download(file_name, file_url, md5_source=None, md5_result=None, callback=Non
         cprint("\n")
 
         if callback is not None:
-            callback.progress("Downloading file.", length, total_length)
+            callback.progress("Downloading file.", nice_size(length), total_length_mb)
 
     md5_file = md5.hexdigest()
     if md5_source is not None:

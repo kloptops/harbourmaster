@@ -618,11 +618,10 @@ class HarbourMaster():
 
     def port_images(self, port_name):
         for source_prefix, source in self.sources.items():
-            if port_name.casefold() in source.images:
+            if name_cleaner(port_name) in source.images:
                 return {
-                    image_type: (source._image_dir / image_file)
-                    for image_type, image_file in source.images[port_name.casefold()]
-                    }
+                    image_type: (source._images_dir / image_file)
+                    for image_type, image_file in source.images[name_cleaner(port_name)].items()}
 
         return None
 
@@ -812,7 +811,7 @@ class HarbourMaster():
                         self.callback.message(f"Downloading runtime {runtime}.")
 
                     try:
-                        runtime_download = source.download(runtime, temp_dir=self.libs_dir, callback=self.callback)
+                        runtime_download = source.download(runtime, temp_dir=self.libs_dir)
 
                     except Exception as err:
                         ## We need to catch any errors and delete the file if it fails,
@@ -874,7 +873,7 @@ class HarbourMaster():
             if source.clean_name(port_name) not in source.ports:
                 continue
 
-            download_info = source.download(source.clean_name(port_name), callback=self.callback)
+            download_info = source.download(source.clean_name(port_name))
 
             if download_info is None:
                 return 255

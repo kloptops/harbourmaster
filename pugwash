@@ -1,0 +1,590 @@
+#!/usr/bin/env python3
+
+import hashlib
+import os
+import platform
+import shutil
+import sys
+import textwrap
+import zipfile
+
+from pathlib import Path
+
+################################################################################
+## This speeds up harbourmaster from 4-5 seconds to 1-2 seconds.
+##
+## Insert our extra modules.
+PYLIB_ZIP     = Path(__file__).parent / 'pylibs.zip'
+PYLIB_ZIP_MD5 = Path(__file__).parent / 'pylibs.zip.md5'
+PYLIB_PATH    = Path(__file__).parent / 'pylibs'
+
+if platform.system() in ('Darwin', 'Windows'):
+    EXLIB_PATH = Path(__file__).parent / 'exlibs'
+    sys.path.insert(0, str(EXLIB_PATH))
+    sys.path.insert(0, str(PYLIB_PATH))
+
+else:
+    if PYLIB_ZIP.is_file():
+        if PYLIB_PATH.is_dir():
+            print("- removing old pylibs.")
+            shutil.rmtree(PYLIB_PATH)
+
+        PYLIB_PATH.mkdir(0o755)
+        print("- extracting new pylibs.")
+        with zipfile.ZipFile(PYLIB_ZIP, 'r') as zf:
+            zf.extractall(PYLIB_PATH)
+
+        md5_check = hashlib.md5()
+        with PYLIB_ZIP.open('rb') as fh:
+            while True:
+                data = fh.read(1024 * 1024)
+                if len(data) == 0:
+                    break
+
+                md5_check.update(data)
+
+        with PYLIB_ZIP_MD5.open('wt') as fh:
+            fh.write(md5_check.hexdigest())
+
+        print("- recorded pylibs.zip.md5")
+
+        del md5_check
+
+        print("- removing pylibs.zip")
+        PYLIB_ZIP.unlink()
+
+    sys.path.insert(0, str(PYLIB_PATH))
+
+################################################################################
+## Now load the stuff we include
+import utility
+import harbourmaster
+import requests
+
+import sdl2
+import sdl2.ext
+
+import pySDL2gui
+
+from utility import cprint, do_cprint_output
+from loguru import logger
+
+from harbourmaster import (
+    HarbourMaster,
+    make_temp_directory,
+    )
+
+
+LOG_FILE = harbourmaster.HM_TOOLS_DIR / "PortMaster" / "pugwash.txt"
+if LOG_FILE.parent.is_dir():
+    LOG_FILE_HANDLE = logger.add(LOG_FILE, level="DEBUG", backtrace=True, diagnose=True)
+
+
+"""
+-- General State Machine --
+
+Main:
+  -> Install Menu
+  -> Uninstall Menu -> Ports List [Installed filter]
+  -> Options
+  -> Quit
+
+Install Menu:
+  -> All Ports    -> Port List [No filter]
+  -> Ready To Run -> Port List [RTR filter]
+  -> Genres       -> Port List [Genres filters]
+  -> Back
+
+Port List:
+  -> List of Ports
+    -> Inspect
+    -> Back
+
+Options:
+  -> TBD.
+  -> Back
+
+Inspect:
+  -> Install/Uninstall
+  -> Back
+
+Install/Uninstall:
+  -> Message Screen
+  -> Back
+
+"""
+def theme_apply(gui, section_data, base_data, elements):
+    new_data = {}
+
+    for region_name, region_data in section_data.items():
+        if region_name == "#base":
+            base_data = pySDL2gui.deep_merge(base_data, region_data)
+            continue
+
+        elif region_name.startswith("#element:"):
+            element_name = region_name.split(':', 1)[1]
+            if element_name not in elements:
+                print(f"Error: Unknown element {element_name}")
+                continue
+
+            new_data[element_name] = pySDL2gui.deep_merge(base_data, pySDL2gui.deep_merge(elements[element_name], region_data))
+            continue
+
+        new_data[region_name] = pySDL2gui.deep_merge(base_data, region_data)
+
+    return new_data
+
+def theme_load(gui, theme_file):
+    print(f"Loading theme {theme_file}")
+
+    with open(theme_file, 'r') as fh:
+        theme_data = harbourmaster.json_safe_load(fh)
+
+    if theme_data is None:
+        raise ValueError(f"Unable to load theme {theme_file}")
+
+    base_data = {}
+    elements = {}
+    sections = {}
+
+    for section_name, section_data in theme_data.items():
+        if section_name.startswith('#'):
+            if section_name == "#base":
+                print("- loading base_data")
+                base_data = section_data
+
+            elif section_name == "#resources":
+                print("- loading resources:")
+                for resource_name, resource_data in section_data.items():
+                    print(f"  - loading {resource_name}")
+                    gui.images.load_atlas(resource_name, resource_data)
+
+            elif section_name == "#elements":
+                print("- loading elements:")
+                for element_name, element_data in section_data.items():
+                    elements[element_name] = element_data
+
+            elif section_name == "#pallet":
+                print("- loading pallet:")
+
+                for pallet_name, pallet_value in section_data.items():
+                    gui.pallet[pallet_name] = pallet_value
+
+        else:
+            print(f"- loading section {section_name}")
+            sections[section_name] = theme_apply(gui, section_data, base_data, elements)
+
+    return sections
+
+class BaseScene:
+    """
+    Scenes handle drawing / logic, different scenes can be transitioned to and or layered.
+
+    Only the top layer receives events.
+    """
+
+    def __init__(self, gui):
+        self.gui = gui
+        self.tags = {}
+        self.regions = []
+
+    def load_regions(self, section, required_tags):
+        temp_required_tags = list(required_tags)
+        for region_name, region_data in self.gui.theme_data[section].items():
+            print(f"Loading region {region_name}: {region_data}")
+            region = pySDL2gui.Region(region_data, self.gui)
+
+            region_tag = region_data.get("tag", region_name)
+            if region_tag is not None:
+                self.tags[region_tag] = region
+
+            if region_tag in temp_required_tags:
+                temp_required_tags.remove(region_tag)
+
+            self.regions.append(region)
+
+        if len(temp_required_tags) > 0:
+            logger.error(f"Error: missing one or more tags for section {section}: {', '.join(temp_required_tags)}")
+            raise RuntimeError("Error missing section tag in theme")
+
+    def do_update(self, events):
+        for region in self.regions:
+            # print(f"DRAW {region}")
+            region.update()
+
+        return False
+
+    def do_draw(self):
+        for region in self.regions:
+            # print(f"DRAW {region}")
+            region.draw()
+
+
+class MainMenuScene(BaseScene):
+    def __init__(self, gui):
+        super().__init__(gui)
+
+        self.load_regions("main_menu", ['option_list', ])
+
+        if len(self.tags['option_list'].list) != 4:
+            raise RuntimeError("The main_menu -> option_list.list needs to be 4 elements long")
+
+    def do_update(self, events):
+        super().do_update(events)
+
+        if events.was_pressed('START') or events.was_pressed('A'):
+            selected_option = self.tags['option_list'].selected
+
+            if selected_option == 0:
+                self.gui.push_scene('ports', PortsListScene(self.gui))
+                return True
+
+            if selected_option == 3:
+                self.gui.events.running = False
+                return True
+
+        elif events.was_pressed('B'):
+            self.gui.events.running = False
+            return True
+
+
+class InstallMenuScene(BaseScene):
+    def __init__(self, gui):
+        super().__init__(gui)
+
+
+class PortsListScene(BaseScene):
+    def __init__(self, gui):
+        super().__init__(gui)
+
+        self.load_regions("ports_list", [
+            'ports_list',
+            'port_title',
+            'port_desc',
+            'port_image',
+            ])
+
+        self.update_ports()
+
+    def update_ports(self):
+        self.all_ports = self.gui.hm.list_ports()
+        self.port_list = list(self.all_ports.keys())
+        self.tags['ports_list'].selected = 0
+
+        self.tags['ports_list'].list = [
+            self.all_ports[port_name]['attr']['title']
+            for port_name in self.port_list]
+
+        self.last_port = 1
+
+    def do_update(self, events):
+        super().do_update(events)
+
+        if self.last_port != self.tags['ports_list'].selected:
+            self.last_port = self.tags['ports_list'].selected
+            port_name = self.port_list[self.last_port]
+            port_info = self.all_ports[port_name]
+            self.tags['port_title'].text = port_info['attr']['title']
+            self.tags['port_desc'].text = port_info['attr']['desc']
+            ## TODO: add ready to run, genres, porter, etc.
+            image = self.gui.hm.port_images(port_name)
+            if image is not None:
+                # print(image)
+                image = image.get('screenshot', None)
+
+            if image is None:
+                image = self.gui.resources.find("no-image.jpg")
+
+            self.tags['port_image'].image = self.gui.images.load(image)
+
+        if events.was_pressed('B'):
+            self.gui.pop_scene()
+            return True
+
+        if events.was_pressed('A'):
+            self.last_port = self.tags['ports_list'].selected
+            port_name = self.port_list[self.last_port]
+
+            self.gui.messages_begin()
+            self.gui.hm.install_port(port_name)
+            self.gui.messages_end()
+            return True
+
+class PortDetailScene(BaseScene):
+    def __init__(self, gui):
+        super().__init__(gui)
+
+
+class MessageWindowScene(BaseScene):
+    """
+    This is a scrolling window showing messages for downloading/installing/uninstalling/updating.
+
+    It can have an optional progress bar at the bottom.
+    """
+    def __init__(self, gui):
+        super().__init__(gui)
+
+        self.load_regions("message_window", ['message_text', ])
+
+
+class MessageBoxScene(BaseScene):
+    ...
+
+
+class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
+    TICK_INTERVAL = 1000 // 5
+
+    def __init__(self):
+        # Initialize SDL
+        sdl2.ext.init(
+            joystick=True)
+
+        # Define window dimensions
+        self.display_width = 640
+        self.display_height = 480
+
+        # Get the current display mode
+        display_mode = sdl2.video.SDL_DisplayMode()
+
+        if sdl2.video.SDL_GetCurrentDisplayMode(0, display_mode) != 0:
+            print("Failed to get display mode:", sdl2.SDL_GetError())
+        else:
+            self.display_width = display_mode.w
+            self.display_height = display_mode.h
+            # Print the display width and height
+            print(f"Display size: {self.display_width}x{self.display_height}")
+
+        if harbourmaster.HM_TESTING:
+            self.display_width = 640
+            self.display_height = 480
+            print(f"Forcing size: {self.display_width}x{self.display_height}")
+
+        # Create the window
+        self.window = sdl2.ext.Window("Game UI", size=(self.display_width, self.display_height))
+        self.window.show()
+
+        # Create a renderer for drawing on the window
+        renderer = sdl2.ext.Renderer(self.window, flags=sdl2.SDL_RENDERER_ACCELERATED)
+
+        super().__init__(renderer)
+
+        self.resources.add_path(PYLIB_PATH / "default_theme")
+        # self.gui.resources.add_path(harbourmaster.HM_TOOLS_DIR / "PortMaster" / "pylibs")
+
+        theme_file = self.resources.find("theme.json")
+        if theme_file is None:
+            raise RuntimeError("FUCK IT ALL!")
+
+        self.theme_data = theme_load(self, theme_file)
+
+        self.scenes = [
+            ('root', [MainMenuScene(self)]),
+            ]
+
+        self.callback_messages = []
+        self.callback_progress = None
+        self.message_box_depth = 0
+        self.message_box_scene = None
+
+        self.updated = False
+
+    def run(self):
+        while self.events.running:
+            self.do_loop()
+
+    def do_loop(self, no_delay=False):
+        events = self.events
+        events.handle_events()
+
+        if not events.disable_quit:
+            if events.buttons['START'] and self.events.buttons['BACK']:
+                events.running = False
+                # Quit :D
+                return
+
+        self.do_update()
+        self.do_draw()
+
+        ## TODO: fix it, 30 is approximately 30fps
+        if not no_delay:
+            sdl2.SDL_Delay(30)
+
+    def do_update(self):
+        # Events get handled in reversed order.
+        for scene in reversed(self.scenes[-1][1]):
+            if scene.do_update(self.events):
+                break
+
+    def do_draw(self):
+        # Drawing happens in forwards order
+        # if self.updated:
+            self.renderer.clear()
+
+            for scene in self.scenes[-1][1]:
+                scene.do_draw()
+
+            self.renderer.present()
+            # self.window.refresh()
+
+        # self.updated = False
+
+    def quit(self):
+        # Clean up
+        sdl2.ext.quit()
+
+    def callback_update(self):
+        if self.message_box_scene:
+            messages = self.callback_messages[-15:]
+            if self.callback_progress is not None:
+                messages.append(self.callback_progress)
+
+            self.message_box_scene.tags['message_text'].text = '\n'.join(messages)
+
+            self.do_loop(no_delay=True)
+
+    def progress(self, message, amount, total=None):
+        if message is None:
+            self.callback_progress = None
+
+        elif total is None:
+            self.callback_progress = f"{message} - [{amount}]"
+
+        else:
+            self.callback_progress = f"{message} - [{amount} / {total}]"
+
+        self.callback_update()
+
+    def message(self, message):
+        self.callback_messages.append(message)
+        self.callback_update()
+
+    def message_box(self, message):
+        self.callback_messages.append(message)
+        self.callback_update()
+
+    def messages_begin(self):
+        if self.message_box_depth == 0:
+            self.message_box_scene = MessageWindowScene(self)
+            self.push_scene('messages', self.message_box_scene)
+        self.message_box_depth += 1
+
+    def messages_end(self):
+        self.message_box_depth -= 1
+        if self.message_box_depth <= 0 and self.message_box_scene:
+            self.message_box_depth = 0
+            self.callback_messages.clear()
+            self.message_box_scene = None
+            self.pop_scene()
+
+    ## Scene code.
+    def push_scene(self, name, scene):
+        """
+        Add a scene, if the name is the same as the current layer it is added to it.
+        """
+        if name == self.scenes[-1][0]:
+            logger.debug(f"PUSH SCENE ADD {name}")
+            self.scenes[-1][1].append(scene)
+
+        else:
+            logger.debug(f"PUSH SCENE LAYER {name}")
+            self.scenes.append((name, [scene]))
+
+    def pop_scene(self, name=None):
+        """
+        Remove a single scene, or remove until we get back to scene named "name".
+        """
+        if name is None:
+            # If name is none, just pop the most top scene.
+            if len(self.scenes[-1][1]) > 1:
+                logger.debug(f"POP SCENE REM {self.scenes[-1][0]}")
+
+                self.scenes[-1][1].pop(-1)
+
+            elif len(self.scenes) > 1:
+                logger.debug(f"POP SCENE LAYER {self.scenes[-1][0]}")
+                self.scenes.pop(-1)
+
+        elif name == self.scenes[-1][0]:
+            # If name is the active, scene, just remove a single scene layer from it.
+            logger.debug(f"POP SCENE {name} REM {self.scenes[-1][0]}")
+            if len(self.scenes[-1][1]) > 1:
+                self.scenes[-1][1].pop(-1)
+
+        else:
+
+            while len(self.scenes) > 1:
+                if self.scenes[-1][0] == name:
+                    break
+
+                logger.debug(f"POP SCENE {name} LAYER {self.scenes[-1][0]}")
+
+                self.scenes.pop(-1)
+
+@logger.catch
+def main(argv):
+    global LOG_FILE_HANDLE
+
+    with make_temp_directory() as temp_dir:
+        argv = argv[:]
+
+        config = {
+            'quiet': False,
+            'no-check': False,
+            'debug': False,
+            'no-colour': False,
+            'force-colour': False,
+            'no-log': False,
+            'help': False,
+            }
+
+        i = 1
+        while i < len(argv):
+            if argv[i] == '--':
+                del argv[i]
+                break
+
+            if argv[i].startswith('--'):
+                if argv[i][2:] in config:
+                    config[argv[i][2:]] = True
+                else:
+                    if not config['quiet']:
+                        logger.error(f"unknown argument {argv}")
+
+                del argv[i]
+                continue
+
+            i += 1
+
+        if config['quiet']:
+            logger.remove(0)  # For the default handler, it's actually '0'.
+            logger.add(sys.stderr, level="ERROR")
+        elif config['debug']:
+            logger.remove(0)  # For the default handler, it's actually '0'.
+            logger.add(sys.stderr, level="DEBUG")
+
+        if config['no-log']:
+            logger.remove(LOG_FILE_HANDLE)
+            LOG_FILE_HANDLE = None
+
+        if config['no-colour']:
+            utility.do_color(False)
+        elif config['force-colour']:
+            utility.do_color(True)
+
+
+        pm = PortMasterGUI()
+
+        pm.events.disable_quit = True
+        hm = HarbourMaster(config, temp_dir=temp_dir, callback=pm)
+        pm.events.disable_quit = False
+
+        pm.hm = hm
+
+        pm.run()
+
+        pm.quit()
+
+
+if __name__ == '__main__':
+    exit(main(sys.argv))
+
