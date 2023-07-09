@@ -68,10 +68,36 @@ import sdl2
 import sdl2.ext
 import sdl2.sdlmixer
 
+
 try:
     import sdl2.sdlgfx as sdlgfx
-except:
+except ImportError:
     sdlgfx = False
+
+
+class GUIException(Exception):
+    '''
+    The root of all GUI runtime exceptions.
+    '''
+    pass
+
+
+class GUIValueError(GUIException, ValueError):
+    pass
+
+
+class GUIRuntimeError(GUIException, RuntimeError):
+    '''
+    General runtime exception.
+    '''
+    pass
+
+
+class GUIThemeError(GUIRuntimeError):
+    '''
+    This is an exception that is thrown during Region creation.
+    '''
+    pass
 
 
 class GUI:
@@ -85,6 +111,7 @@ class GUI:
         self.events = EventManager(self)
         self.pallet = {}
 
+
 class ResourceManager:
     def __init__(self, gui):
         self.gui = gui
@@ -96,7 +123,7 @@ class ResourceManager:
         elif isinstance(path, str):
             path = Path(path)
         else:
-            raise ValueError(f"Invalid {path!r}")
+            raise GUIValueError(f"Invalid {path!r}")
 
         if not path.is_dir():
             return
@@ -111,7 +138,7 @@ class ResourceManager:
         elif isinstance(path, str):
             path = Path(path)
         else:
-            raise ValueError(f"Invalid {path!r}")
+            raise GUIValueError(f"Invalid {path!r}")
 
         if path in self._paths:
             self._paths.remove(path)
@@ -129,7 +156,7 @@ class ResourceManager:
             return None
 
         else:
-            raise ValueError(f"Invalid {file_name!r}")
+            raise GUIValueError(f"Invalid {file_name!r}")
 
         if file_name.exists():
             return file_name
@@ -150,8 +177,17 @@ class Point:
 
 
 class Rect:
-    POINTS = ('topleft midtop topright midleft center midright '+
-              'bottomleft midbottom bottomright').split()
+    POINTS = (
+        'topleft',
+        'midtop',
+        'topright',
+        'midleft',
+        'center',
+        'midright',
+        'bottomleft',
+        'midbottom',
+        'bottomright',
+        )
 
     def __init__(self, x, y, width, height):
         self.x = int(x)
@@ -160,14 +196,14 @@ class Rect:
         self.height = int(height)
 
     def __repr__(self):
-        return f'Rect({self.x},{self.y},{self.width},{self.height})'
+        return f'Rect({self.x}, {self.y}, {self.width}, {self.height})'
 
     def __mul__(self, v):
         'Scale by v keeping center in position'
         cx, cy = self.center
         r = Rect(self.x, self.y, self.width, self.height)
-        r.width = int(r.width*v)
-        r.height = int(r.height*v)
+        r.width = int(r.width * v)
+        r.height = int(r.height * v)
         r.center = cx, cy
         return r
 
@@ -178,13 +214,16 @@ class Rect:
     def fit(self, other):
         'Move and resize myself to fill other rect maintaining aspect ratio'
         r = self.fitted(other)
-        self.x = r.x; self.width = r.width
-        self.y = r.y; self.height = r.height
+        self.x = r.x
+        self.y = r.y
+        self.width = r.width
+        self.height = r.height
 
     def fitted(self, other):
         '''
         Return new Rect with other centered and resized to fill self.
-        Aspect ration is retained'''
+        Aspect ration is retained
+        '''
         xr = self.width / other.width
         yr = self.height / other.height
         mr = xr if yr < xr else yr
@@ -198,8 +237,9 @@ class Rect:
     def from_corners(x, y, x2, y2):
         '''
         Creat a new rect using bottom and right coordinates instead
-        of width and height'''
-        return Rect(x, y, x2-x, y2-y)
+        of width and height
+        '''
+        return Rect(x, y, x2 - x, y2 - y)
 
     def from_sdl(r):
         '''
@@ -210,8 +250,9 @@ class Rect:
     def inflate(self, x, y=None):
         '''
         Add x to width and y to height of rect, or x to both.
-        The rect will remain centered around the same point'''
-        y = y if y != None else x
+        The rect will remain centered around the same point
+        '''
+        y = y if y is not None else x
         self.x -= x // 2
         self.y -= y // 2
         self.width += x
@@ -221,8 +262,9 @@ class Rect:
         '''
         Return a copy of self with x added to the width and y to the
         height of rect, or x to both. The rect will remain centered
-        around the same point'''
-        y = y if y != None else x
+        around the same point
+        '''
+        y = y if y is not None else x
         nx = self.x - x // 2
         ny = self.y - y // 2
         nw = self.width + x
@@ -250,42 +292,44 @@ class Rect:
 
     def update(self, x, y, w, h):
         'Update myself with new position and size'
-        self.x = x; self.width = w
-        self.y = y; self.height = h
+        self.x = x
+        self.y = y
+        self.width = w
+        self.height = h
 
     def clip(self, other):
         'Return copy of self cropped to fit inside other Rect'
         # LEFT
-        if self.x >= other.x and self.x < other.x + other.width:
+        if self.x >= other.x and self.x < (other.x + other.width):
             x = self.x
-        elif other.x >= self.x and other.x < self.x + self.width:
+        elif other.x >= self.x and other.x < (self.x + self.width):
             x = other.x
         else:
-            return Rect(self.x, self.y, 0,0)
+            return Rect(self.x, self.y, 0, 0)
 
         # RIGHT
-        if self.x + self.width > other.x and self.x + self.width <= other.x + other.width:
+        if (self.x + self.width) > other.x and (self.x + self.width) <= (other.x + other.width):
             w = self.x + self.width - x
-        elif other.x + other.width > self.x and other.x + other.width <= self.x + self.width:
+        elif (other.x + other.width) > self.x and (other.x + other.width) <= (self.x + self.width):
             w = other.x + other.width - x
         else:
-            return Rect(self.x, self.y, 0,0)
+            return Rect(self.x, self.y, 0, 0)
 
         # TOP
-        if self.y >= other.y and self.y < other.y + other.height:
+        if self.y >= other.y and self.y < (other.y + other.height):
             y = self.y
-        elif other.y >= self.y and other.y < self.y + self.height:
+        elif other.y >= self.y and other.y < (self.y + self.height):
             y = other.y
         else:
-            return Rect(self.x, self.y, 0,0)
+            return Rect(self.x, self.y, 0, 0)
 
         # BOTTOM
-        if self.y + self.height > other.y and self.y + self.height <= other.y + other.height:
+        if (self.y + self.height) > other.y and (self.y + self.height) <= (other.y + other.height):
             h = self.y + self.height - y
-        elif other.y + other.height > self.y and other.y + other.height <= self.y + self.height:
+        elif other.y + other.height > self.y and (other.y + other.height) <= (self.y + self.height):
             h = other.y + other.height - y
         else:
-            return Rect(self.x, self.y, 0,0)
+            return Rect(self.x, self.y, 0, 0)
 
         return Rect(x, y, w, h)
 
@@ -296,7 +340,7 @@ class Rect:
     @w.setter
     def w(self, v):
         self.width = v
-        self.x -= v//2
+        self.x -= v // 2
 
     @property
     def h(self):
@@ -305,7 +349,7 @@ class Rect:
     @h.setter
     def h(self, v):
         self.height = v
-        self.y -= v//2
+        self.y -= v // 2
 
     # EDGES
     @property
@@ -342,19 +386,19 @@ class Rect:
 
     @property
     def centerx(self):
-        return self.x + self.width//2
+        return self.x + (self.width // 2)
 
     @centerx.setter
     def centerx(self, v):
-        self.x = v - self.width//2
+        self.x = v - (self.width // 2)
 
     @property
     def centery(self):
-        return self.y + self.height//2
+        return self.y + (self.height // 2)
 
     @centery.setter
     def centery(self, v):
-        self.y = v - self.height//2
+        self.y = v - (self.height // 2)
 
     # FIRST ROW
     @property
@@ -369,12 +413,12 @@ class Rect:
 
     @property
     def midtop(self):
-        return self.x+self.width//2, self.y
+        return self.x + (self.width // 2), self.y
 
     @midtop.setter
     def midtop(self, v):
         x, y = v
-        self.x = x - self.width//2
+        self.x = x - (self.width // 2)
         self.y = y
 
     @property
@@ -390,33 +434,33 @@ class Rect:
     # SECOND ROW
     @property
     def midleft(self):
-        return self.x, self.y + self.height//2
+        return self.x, self.y + (self.height // 2)
 
     @midleft.setter
     def midleft(self, v):
         x, y = v
         self.x = x
-        self.y = y - self.height//2
+        self.y = y - (self.height // 2)
 
     @property
     def center(self):
-        return self.x + (self.width//2), self.y + (self.height//2)
+        return self.x + (self.width // 2), self.y + (self.height // 2)
 
     @center.setter
     def center(self, v):
         x, y = v
-        self.x = x - self.width//2
-        self.y = y - self.height//2
+        self.x = x - (self.width // 2)
+        self.y = y - (self.height // 2)
 
     @property
     def midright(self):
-        return self.x+self.width, self.y + self.height//2
+        return self.x + self.width, self.y + (self.height // 2)
 
     @midright.setter
     def midright(self, v):
         x, y = v
         self.x = x - self.width
-        self.y = y - self.height//2
+        self.y = y - (self.height // 2)
 
     # THIRD ROW
     @property
@@ -431,17 +475,17 @@ class Rect:
 
     @property
     def midbottom(self):
-        return self.x+self.width//2, self.y+self.height
+        return self.x + (self.width // 2), self.y + self.height
 
     @midbottom.setter
     def midbottom(self, v):
         x, y = v
-        self.x = x - self.width//2
+        self.x = x - (self.width // 2)
         self.y = y - self.height
 
     @property
     def bottomright(self):
-        return self.x+self.width, self.y+self.height
+        return self.x + self.width, self.y + self.height
 
     @bottomright.setter
     def botomright(self, v):
@@ -466,7 +510,9 @@ class Image:
     The Image class represents an image with its position, angle,
     and flipped(x/y) status. An image references a Texture and
     has a srcrect(Rect) to define which part of the Texture to
-    draw'''
+    draw
+    '''
+
     def __init__(self, texture, srcrect=None, renderer=None):
         '''
         Create a new Image from a texture and a source Rect.
@@ -476,24 +522,25 @@ class Image:
             texture to draw
         :param renderer: a sdl2.ext.Renderer context to draw into
         '''
+
         renderer = renderer or Image.renderer
         if renderer is None:
-            raise Exception('No renderer context provided')
+            raise GUIRuntimeError('No renderer context provided')
 
         if Image.renderer is None:
-            Image.renderer = renderer # set default
+            Image.renderer = renderer  # set default
 
         self.texture = texture
         if isinstance(srcrect, Rect):
             self.srcrect = srcrect.sdl()
-        elif isinstance(srcrect, (list, tuple)) and len(srcrect)==4:
+        elif isinstance(srcrect, (list, tuple)) and len(srcrect) == 4:
             self.srcrect = sdl2.SDL_Rect(*srcrect)
         elif isinstance(srcrect, (sdl2.SDL_Rect)):
-            self.srcrect =srcrect
-        elif srcrect == None:
-            self.srcrect = sdl2.SDL_Rect(0,0, *texture.size)
+            self.srcrect = srcrect
+        elif srcrect is None:
+            self.srcrect = sdl2.SDL_Rect(0, 0, *texture.size)
         else:
-            raise Exception('srcrect not a supported type')
+            raise GUIValueError('srcrect not a supported type')
 
         self.x = self.y = 0
         self.flip_x = self.flip_y = 0
@@ -502,7 +549,7 @@ class Image:
 
         # default dest rect is fitted to full screen
         self.dstrect = Rect.from_sdl(self.srcrect).fitted(
-                    Rect(0,0, *self.renderer.logical_size)).sdl()
+            Rect(0, 0, *self.renderer.logical_size)).sdl()
 
     def draw_at(self, x, y, angle=0, flip_x=None, flip_y=None, center=None):
         '''
@@ -518,13 +565,19 @@ class Image:
         center = center or self.center
         angle = angle or self.angle
 
-        if flip_x == None and flip_y == None:
+        if flip_x is None and flip_y is None:
             flip = 1 * bool(self.flip_x) | 2 * bool(self.flip_y)
         else:
             flip = 1 * bool(flip_x) | 2 * bool(flip_y)
 
-        self.renderer.copy(self.texture, self.srcrect,
-                dstrect=(x, y), angle=angle, flip=flip, center=center)
+        self.renderer.copy(
+            self.texture,
+            self.srcrect,
+            dstrect=(x, y),
+            angle=angle,
+            flip=flip,
+            center=center,
+            )
 
     def draw_in(self, dest, angle=0, flip_x=None, flip_y=None,
                 center=None, fit=False, color=None):
@@ -544,22 +597,23 @@ class Image:
 
         if fit:
             dest = self.srcrect.fitted(dest)
-        if flip_x == None and flip_y == None:
+        if flip_x is None and flip_y is None:
             flip = 1 * bool(self.flip_x) | 2 * bool(self.flip_y)
         else:
             flip = 1 * bool(flip_x) | 2 * bool(flip_y)
 
-        set_color_mod(self.texture, (255,255,255))
+        set_color_mod(self.texture, (255, 255, 255))
         self.renderer.copy(self.texture, self.srcrect,
-                dstrect=dest, angle=angle, flip=flip, center=center)
+            dstrect=dest, angle=angle, flip=flip, center=center)
 
     def draw(self):
         ''''Draw image to its current destrect(Rect region), which defaults to
         full screen maintaining aspect ratio'''
         flip = 1 * bool(self.flip_x) | 2 * bool(self.flip_y)
         self.renderer.copy(self.texture, self.srcrect,
-                dstrect=self.dstrect, angle=self.angle,
-                flip=flip, center=self.center)
+            dstrect=self.dstrect, angle=self.angle,
+            flip=flip, center=self.center)
+
 
 class ImageManager():
     '''
@@ -648,7 +702,7 @@ class ImageManager():
 
         for name, item in atlas.items():
             r = item[:4]
-            flip_x, flip_y, angle, *_ = list(item[4:] + [0,0,0])
+            flip_x, flip_y, angle, *_ = list(item[4:] + [0, 0, 0])
 
             im = Image(texture, r, renderer=self.renderer)
             im.flip_x = flip_x
@@ -668,6 +722,8 @@ class ImageManager():
         'Remove old images when max_images is reached'
         for filename in self.cache[self.max_images:]:
             texture = self.textures.pop(filename)
+            image = self.images.pop(filename)
+            # image.destroy()
             texture.destroy()
         self.cache = self.cache[:self.max_images]
 
@@ -687,7 +743,7 @@ def get_text_size(font, text=''):
     sdl2.sdlttf.TTF_SizeText(f, text.encode(), byref(text_w), byref(text_h))
     if not text:
         return text_h.value
-    return  text_w.value, text_h.value
+    return text_w.value, text_h.value
 
 
 char_map = ''' ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,?!-:'"_=+&<^>~@/\\|(%)'''
@@ -735,7 +791,7 @@ class FontManager():
         if res_filename is None:
             return None
 
-        font = sdl2.ext.FontTTF(str(res_filename), size, (255,255,255))
+        font = sdl2.ext.FontTTF(str(res_filename), size, (255, 255, 255))
         self.cmap = {}
         tot = 0
 
@@ -751,7 +807,7 @@ class FontManager():
         self.height = get_text_size(font)
 
         y = 0
-        surface = sdl2.SDL_CreateRGBSurface(sdl2.SDL_SWSURFACE, width, self.height*rows,
+        surface = sdl2.SDL_CreateRGBSurface(sdl2.SDL_SWSURFACE, width, self.height *rows,
                 32, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000)
         tot = x = 0
 
@@ -760,9 +816,9 @@ class FontManager():
             wi, hi = rend.w, rend.h
             if x + wi > 1024: # limit texture width
                 x = 0
-                y += self.height+1
+                y += self.height +1
             sdl2.SDL_BlitSurface(rend, None, surface,
-                    sdl2.SDL_Rect(x,y,wi,hi))
+                    sdl2.SDL_Rect(x, y, wi, hi))
 
             self.cmap[c] = Rect(x, y, wi, self.height)
             tot += wi
@@ -782,7 +838,7 @@ class FontManager():
         :param text: string to draw
         :param x: x coordinate to draw at
         :param y: y coordinate to draw at
-        :param color: (r,g,b) color tuple
+        :param color: (r, g, b) color tuple
         :param alpha: alpha transparency value
         :param align: choose one of: topleft, midtop, topright, midleft, center, midright,
                 bottomleft, midbottom, or bottomright
@@ -814,7 +870,7 @@ class FontManager():
             if lines > 1:
 
                 if align in ('midleft', 'center', 'midright'):
-                    y -= (self.height * lines) // 2 + (linespace * (lines/2))
+                    y -= (self.height * lines) // 2 + (linespace * (lines / 2))
                 elif align in ('bottomleft', 'midbottom', 'bottomright'):
                     y -= (self.height) * lines + linespace * lines
                 for line in wrapped_text:
@@ -825,12 +881,12 @@ class FontManager():
             return clip
 
         out_rect = Rect(0, 0, self.width(text), self.height)
-        dx, dy = getattr(out_rect, align, (0,0))
-        dest = Rect(x-dx, y-dy, 1, self.height)
+        dx, dy = getattr(out_rect, align, (0, 0))
+        dest = Rect(x - dx, y - dy, 1, self.height)
         out_rect.topleft = dest.topleft
 
         sdl2.SDL_SetTextureAlphaMod(texture.tx, alpha or 255)
-        color = color or (255,255,255)
+        color = color or (255, 255, 255)
         sdl2.SDL_SetTextureColorMod(texture.tx, *color[:3])
 
         for c in text:
@@ -842,11 +898,11 @@ class FontManager():
             if outline:
                 sdl2.SDL_SetTextureColorMod(texture.tx, *outline[0])
                 self.renderer.copy(texture, src.sdl(), dest.inflated(outline[1]).sdl())
-                sdl2.SDL_SetTextureColorMod(texture.tx, *color)
+                sdl2.SDL_SetTextureColorMod(texture.tx, *color[:3])
                 self.renderer.copy(texture, src.sdl(), dest.inflated(-outline[1]).sdl())
             else:
                 self.renderer.copy(texture, src.sdl(), dest.sdl())
-            #self.renderer.draw_rect(dest.tuple(), (255,255,255,255))
+            #self.renderer.draw_rect(dest.tuple(), (255, 255, 255, 255))
             dest.x += src.width
         return out_rect
 
@@ -1228,9 +1284,9 @@ class SoundManager():
 
         if sample is None:
             return None
-            # raise RuntimeError(f'Cannot open audio file: {sdl2.Mix_GetError()}')
+            # raise GUIRuntimeError(f'Cannot open audio file: {sdl2.Mix_GetError()}')
 
-        sdl2.sdlmixer.Mix_VolumeChunk(sample, int(128*volume))
+        sdl2.sdlmixer.Mix_VolumeChunk(sample, int(128 * volume))
         self.sounds[name] = sample
         return name
 
@@ -1250,13 +1306,13 @@ class SoundManager():
         if res_filename is None:
             return None
 
-        sdl2.sdlmixer.Mix_VolumeMusic(int(volume*128))
+        sdl2.sdlmixer.Mix_VolumeMusic(int(volume * 128))
         music = sdl2.sdlmixer.Mix_LoadMUS(
                     sdl2.ext.compat.byteify(str(res_filename), 'utf-8'))
 
         if music is None:
             return None
-            # raise RuntimeError(f'Cannot open audio file: {sdl2.Mix_GetError()}')
+            # raise GUIRuntimeError(f'Cannot open audio file: {sdl2.Mix_GetError()}')
 
         sdl2.sdlmixer.Mix_PlayMusic(music, loops)
         if self.song:
@@ -1278,7 +1334,7 @@ class SoundManager():
         if not self.is_init:
             return
 
-        sdl2.sdlmixer.Mix_MasterVolume(int(v*128))
+        sdl2.sdlmixer.Mix_MasterVolume(int(v * 128))
 
     def play(self, name, volume=1):
         '''
@@ -1295,9 +1351,9 @@ class SoundManager():
         if sample:
             channel = sdl2.sdlmixer.Mix_PlayChannel(-1, sample, 0)
             if channel == -1:
-                raise RuntimeError(
+                raise GUIRuntimeError(
                     f'Cannot play sample {name}: {sdl2.sdlmixer.Mix_GetError()}')
-            sdl2.sdlmixer.Mix_Volume(channel, int(volume*128))
+            sdl2.sdlmixer.Mix_Volume(channel, int(volume * 128))
 
     def __del__(self):
         if not self.is_init:
@@ -1335,7 +1391,7 @@ class Region:
     from a json file and then passed to the class as a standard dict.
 
 FILL AND OUTLINE
-area: 4-tuple representing a rectangular area for the region, defined in (left,top,right,bottom) format, not in (x, y, width, height) format like a normal Rect object. It can be in pixels (10,10,200,400), or in screen percent (0.1, 0.1, 0.5, 0.9).
+area: 4-tuple representing a rectangular area for the region, defined in (left, top, right, bottom) format, not in (x, y, width, height) format like a normal Rect object. It can be in pixels (10, 10, 200, 400), or in screen percent (0.1, 0.1, 0.5, 0.9).
 fill: 3-tuple rgb fill color
 outline: 3-tuple rgb outline color
 thickness: int outline thickness,
@@ -1346,7 +1402,7 @@ bordery: int top/bottom border around text
 
 IMAGE RENDERING
 image: filename for an image to draw in the region
-imagesize: an 2-tuple of ints (width,height) to draw image at a specific size
+imagesize: an 2-tuple of ints (width, height) to draw image at a specific size
 imagemode: draw mode for the image can be 'fit', 'stretch', or 'repeat'
 imagealign: string options to align the image include: topleft, topright, midtop,
 midleft, center, midright, bottomleft, midbottom, and bottomright
@@ -1397,6 +1453,9 @@ The selected item will be drawn in the color of or with the Region referenced by
         self.fonts = gui.fonts
         self.pallet = gui.pallet
 
+        self.z_index = self._verify_int('z-index', default=None, optional=True)
+        self.visible = self._verify_bool('visible', default=True, optional=True)
+
         self.area = self._verify_rect('area')
         self.fill = self._verify_color('fill', optional=True)
         self.outline = self._verify_color('outline', optional=True)
@@ -1422,7 +1481,7 @@ The selected item will be drawn in the color of or with the Region referenced by
         # TODO figure out how to use default/system fonts
         self.font = self._verify_file('font', optional=True)
         self.fontsize = self._verify_int('fontsize', 30)
-        self.fontcolor = self._verify_color('fontcolor', (255,255,255))
+        self.fontcolor = self._verify_color('fontcolor', (255, 255, 255))
         self.fontoutline = self._verify_outline('fontoutline', None, True)
         self._text = self._verify_text('text', optional=True)
         self.wrap = self._verify_bool('wrap', False, True)
@@ -1447,10 +1506,10 @@ The selected item will be drawn in the color of or with the Region referenced by
         self._bar = self._verify_bar('bar', optional=True)
 
         if self._text and self.list:
-            raise Exception('Cannot define text and a list')
+            raise GUIThemeError('Cannot define text and a list')
 
         self.scroll_pos = 0
-        self.scroll_delay = -self.autoscroll*2
+        self.scroll_delay = -self.autoscroll * 2
         self.selected = 0
         self.selectedx = -1
 
@@ -1501,16 +1560,16 @@ The selected item will be drawn in the color of or with the Region referenced by
 
         elif self.outline:
             r = area.sdl()
-            for _ in range(self.thickness-1):
+            for _ in range(self.thickness - 1):
                 if self.roundness and sdlgfx:
                     sdlgfx.roundedRectangleRGBA(self.renderer.sdlrenderer,
-                        r.x, r.y, r.x+r.w, r.y+r.h,
+                        r.x, r.y, r.x + r.w, r.y + r.h,
                         self.roundness, *self.outline)
                 else:
                     self.renderer.draw_rect(r, self.outline)
                 r.x += 1; r.w -= 2
                 r.y += 1; r.h -= 2
-            area.size = area.w-self.thickness, area.h-self.thickness
+            area.size = area.w - self.thickness, area.h - self.thickness
 
         # RENDER IMAGE
         if self.image and not self.patch:
@@ -1534,7 +1593,7 @@ The selected item will be drawn in the color of or with the Region referenced by
                 dest.topleft = area.topleft
                 image.draw_in(dest.clip(area).tuple())
 
-        text_area = area.inflated(-self.borderx*2, -self.bordery*2)
+        text_area = area.inflated(-self.borderx * 2, -self.bordery * 2)
 
         if self.font and self.fontsize:
             self.fonts.load(self.font, self.fontsize)
@@ -1571,8 +1630,8 @@ The selected item will be drawn in the color of or with the Region referenced by
 
             self.fonts.load(self.font, self.fontsize)
             if len(self.list) > self.page_size:
-                start = max(0, min(self.selected - self.page_size//3,
-                        len(self.list)-self.page_size))
+                start = max(0, min(self.selected - self.page_size // 3,
+                        len(self.list) -self.page_size))
             else:
                 start = 0
 
@@ -1589,7 +1648,7 @@ The selected item will be drawn in the color of or with the Region referenced by
 
                 elif self.selected == i:
                     if isinstance(self.select, Region):
-                        r = irect.inflated(self.borderx*2, self.bordery*2)
+                        r = irect.inflated(self.borderx * 2, self.bordery * 2)
                         self.select.draw(irect, t)
                         self.fonts.load(self.font, self.fontsize)
                     else:
@@ -1630,7 +1689,7 @@ The selected item will be drawn in the color of or with the Region referenced by
             elif self.gui.events.was_pressed('DOWN'):
                 self.scroll_pos += 1
                 updated = True
-            self.scroll_pos = min(max(0, self.scroll_pos), len(self.text)-1)
+            self.scroll_pos = min(max(0, self.scroll_pos), len(self.text) - 1)
 
         elif self.list:
             l = len(self.list)
@@ -1638,16 +1697,16 @@ The selected item will be drawn in the color of or with the Region referenced by
             selected = self.selected
 
             if self.gui.events.was_pressed('UP'):
-                selected = (selected-1) % l
+                selected = (selected - 1) % l
                 while (selected) % l not in selectable:
-                    selected = (selected-1) % l
+                    selected = (selected - 1) % l
                 self.gui.sounds.play(self.click_sound)
                 updated = True
 
             elif self.gui.events.was_pressed('DOWN'):
-                selected = (selected+1) % l
+                selected = (selected + 1) % l
                 while (selected) % l not in selectable:
-                    selected = (selected+1) % l
+                    selected = (selected + 1) % l
 
                 self.gui.sounds.play(self.click_sound)
                 updated = True
@@ -1665,7 +1724,7 @@ The selected item will be drawn in the color of or with the Region referenced by
         'Process text for proper wrapping when user changes it.'
         if self.wrap:
             self.fonts.load(self.font, self.fontsize)
-            text_area = self.area.inflated(-self.borderx*2, -self.bordery*2)
+            text_area = self.area.inflated(-self.borderx * 2, -self.bordery * 2)
             self._text = self.fonts._split_lines(val, text_area)
             self.scroll_delay = -self.autoscroll
             self.scroll_pos = 0
@@ -1689,13 +1748,13 @@ The selected item will be drawn in the color of or with the Region referenced by
         area: override Region's area, used internally
         '''
         vals = self._dict.get(name, default)
-        if vals == None and optional: return None
+        if vals is None and optional: return None
 
         if not isinstance(vals, (list, tuple)):
-            raise Exception("bar is not a list")
+            raise GUIThemeError("bar is not a list")
         vals = [None if v == '' else v for v in vals]
         if vals.count('None') > 1:
-            raise Exception('bar has more than one null value separator')
+            raise GUIThemeError('bar has more than one null value separator')
 
         if not area:
             area = self.area
@@ -1704,7 +1763,7 @@ The selected item will be drawn in the color of or with the Region referenced by
                     area.x + self.patch[0], area.y + self.patch[1],
                     area.right - self.patch[2], area.bottom - self.patch[3])
             else:
-                area = area.inflated(-self.borderx*2, -self.bordery*2)
+                area = area.inflated(-self.borderx * 2, -self.bordery * 2)
 
         self.fonts.load(self.font, self.fontsize)
         x = area.x
@@ -1725,10 +1784,10 @@ The selected item will be drawn in the color of or with the Region referenced by
                 dest.centery = area.centery
                 x = dest.right + self.barspace
                 items.append((dest, v))
-            elif v == None:
+            elif v is None:
                 items = right
             else:
-                raise Exception(f'bar item {i}({v}) not valid type')
+                raise GUIThemeError(f'bar item {i}({v}) not valid type')
         x = area.right
         for dest, item in right:
             dest.right = x
@@ -1751,12 +1810,12 @@ The selected item will be drawn in the color of or with the Region referenced by
                     else:
                         color = None
                         text = item; image = None
-                    r = dest.inflated(self.borderx*2, self.bordery*2)
+                    r = dest.inflated(self.borderx * 2, self.bordery * 2)
                     self.select.draw(dest, text, image)
                     self.fonts.load(self.font, self.fontsize)
 
                 else:
-                    #self.renderer.fill(dest.tuple(), [0,0,255,100])
+                    #self.renderer.fill(dest.tuple(), [0, 0, 255, 100])
 
                     if isinstance(item, Image):
                         item.draw_in(Rect.from_sdl(item.srcrect).fitted(dest).tuple())
@@ -1770,16 +1829,16 @@ The selected item will be drawn in the color of or with the Region referenced by
                 item.draw_in(Rect.from_sdl(item.srcrect).fitted(dest).tuple())
             else:
                 x, y = dest.center
-                self.fonts.draw(item, x, y,self.fontcolor, 255, 'center',
+                self.fonts.draw(item, x, y, self.fontcolor, 255, 'center',
                         area, outline=self.fontoutline)
         #self.renderer.blendmode = mode
 
     def _verify_outline(self, name, default, optional):
-        print(name, default)
+        # print(name, default)
         val = self._dict.get(name, default)
-        if val == None and optional: return None
+        if val is None and optional: return None
 
-        print(val)
+        # print(val)
         if isinstance(val, (list, tuple)) and len(val) == 2:
             color = self._verify_color(None, val[0])
             thickness = self._verify_int(None, val[1])
@@ -1787,10 +1846,10 @@ The selected item will be drawn in the color of or with the Region referenced by
                 return color, thickness
 
         else:
-            raise Exception(f'fontoutline is not a 2-tuple')
+            raise GUIThemeError(f'fontoutline is not a 2-tuple')
 
         if not isinstance(val, int):
-            raise Exception(f'{name} is not an int')
+            raise GUIThemeError(f'{name} is not an int')
         #print(f'{name}: {val}')
         return None
 
@@ -1804,70 +1863,74 @@ The selected item will be drawn in the color of or with the Region referenced by
 
         self.renderer.copy(texture,  # TOP
                 srcrect=(bounds.left, bounds.top, self.patch[0], self.patch[1]),
-                dstrect=(target.left, target.top, self.patch[0], self.patch[1]) )
+                dstrect=(target.left, target.top, self.patch[0], self.patch[1]))
         self.renderer.copy(texture,  # LEFT
-            srcrect=(bounds.left, bounds.top+self.patch[1], self.patch[0],
-                    bounds.height-self.patch[1]-self.patch[3]),
-            dstrect=(target.left, target.top+self.patch[1], self.patch[0],
-                    target.height-self.patch[1]-self.patch[3]) )
+            srcrect=(bounds.left, bounds.top + self.patch[1], self.patch[0],
+                    bounds.height - self.patch[1] - self.patch[3]),
+            dstrect=(target.left, target.top + self.patch[1], self.patch[0],
+                    target.height - self.patch[1] - self.patch[3]))
         self.renderer.copy(texture,  # BOTTOM-LEFT
-            srcrect=(bounds.left, bounds.bottom-self.patch[3],
+            srcrect=(bounds.left, bounds.bottom - self.patch[3],
                     self.patch[0], self.patch[3]),
-            dstrect=(target.left, target.bottom-self.patch[3],
-                    self.patch[0], self.patch[3]) )
+            dstrect=(target.left, target.bottom - self.patch[3],
+                    self.patch[0], self.patch[3]))
 
-        self.renderer.copy(texture, # TOP-RIGHT
-            srcrect=(bounds.right-self.patch[2], bounds.top,
+        self.renderer.copy(texture, # TOP -RIGHT
+            srcrect=(bounds.right - self.patch[2], bounds.top,
                     self.patch[2], self.patch[1]),
-            dstrect=(target.right-self.patch[2], target.top,
-                    self.patch[2], self.patch[1]) )
+            dstrect=(target.right - self.patch[2], target.top,
+                    self.patch[2], self.patch[1]))
         self.renderer.copy(texture, # RIGHT
-            srcrect=(bounds.right-self.patch[2], bounds.top+self.patch[1],
-                    self.patch[2],bounds.height-self.patch[3]-self.patch[1]),
-            dstrect=(target.right-self.patch[2], target.top+self.patch[1],
-                    self.patch[2], target.height-self.patch[3]-self.patch[1]) )
+            srcrect=(bounds.right - self.patch[2], bounds.top + self.patch[1],
+                    self.patch[2], bounds.height - self.patch[3] - self.patch[1]),
+            dstrect=(target.right - self.patch[2], target.top + self.patch[1],
+                    self.patch[2], target.height - self.patch[3] - self.patch[1]))
         self.renderer.copy(texture, # BOTTOM-RIGHT
-            srcrect=(bounds.right-self.patch[2], bounds.bottom-self.patch[3],
+            srcrect=(bounds.right - self.patch[2], bounds.bottom - self.patch[3],
                     self.patch[2], self.patch[3]),
-            dstrect=(target.right-self.patch[2], target.bottom-self.patch[3],
-                    self.patch[2], self.patch[3]) )
+            dstrect=(target.right - self.patch[2], target.bottom - self.patch[3],
+                    self.patch[2], self.patch[3]))
 
         self.renderer.copy(texture, # TOP
-            srcrect=(bounds.left+self.patch[0], bounds.top,
-                    bounds.width-self.patch[0]-self.patch[2], self.patch[1]),
-            dstrect=(target.left+self.patch[0], target.top,
-                    target.width-self.patch[0]-self.patch[2], self.patch[1]) )
+            srcrect=(bounds.left + self.patch[0], bounds.top,
+                    bounds.width - self.patch[0] - self.patch[2], self.patch[1]),
+            dstrect=(target.left + self.patch[0], target.top,
+                    target.width - self.patch[0] - self.patch[2], self.patch[1]))
         self.renderer.copy(texture, # CENTER
-            srcrect=(bounds.left+self.patch[0], bounds.top+self.patch[1],
-                    bounds.width-self.patch[2]-self.patch[0],
-                    bounds.height-self.patch[1]-self.patch[3]),
-            dstrect=(target.left+self.patch[0], target.top+self.patch[1],
-                    target.width-self.patch[2]-self.patch[0],
-                    target.height-self.patch[1]-self.patch[3]) )
+            srcrect=(bounds.left + self.patch[0], bounds.top + self.patch[1],
+                    bounds.width - self.patch[2] - self.patch[0],
+                    bounds.height - self.patch[1] - self.patch[3]),
+            dstrect=(target.left + self.patch[0], target.top + self.patch[1],
+                    target.width - self.patch[2] - self.patch[0],
+                    target.height - self.patch[1] - self.patch[3]))
         self.renderer.copy(texture, # BOTTOM
-            srcrect=(bounds.left+self.patch[0], bounds.bottom-self.patch[3],
-                    bounds.width-self.patch[0]-self.patch[2], self.patch[3]),
-            dstrect=(target.left+self.patch[0], target.bottom-self.patch[3],
-                    target.width-self.patch[0]-self.patch[2], self.patch[3]) )
+            srcrect=(bounds.left + self.patch[0], bounds.bottom - self.patch[3],
+                    bounds.width - self.patch[0] - self.patch[2], self.patch[3]),
+            dstrect=(target.left + self.patch[0], target.bottom - self.patch[3],
+                    target.width - self.patch[0] - self.patch[2], self.patch[3]))
 
 
     def _verify_rect(self, name, default=None, optional=False):
         'Verify that value of self._dict[name] is a usable Rect'
 
         val = self._dict.get(name, default)
-        if val == None and optional: return None
+        if val is None and optional: return None
 
         try:
             if len(val) != 4:
-                raise Exception('Region area incorrect length')
+                raise GUIThemeError('Region area incorrect length')
+
         except TypeError:
             print('Region area not iterable')
             raise
+
         for i, p in enumerate(val):
             if not isinstance(p, (int, float)):
-                raise Exception(f'point {i}{p} is not a number')
+                raise GUIThemeError(f'point {i}{p} is not a number')
+
             if type(p)==float and 0 < p <= 1:
                 val[i] = p * self.renderer.logical_size[i % 2]
+
         val = Rect.from_corners(*val)
         #print(f'{name}: {val}')
         return val
@@ -1877,24 +1940,29 @@ The selected item will be drawn in the color of or with the Region referenced by
         ## Added support for a colour pallet.
 
         val = self._dict.get(name, default)
-        if val == None and optional: return None
+        if val is None and optional: return None
 
         if isinstance(val, str):
             val = self.pallet.get(val, [0, 0, 0, 255])
 
         try:
             if len(val) == 3:
-                val = tuple(val) + (255,)
+                val = tuple(val) + (255, )
+
             elif len(val) != 4:
-                raise Exception('color incorrect length')
+                raise GUIThemeError('color incorrect length')
+
         except TypeError:
-            print('color not iterable')
+            # print('color not iterable')
+            ## TODO: fix this
             raise
+
         for i, p in enumerate(val):
             if not isinstance(p, (int)):
-                raise Exception(f'{i},{p} - invalid color type')
+                raise GUIThemeError(f'{i}, {p} - invalid color type')
+
             if p<0 or p>255:
-                raise Exception(f'{i},{p} - invalid color value')
+                raise GUIThemeError(f'{i}, {p} - invalid color value')
         #print(f'{name}: {val}')
         return val
 
@@ -1902,10 +1970,11 @@ The selected item will be drawn in the color of or with the Region referenced by
         'verify that value of self._dict[name] is valid int value'
 
         val = self._dict.get(name, default)
-        if val == None and optional: return None
+        if val is None and optional:
+            return None
 
         if not isinstance(val, int):
-            raise Exception(f'{name} is not an int')
+            raise GUIThemeError(f'{name} is not an int')
         #print(f'{name}: {val}')
         return val
 
@@ -1915,12 +1984,15 @@ The selected item will be drawn in the color of or with the Region referenced by
         absolute path, or RESOURCES asset
         '''
         val = self._dict.get(name, default)
-        if val == None and optional: return None
+        if val is None and optional:
+            return None
 
         if not isinstance(val, str):
-            raise Exception(f'{name} is not a string')
+            raise GUIThemeError(f'{name} is not a string')
+
         if not self.gui.resources.find(val):
-            raise Exception(f'{name} is not a file')
+            raise GUIThemeError(f'{name} is not a file')
+
         #print(f'{name}: {val}')
         return val
 
@@ -1928,20 +2000,21 @@ The selected item will be drawn in the color of or with the Region referenced by
         'verify that value of self._dict[name] is valid bool value'
 
         val = self._dict.get(name, default)
-        if val == None and optional: return None
+        if val is None and optional:
+            return None
 
         if val in (True, False, 0, 1):
             val = True if val else False
             #print(f'{name}: {val}')
             return val
         else:
-            raise Exception(f'{name} is not BOOL')
+            raise GUIThemeError(f'{name} is not BOOL')
 
     def _verify_option(self, name, options, default=None, optional=False):
         'verify that value of self._dict[name] is in given options list'
 
         val = self._dict.get(name, default)
-        if val == None and optional: return None
+        if val is None and optional: return None
 
         if val not in options:
             val = default
@@ -1951,7 +2024,7 @@ The selected item will be drawn in the color of or with the Region referenced by
         'verify that value of self._dict[name] is valid str of text'
 
         val = self._dict.get(name, default)
-        if val == None and optional: return None
+        if val is None and optional: return None
 
         if isinstance(val, str):
             #print(f'{name}: {val}')
@@ -1963,30 +2036,36 @@ The selected item will be drawn in the color of or with the Region referenced by
         'verify that value of self._dict[name] is valid list'
 
         val = self._dict.get(name, default)
-        if val == None and optional: return None
+        if val is None and optional: return None
 
         if not isinstance(val, (list, tuple)):
-            raise Exception(f'{name} is not a list')
+            raise GUIThemeError(f'{name} is not a list')
+
         for i, v in enumerate(val):
             if isinstance(v, (list, tuple)):
-                self._verify_bar(None, v, Rect(0,0,100,100))
+                self._verify_bar(None, v, Rect(0, 0, 100, 100))
+
             elif not isinstance(v, str):
-                raise Exception(f'{name}[{i}] == {v}, not a string')
+                raise GUIThemeError(f'{name}[{i}] == {v}, not a string')
+
         return val
 
     def _verify_ints(self, name, count, default=None, optional=False):
         'verify that value of self._dict[name] is valid list of ints'
 
         val = self._dict.get(name, default)
-        if val == None and optional: return None
+        if val is None and optional: return None
 
         if not isinstance(val, (list, tuple)):
-            raise Exception(f'{name} is not a list')
+            raise GUIThemeError(f'{name} is not a list')
+
         elif len(val) != count:
-            raise Exception(f'{name} must have {count} int values')
+            raise GUIThemeError(f'{name} must have {count} int values')
+
         for i, v in enumerate(val):
             if not isinstance(v, int):
-                raise Exception(f'{name}[{i}] == {v}, not an int')
+                raise GUIThemeError(f'{name}[{i}] == {v}, not an int')
+
         return val
 
 
@@ -2003,11 +2082,14 @@ def deep_update(d, u, r=False):
     for k, v in u.items():
         if not isinstance(d, Mapping):
             o = u
+
         elif isinstance(v, Mapping):
             r = deep_update(d.get(k, {}), v, True)
             o[k] = r
+
         else:
             o[k] = u[k]
+
     return o
 
 def deep_merge(d, u, r=False):
@@ -2031,12 +2113,13 @@ def deep_print(d, name=None, l=0, file=None):
     :param l: used internaly
     :param file: open file to print into instead of to the console
     '''
-    if name: print(f'{"  "*l}{name}', file=file)
+    if name: print(f'{"  " * l}{name}', file=file)
     for k, v in d.items():
         if isinstance(v, Mapping):
-            deep_print(v, k, l+1, file)
+            deep_print(v, k, l + 1, file)
+
         else:
-            print(f'{"  "*(l+1)}{k}: {v}', file=file)
+            print(f'{"  " * (l + 1)}{k}: {v}', file=file)
 
 
 def range_list(start, low, high, step):
@@ -2056,8 +2139,8 @@ def range_list(start, low, high, step):
     example: range_list(50, 0, 100, 10) ->
             [50, 60, 70, 80, 90, 100, 0, 10, 20, 30, 40]
     '''
-    return [str(i) for i in range(start, high+1, step)] + [
-            str(i) for i in reversed(range(start-step, low-1, -step))]
+    return [str(i) for i in range(start, high + 1, step)] + [
+            str(i) for i in reversed(range(start - step, low - 1, -step))]
 
 
 def get_color_mod(texture):
@@ -2067,7 +2150,7 @@ def get_color_mod(texture):
     '''
     r, g, b = c_ubyte(0), c_ubyte(0), c_ubyte(0)
     sdl2.SDL_GetTextureColorMod(texture.tx, byref(r), byref(g), byref(b))
-    print('inside get', r.value,g.value,b.value)
+    print('inside get', r.value, g.value, b.value)
     return  r.value, g.value, b.value
 
 def set_color_mod(texture, color):
@@ -2079,6 +2162,8 @@ def set_color_mod(texture, color):
     sdl2.SDL_SetTextureColorMod(texture.tx, r, g, b)
 
 
+'''
+## Not used.
 def init():
     with open('theme.json') as inp:
         config = json.load(inp)
@@ -2104,7 +2189,7 @@ def init():
             size=screen_size, flags=flags)
     screen = sdl2.ext.renderer.Renderer(window,
             flags=sdl2.SDL_RENDERER_ACCELERATED, logical_size=logical_size)
-    screen.clear((0,0,0))
+    screen.clear((0, 0, 0))
     sdl2.ext.renderer.set_texture_scale_quality('linear') #nearest, linear, best
 
     Image.renderer = screen
@@ -2130,3 +2215,4 @@ def init():
     utility.set_globals(config, screen, images, fonts, inp)
 
     return config, screen, fonts, images, inp
+'''

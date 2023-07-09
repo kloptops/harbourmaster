@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import contextlib
 import hashlib
 import os
 import platform
@@ -85,7 +86,7 @@ if LOG_FILE.parent.is_dir():
 
 Main:
   -> Install Menu
-  -> Uninstall Menu -> Ports List [Installed filter]
+  -> Uninstall Menu -> Port List [Installed filter]
   -> Options
   -> Quit
 
@@ -105,7 +106,7 @@ Options:
   -> Back
 
 Inspect:
-  -> Install/Uninstall
+  -> Install/Re-Install or Uninstall
   -> Back
 
 Install/Uninstall:
@@ -113,6 +114,7 @@ Install/Uninstall:
   -> Back
 
 """
+
 def theme_apply(gui, section_data, base_data, elements):
     new_data = {}
 
@@ -176,6 +178,11 @@ def theme_load(gui, theme_file):
 
     return sections
 
+
+class CancelEvent(Exception):
+    pass
+
+
 class BaseScene:
     """
     Scenes handle drawing / logic, different scenes can be transitioned to and or layered.
@@ -217,6 +224,9 @@ class BaseScene:
     def do_draw(self):
         for region in self.regions:
             # print(f"DRAW {region}")
+            if not region.visible:
+                continue
+
             region.draw()
 
 
@@ -240,11 +250,11 @@ class MainMenuScene(BaseScene):
                 return True
 
             if selected_option == 3:
-                self.gui.events.running = False
+                self.gui.do_cancel()
                 return True
 
         elif events.was_pressed('B'):
-            self.gui.events.running = False
+            self.gui.do_cancel()
             return True
 
 
@@ -306,9 +316,13 @@ class PortsListScene(BaseScene):
             port_name = self.port_list[self.last_port]
 
             self.gui.messages_begin()
-            self.gui.hm.install_port(port_name)
+            self.gui.message(f"Installing {self.all_ports[port_name]['attr']['title']}")
+            self.gui.do_loop(no_delay=True)
+            with self.gui.enable_cancellable(True):
+                self.gui.hm.install_port(port_name)
             self.gui.messages_end()
             return True
+
 
 class PortDetailScene(BaseScene):
     def __init__(self, gui):
@@ -325,6 +339,12 @@ class MessageWindowScene(BaseScene):
         super().__init__(gui)
 
         self.load_regions("message_window", ['message_text', ])
+
+    def do_update(self, events):
+        super().do_update(events)
+
+        if events.was_pressed('B'):
+            self.gui.do_cancel()
 
 
 class MessageBoxScene(BaseScene):
@@ -360,13 +380,15 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             print(f"Forcing size: {self.display_width}x{self.display_height}")
 
         # Create the window
-        self.window = sdl2.ext.Window("Game UI", size=(self.display_width, self.display_height))
+        self.window = sdl2.ext.Window("PortMaster", size=(self.display_width, self.display_height))
         self.window.show()
 
         # Create a renderer for drawing on the window
         renderer = sdl2.ext.Renderer(self.window, flags=sdl2.SDL_RENDERER_ACCELERATED)
 
         super().__init__(renderer)
+
+        self.cancellable = True
 
         self.resources.add_path(PYLIB_PATH / "default_theme")
         # self.gui.resources.add_path(harbourmaster.HM_TOOLS_DIR / "PortMaster" / "pylibs")
@@ -389,23 +411,27 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.updated = False
 
     def run(self):
-        while self.events.running:
-            self.do_loop()
+        try:
+            while True:
+                self.do_loop()
+
+        except CancelEvent:
+            pass
 
     def do_loop(self, no_delay=False):
         events = self.events
         events.handle_events()
 
-        if not events.disable_quit:
-            if events.buttons['START'] and self.events.buttons['BACK']:
-                events.running = False
-                # Quit :D
-                return
+        if not events.running:
+            self.do_cancel()
+
+        if events.buttons['START'] and self.events.buttons['BACK']:
+            self.do_cancel()
 
         self.do_update()
         self.do_draw()
 
-        ## TODO: fix it, 30 is approximately 30fps
+        ## TODO: fix it, 30 is approximately 30fps (1000 // 30)
         if not no_delay:
             sdl2.SDL_Delay(30)
 
@@ -520,6 +546,25 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
                 self.scenes.pop(-1)
 
+    def do_cancel(self):
+        if self.cancellable is True:
+            raise CancelEvent()
+
+    @contextlib.contextmanager
+    def enable_cancellable(self, cancellable=False):
+        old_cancellable = self.cancellable
+        self.cancellable = cancellable
+
+        try:
+            yield
+
+        except CancelEvent:
+            pass
+
+        finally:
+            self.cancellable = old_cancellable
+
+
 @logger.catch
 def main(argv):
     global LOG_FILE_HANDLE
@@ -575,7 +620,10 @@ def main(argv):
         pm = PortMasterGUI()
 
         pm.events.disable_quit = True
-        hm = HarbourMaster(config, temp_dir=temp_dir, callback=pm)
+
+        with pm.enable_cancellable(False):
+            hm = HarbourMaster(config, temp_dir=temp_dir, callback=pm)
+
         pm.events.disable_quit = False
 
         pm.hm = hm

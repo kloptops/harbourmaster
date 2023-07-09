@@ -25,8 +25,9 @@ HM_PERFTEST=False
 ################################################################################
 ## The following code is a simplification of the PortMaster toolsloc and whichsd code.
 HM_DEFAULT_PORTS_DIR = Path("/roms/ports")
+HM_DEFAULT_TOOLS_DIR = Path("/roms/ports")
 
-if platform.system() in ('Darwin', 'Windows'):
+if (Path().cwd() / '.git').is_dir():
     ## For testing
     HM_DEFAULT_TOOLS_DIR = Path('.').absolute()
     HM_DEFAULT_PORTS_DIR = Path('ports/').absolute()
