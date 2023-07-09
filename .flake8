@@ -21,4 +21,5 @@ ignore =
 per-file-ignores =
     pylibs/ports_info.py:E121,E501
     pylibs/harbourmaster/*:E225
+    pugwash:E402
     harbourmaster:E402

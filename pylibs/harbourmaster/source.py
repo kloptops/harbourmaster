@@ -31,13 +31,13 @@ class GitHubRawReleaseV1(BaseSource):
     VERSION = 3
 
     def __init__(self, hm, file_name, config):
-        self._hm = hm
+        self.hm = hm
         self._file_name = file_name
         self._config = config
         self._prefix = config['prefix']
         self._did_update = False
         self._wants_update = None
-        self._images_dir = self._hm.cfg_dir / f"images_{self._prefix}"
+        self._images_dir = self.hm.cfg_dir / f"images_{self._prefix}"
         self._images_md5_file = self._images_dir / "images.md5"
         self._images_md5 = None
 
@@ -56,7 +56,7 @@ class GitHubRawReleaseV1(BaseSource):
         elif datetime_compare(self._config['last_checked']) > HM_UPDATE_FREQUENCY:
             self._wants_update = "Auto Update."
 
-        if not self._hm.config['no-check']:
+        if not self.hm.config['no-check']:
             self.auto_update()
         else:
             self.load()
@@ -64,8 +64,8 @@ class GitHubRawReleaseV1(BaseSource):
     def auto_update(self):
         if self._wants_update is not None:
             cprint(f"<b>{self._config['name']}</b>: {self._wants_update}")
-            if self._hm.callback is not None:
-                self._hm.callback.message(f"{self._config['name']}: {self._wants_update}")
+            if self.hm.callback is not None:
+                self.hm.callback.message(f"{self._config['name']}: {self._wants_update}")
 
             self.update()
             self._wants_update = None
@@ -124,8 +124,8 @@ class GitHubRawReleaseV1(BaseSource):
 
     def update(self):
         cprint(f"<b>{self._config['name']}</b>: updating")
-        if self._hm.callback is not None:
-            self._hm.callback.message(f"{self._config['name']}: updating")
+        if self.hm.callback is not None:
+            self.hm.callback.message(f"{self._config['name']}: updating")
 
         # Scrap the rest
         self._clear()
@@ -136,14 +136,13 @@ class GitHubRawReleaseV1(BaseSource):
 
         if self._did_update:
             cprint(f"- <b>{self._config['name']}</b>: up to date already.")
-            if self._hm.callback is not None:
-                self._hm.callback.message(f"- {self._config['name']}: up to date already")
+            self.hm.callback.message(f"- {self._config['name']}: up to date already")
 
             return
 
         cprint(f"- <b>{self._config['name']}</b>: Fetching latest ports")
-        if self._hm.callback is not None:
-            self._hm.callback.message(f"- {self._config['name']}: Fetching latest ports")
+        if self.hm.callback is not None:
+            self.hm.callback.message(f"- {self._config['name']}: Fetching latest ports")
         data = fetch_json(self._config['url'])
         if data is None:
             return
@@ -187,8 +186,7 @@ class GitHubRawReleaseV1(BaseSource):
         self.save()
         self._did_update = True
         cprint(f"- <b>{self._config['name']}:</b> Done.")
-        if self._hm.callback is not None:
-            self._hm.callback.message(f"- {self._config['name']}: Done.")
+        self.hm.callback.message(f"- {self._config['name']}: Done.")
 
     def download(self, port_name, temp_dir=None, md5_result=None):
         if md5_result is None:
@@ -196,39 +194,35 @@ class GitHubRawReleaseV1(BaseSource):
 
         if port_name not in self._data:
             logger.error(f"Unable to find port {port_name}")
-            if callback is not None:
-                callback.message_box(f"Unable to find {port_name}.")
+            self.hm.callback.message_box(f"Unable to find {port_name}.")
             return None
 
         if temp_dir is None:
-            temp_dir = self._hm.temp_dir
+            temp_dir = self.hm.temp_dir
 
         if (port_name + '.md5') in self._data:
             md5_file = port_name + '.md5'
         elif (port_name + '.md5sum') in self._data:
             md5_file = port_name + '.md5sum'
         else:
-            if callback is not None:
-                callback.message_box(f"Unable to find verification info for {port_name}.")
+            self.hm.callback.message_box(f"Unable to find verification info for {port_name}.")
             logger.error(f"Unable to find md5 for {port_name}")
             return None
 
         md5_source = fetch_text(self._data[md5_file]['url'])
         if md5_source is None:
             logger.error(f"Unable to download md5 file: {self._data[md5_file]['url']!r}")
-            if callback is not None:
-                callback.message_box(f"Unable to download verification info for {port_name}.")
+            self.hm.callback.message_box(f"Unable to download verification info for {port_name}.")
             return None
 
         md5_source = md5_source.strip().split(' ', 1)[0]
 
-        zip_file = download(temp_dir / port_name, self._data[port_name]['url'], md5_source, callback=self._hm.callback)
+        zip_file = download(temp_dir / port_name, self._data[port_name]['url'], md5_source, callback=self.hm.callback)
 
         if zip_file is not None:
             cprint("<b,g,>Success!</b,g,>")
 
-            if self._hm.callback is not None:
-                self._hm.callback.message(f"- Success!")
+            self.hm.callback.message(f"- Success!")
 
         md5_result[0] = md5_source
 
@@ -255,8 +249,7 @@ class PortMasterV1(GitHubRawReleaseV1):
     def _update(self):
 
         cprint(f"- <b>{self._config['name']}</b>: Fetching info")
-        if self._hm.callback is not None:
-            self._hm.callback.message(f"- {self._config['name']}: Fetching info")
+        self.hm.callback.message(f"- {self._config['name']}: Fetching info")
 
         # portsmd_url = "https://raw.githubusercontent.com/kloptops/PortMaster/main/ports.md"
         portsmd_url = self._data['ports.md']['url']
@@ -285,7 +278,7 @@ class PortMasterV1(GitHubRawReleaseV1):
         images_md5 = fetch_text(images_url_md5).strip()
         if self._images_md5 is None or images_md5 != self._images_md5:
             logger.debug(f"images_md5={images_md5}, self.images_md5={self._images_md5}")
-            images_zip = download(self._hm.temp_dir / "images.zip", images_url_zip, images_md5, callback=self._hm.callback)
+            images_zip = download(self.hm.temp_dir / "images.zip", images_url_zip, images_md5, callback=self.hm.callback)
             if images_zip is None:
                 logger.debug(f"Unable to download {images_url_zip}")
                 return
@@ -434,8 +427,7 @@ class GitHubRepoV1(GitHubRawReleaseV1):
         git_url = f"https://api.github.com/repos/{user_name}/{repo_name}/git/trees/{branch_name}?recursive=true"
 
         cprint(f"- <b>{self._config['name']}</b>: Fetching latest ports")
-        if self._hm.callback is not None:
-            self._hm.callback.message(f"- {self._config['name']}: Fetching latest ports")
+        self.hm.callback.message(f"- {self._config['name']}: Fetching latest ports")
 
         git_info = fetch_json(git_url)
         if git_info is None:
@@ -499,9 +491,9 @@ class GitHubRepoV1(GitHubRawReleaseV1):
         self._did_update = True
         cprint(f"- <b>{self._config['name']}:</b> Done.")
 
-    def download(self, port_name, temp_dir=None, callback=None):
+    def download(self, port_name, temp_dir=None):
         md5_result = [None]
-        zip_file = super().download(port_name, temp_dir, md5_result, callback=callback)
+        zip_file = super().download(port_name, temp_dir, md5_result)
 
         if zip_file is None:
             return None
@@ -543,7 +535,7 @@ def raw_download(save_path, file_url, callback=None):
         md5_source = fetch_text(file_url)
         if md5_source is None:
             if callback is not None:
-                callback.message(f"Unable to download verification file. [{r.status_code}]", wait=5)
+                callback.message_box(f"Unable to download verification file.")
             logger.error(f"Unable to download file: {file_url!r} [{r.status_code}]")
             return None
 
@@ -556,7 +548,8 @@ def raw_download(save_path, file_url, callback=None):
 
     if not file_name.endswith('.zip'):
         if callback is not None:
-            callback.message(f"Unable to download non zip files.", wait=5)
+            callback.message_box(f"Unable to download non zip files.")
+
         logger.error(f"Unable to download file: {file_url!r} [doesn't end with '.zip']")
         return None
 

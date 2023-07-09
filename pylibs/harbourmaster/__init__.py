@@ -11,6 +11,7 @@ from .config import (
 
 from .util import (
     Callback,
+    CancelEvent,
     add_dict_list_unique,
     add_list_unique,
     add_pm_signature,

@@ -54,6 +54,8 @@ class HarbourMaster():
         elif not isinstance(ports_dir, pathlib.PurePath):
             raise ValueError('ports_dir')
 
+        if callback is None:
+            callback = Callback()
 
         self.temp_dir  = temp_dir
         self.tools_dir = tools_dir
@@ -71,25 +73,19 @@ class HarbourMaster():
         self.ports = []
         self.utils = []
 
-        if self.callback:
-            self.callback.messages_begin()
-
-        if self.callback:
+        with self.callback.enable_messages():
             self.callback.message("Loading...")
 
-        if not self.cfg_dir.is_dir():
-            self.cfg_dir.mkdir(0o755, parents=True)
+            if not self.cfg_dir.is_dir():
+                self.cfg_dir.mkdir(0o755, parents=True)
 
-            for source_name in HM_SOURCE_DEFAULTS:
-                with (self.cfg_dir / source_name).open('w') as fh:
-                    fh.write(HM_SOURCE_DEFAULTS[source_name])
+                for source_name in HM_SOURCE_DEFAULTS:
+                    with (self.cfg_dir / source_name).open('w') as fh:
+                        fh.write(HM_SOURCE_DEFAULTS[source_name])
 
-        self.load_sources()
+            self.load_sources()
 
-        self.load_ports()
-
-        if self.callback:
-            self.callback.messages_end()
+            self.load_ports()
 
     @timeit
     def __ports_info(self):
@@ -104,8 +100,7 @@ class HarbourMaster():
         source_files = list(self.cfg_dir.glob('*.source.json'))
         source_files.sort()
 
-        if self.callback:
-            self.callback.message("- Loading Sources.")
+        self.callback.message("- Loading Sources.")
 
         check_keys = {'version': None, 'prefix': None, 'api': HM_SOURCE_APIS, 'name': None, 'last_checked': None, 'data': None}
         for source_file in source_files:
@@ -261,8 +256,7 @@ class HarbourMaster():
 
         ports_info = self.__ports_info()
 
-        if self.callback:
-            self.callback.message("- Loading Ports.")
+        self.callback.message("- Loading Ports.")
 
         """
         This is a bit of a heavy function but it does the following.
@@ -625,6 +619,22 @@ class HarbourMaster():
 
         return None
 
+    def port_info(self, port_name, installed=False):
+        port_name = name_cleaner(port_name)
+
+        if installed:
+            if port_name in self.installed_ports:
+                return self.installed_ports[port_name]
+
+            if port_name in self.broken_ports:
+                return self.broken_ports[port_name]
+
+        for source_prefix, source in self.sources.items():
+            for port_name in source.ports:
+                return source.port_info(port_name)
+
+        return None
+
     def _fix_permissions(self):
         path_fs = get_path_fs(self.ports_dir)
         logger.debug(f"path_fs={path_fs}")
@@ -651,153 +661,182 @@ class HarbourMaster():
         dirs = []
         scripts = []
 
-        with zipfile.ZipFile(download_info['zip_file'], 'r') as zf:
-            for file_info in zf.infolist():
-                if file_info.filename.startswith('/'):
-                    ## Sneaky
-                    logger.error(f"Port {download_info['name']} has an illegal file {file_info.filename!r}, aborting.")
-                    if self.callback is not None:
+        undo_data = []
+        is_successs = False
+
+        try:
+            with zipfile.ZipFile(download_info['zip_file'], 'r') as zf:
+                for file_info in zf.infolist():
+                    if file_info.filename.startswith('/'):
+                        ## Sneaky
+                        logger.error(f"Port {download_info['name']} has an illegal file {file_info.filename!r}, aborting.")
                         self.callback.message_box(f"Port {download_info['name']} has an illegal file, aborting installation.")
-                    return 255
+                        return 255
 
-                if file_info.filename.startswith('../'):
-                    ## Little
-                    logger.error(f"Port {download_info['name']} has an illegal file {file_info.filename!r}, aborting installation.")
-                    if self.callback is not None:
+                    if file_info.filename.startswith('../'):
+                        ## Little
+                        logger.error(f"Port {download_info['name']} has an illegal file {file_info.filename!r}, aborting installation.")
                         self.callback.message_box(f"Port {download_info['name']} has an illegal file, aborting installation.")
-                    return 255
+                        return 255
 
-                if '/../' in file_info.filename:
-                    ## Shits
-                    logger.error(f"Port {download_info['name']} has an illegal file {file_info.filename!r}, aborting.")
-                    if self.callback is not None:
+                    if '/../' in file_info.filename:
+                        ## Shits
+                        logger.error(f"Port {download_info['name']} has an illegal file {file_info.filename!r}, aborting.")
                         self.callback.message_box(f"Port {download_info['name']} has an illegal file, aborting installation.")
-                    return 255
+                        return 255
 
-                if '/' in file_info.filename:
-                    parts = file_info.filename.split('/')
+                    if '/' in file_info.filename:
+                        parts = file_info.filename.split('/')
 
-                    if parts[0] not in dirs:
-                        items.append(parts[0] + '/')
-                        dirs.append(parts[0])
+                        if parts[0] not in dirs:
+                            items.append(parts[0] + '/')
+                            dirs.append(parts[0])
 
-                    if len(parts) == 2:
-                        if parts[1].lower().endswith('.port.json'):
-                            ## TODO: add the ability for multiple port folders to have multiple port.json files. ?
-                            if port_info_file is not None:
-                                logger.warning(f"Port {download_info['name']} has multiple port.json files.")
-                                logger.warning(f"- Before: {port_info_file.relative_to(self.ports_dir)!r}")
-                                logger.warning(f"- Now:    {file_info.filename!r}")
+                        if len(parts) == 2:
+                            if parts[1].lower().endswith('.port.json'):
+                                ## TODO: add the ability for multiple port folders to have multiple port.json files. ?
+                                if port_info_file is not None:
+                                    logger.warning(f"Port {download_info['name']} has multiple port.json files.")
+                                    logger.warning(f"- Before: {port_info_file.relative_to(self.ports_dir)!r}")
+                                    logger.warning(f"- Now:    {file_info.filename!r}")
 
-                            port_info_file = self.ports_dir / file_info.filename
+                                port_info_file = self.ports_dir / file_info.filename
 
-                    if file_info.filename.lower().endswith('.sh'):
-                        logger.warning(f"Port {download_info['name']} has {file_info.filename} inside, this can cause issues.")
+                        if file_info.filename.lower().endswith('.sh'):
+                            logger.warning(f"Port {download_info['name']} has {file_info.filename} inside, this can cause issues.")
 
-                else:
-                    if file_info.filename.lower().endswith('.sh'):
-                        scripts.append(file_info.filename)
-                        items.append(file_info.filename)
                     else:
-                        logger.warning(f"Port {download_info['name']} contains {file_info.filename} at the top level, but it is not a shell script.")
+                        if file_info.filename.lower().endswith('.sh'):
+                            scripts.append(file_info.filename)
+                            items.append(file_info.filename)
+                        else:
+                            logger.warning(f"Port {download_info['name']} contains {file_info.filename} at the top level, but it is not a shell script.")
 
-            if len(dirs) == 0:
-                logger.error(f"Port {download_info['name']} has no directories, aborting.")
-                if self.callback is not None:
+                if len(dirs) == 0:
+                    logger.error(f"Port {download_info['name']} has no directories, aborting.")
                     self.callback.message_box(f"Port {download_info['name']} has no directories, aborting installation.")
 
-                return 255
+                    return 255
 
-            if len(scripts) == 0:
-                logger.error(f"Port {download_info['name']} has no scripts, aborting.")
-                if self.callback is not None:
+                if len(scripts) == 0:
+                    logger.error(f"Port {download_info['name']} has no scripts, aborting.")
                     self.callback.message_box(f"Port {download_info['name']} has no scripts, aborting installation.")
 
-                return 255
+                    return 255
 
-            ## TODO: keep a list of installed files for uninstalling?
-            # At this point the port will be installed
-            # Extract all the files to the specified directory
-            # zf.extractall(self.ports_dir)
-            cprint("<b>Extracting port.</b>")
-            if self.callback is not None:
+                ## TODO: keep a list of installed files for uninstalling?
+                # At this point the port will be installed
+                # Extract all the files to the specified directory
+                # zf.extractall(self.ports_dir)
+                cprint("<b>Extracting port.</b>")
                 self.callback.message(f"Installing {download_info['name']}.")
 
-            for file_info in zf.infolist():
-                if file_info.file_size == 0:
-                    compress_saving = 100
-                else:
-                    compress_saving = file_info.compress_size / file_info.file_size * 100
+                for file_info in zf.infolist():
+                    if file_info.file_size == 0:
+                        compress_saving = 100
+                    else:
+                        compress_saving = file_info.compress_size / file_info.file_size * 100
 
-                if self.callback is not None:
                     self.callback.message(f"- {file_info.filename}")
 
-                cprint(f"- <b>{file_info.filename!r}</b> <d>[{nice_size(file_info.file_size)} ({compress_saving:.0f}%)]</d>")
-                zf.extract(file_info, path=self.ports_dir)
+                    dest_file = path=self.ports_dir / file_info.filename
 
-        if port_info_file is not None:
-            port_info = port_info_load(port_info_file)
-        else:
-            port_info = port_info_load({})
+                    if not file_info.filename.endswith('/'):
+                        if not dest_file.parent.is_dir():
+                            add_list_unique(undo_data, dest_file.parent)
 
-        # print(f"Port Info: {port_info}")
-        # print(f"Download Info: {download_info}")
+                    if not dest_file.exists():
+                        add_list_unique(undo_data, dest_file)
 
-        port_info_merge(port_info, download_info)
+                    cprint(f"- <b>{file_info.filename!r}</b> <d>[{nice_size(file_info.file_size)} ({compress_saving:.0f}%)]</d>")
+                    zf.extract(file_info, path=self.ports_dir)
 
-        ## These two are always overriden.
-        port_info['name'] = name_cleaner(download_info['zip_file'].name)
-        port_info['items'] = items
-        port_info['status'] = download_info['status'].copy()
-        port_info['status']['status'] = 'Installed'
+            if port_info_file is not None:
+                port_info = port_info_load(port_info_file)
+            else:
+                port_info = port_info_load({})
 
-        if port_info_file is None:
-            port_info_file = self.ports_dir / dirs[0] / (port_info['name'].rsplit('.', 1)[0] + '.port.json')
+            # print(f"Port Info: {port_info}")
+            # print(f"Download Info: {download_info}")
 
-        port_info['files'] = {
-            'port.json': str(port_info_file.relative_to(self.ports_dir)),
-            }
+            port_info_merge(port_info, download_info)
 
-        # Add all the root dirs/scripts in the port
-        for item in port_info['items']:
-            if (self.ports_dir / item).exists():
-                if item not in get_dict_list(port_info['files'], item):
-                    add_dict_list_unique(port_info['files'], item, item)
+            ## These two are always overriden.
+            port_info['name'] = name_cleaner(download_info['zip_file'].name)
+            port_info['items'] = items
+            port_info['status'] = download_info['status'].copy()
+            port_info['status']['status'] = 'Installed'
 
-                if item.casefold().endswith('.sh'):
-                    add_pm_signature(self.ports_dir / item, [port_info['name'], item])
+            if port_info_file is None:
+                port_info_file = self.ports_dir / dirs[0] / (port_info['name'].rsplit('.', 1)[0] + '.port.json')
 
-        # And any optional ones.
-        for item in get_dict_list(port_info, 'items_opt'):
-            if (self.ports_dir / item).exists():
-                if item not in get_dict_list(port_info['files'], item):
-                    add_dict_list_unique(port_info['files'], item, item)
+            port_info['files'] = {
+                'port.json': str(port_info_file.relative_to(self.ports_dir)),
+                }
 
-                if item.casefold().endswith('.sh'):
-                    add_pm_signature(self.ports_dir / item, [port_info['name'], item])
-        # print(f"Merged Info: {port_info}")
+            # Add all the root dirs/scripts in the port
+            for item in port_info['items']:
+                if (self.ports_dir / item).exists():
+                    if item not in get_dict_list(port_info['files'], item):
+                        add_dict_list_unique(port_info['files'], item, item)
 
-        with open(port_info_file, 'w') as fh:
-            json.dump(port_info, fh, indent=4)
+                    if item.casefold().endswith('.sh'):
+                        add_pm_signature(self.ports_dir / item, [port_info['name'], item])
+
+            # And any optional ones.
+            for item in get_dict_list(port_info, 'items_opt'):
+                if (self.ports_dir / item).exists():
+                    if item not in get_dict_list(port_info['files'], item):
+                        add_dict_list_unique(port_info['files'], item, item)
+
+                    if item.casefold().endswith('.sh'):
+                        add_pm_signature(self.ports_dir / item, [port_info['name'], item])
+            # print(f"Merged Info: {port_info}")
+
+            if not port_info_file.is_file():
+                add_list_unique(undo_data, port_info_file)
+
+            with open(port_info_file, 'w') as fh:
+                json.dump(port_info, fh, indent=4)
+
+            is_successs = True
+
+        finally:
+            if not is_successs and len(undo_data) > 0:
+                logger.error("Installation failed, removing installed files.")
+                self.callback.message(f"Installation failed, removing files...")
+
+                for undo_file in undo_data[::-1]:
+                    logger.debug(f"Removing {undo_file.relative_to(self.ports_dir)}")
+                    self.callback.message(f"- {str(undo_file.relative_to(self.ports_dir))}")
+
+                    if undo_file.is_file():
+                        undo_file.unlink()
+
+                    elif undo_file.is_dir():
+                        shutil.rmtree(undo_file)
+
+                self.callback.message_box(f"Port {download_info['name']} installed failed.")
 
         self._fix_permissions()
 
         if port_info['attr'].get('runtime', None) is not None:
             return self.check_runtime(port_info['attr']['runtime'])
 
-        if self.callback is not None:
-            self.callback.message_box(f"Port {download_info['name']} installed successfully.")
+        self.callback.message_box(f"Port {download_info['name']} installed successfully.")
 
         return 0
 
     def check_runtime(self, runtime):
         if isinstance(runtime, str):
             if '/' in runtime:
-                if self.callback is not None:
-                    self.callback.message_box(f"Port {runtime} contains a bad runtime, game may not run correctly.")
+                self.callback.message_box(f"Port {runtime} contains a bad runtime, game may not run correctly.")
 
                 logger.error(f"Bad runtime {runtime}")
                 return 255
+
+            if not self.libs_dir.is_dir():
+                self.libs_dir.mkdir(0o777)
 
             runtime_file = (self.libs_dir / runtime)
             if not runtime_file.is_file():
@@ -807,11 +846,17 @@ class HarbourMaster():
 
                     cprint(f"Downloading required runtime <b>{runtime}</b>.")
 
-                    if self.callback is not None:
-                        self.callback.message(f"Downloading runtime {runtime}.")
+                    self.callback.message(f"Downloading runtime {runtime}.")
 
                     try:
-                        runtime_download = source.download(runtime, temp_dir=self.libs_dir)
+                        with self.callback.enable_cancellable(True):
+                            runtime_download = source.download(runtime, temp_dir=self.libs_dir)
+
+                        if self.callback.was_cancelled:
+                            if runtime_file.is_file():
+                                runtime_file.unlink()
+
+                            self.callback.message_box(f"Unable to download {runtime}, game may not run correctly.")
 
                     except Exception as err:
                         ## We need to catch any errors and delete the file if it fails,
@@ -819,14 +864,15 @@ class HarbourMaster():
                         if runtime_file.is_file():
                             runtime_file.unlink()
 
-                        if self.callback is not None:
-                            self.callback.message_box(f"Unable to download {runtime}, game may not run correctly.")
-                            return 255
+                        logger.error(err)
 
-                        raise err
+                        self.callback.message_box(f"Unable to download {runtime}, game may not run correctly.")
+                        return 255
 
                     return 0
                 else:
+                    self.callback.message(f"Unable to find a download for {runtime}.")
+
                     logger.error(f"Unable to find suitable source for {runtime}.")
                     return 255
 
@@ -838,7 +884,8 @@ class HarbourMaster():
             if download_info is None:
                 return 255
 
-            return self._install_port(download_info)
+            with self.callback.enable_cancellable(False):
+                return self._install_port(download_info)
 
         # Special case for a local file.
         if port_name.startswith('./') or port_name.startswith('../') or port_name.startswith('/'):
@@ -858,7 +905,8 @@ class HarbourMaster():
                 'status': 'downloaded',
                 }
 
-            return self._install_port(port_info)
+            with self.callback.enable_cancellable(False):
+                return self._install_port(port_info)
 
         if '/' in port_name:
             repo, port_name = port_name.split('/', 1)
@@ -879,10 +927,10 @@ class HarbourMaster():
                 return 255
 
             # print(f"Download Info: {download_info.to_dict()}")
-            return self._install_port(download_info)
+            with self.callback.enable_cancellable(False):
+                return self._install_port(download_info)
 
-        if self.callback is not None:
-            self.callback.message_box(f"Unable to find a source for {port_name}")
+        self.callback.message_box(f"Unable to find a source for {port_name}")
 
         cprint(f"Unable to find a source for <b>{port_name}</b>")
         return 255
@@ -896,8 +944,7 @@ class HarbourMaster():
             port_loc = self.broken_ports
 
             if port_info is None:
-                if self.callback is not None:
-                    self.callback.message_box(f"Unknown port {port_name}")
+                self.callback.message_box(f"Unknown port {port_name}")
                 logger.error(f"Unknown port {port_name}")
                 return 255
 
@@ -928,8 +975,7 @@ class HarbourMaster():
 
         # cprint(f"{all_items}")
         cprint(f"Uninstalling <b>{port_name}</b>")
-        if self.callback is not None:
-            self.callback.message(f"Removing {port_name}")
+        self.callback.message(f"Removing {port_name}")
 
         all_port_items = []
         for port_file in port_info['files']:
@@ -950,8 +996,7 @@ class HarbourMaster():
 
             if item_path.exists():
                 cprint(f"- removing {item}")
-                if self.callback is not None:
-                    self.callback.message(f"- removing {item}")
+                self.callback.message(f"- removing {item}")
 
                 if item_path.is_dir():
                     shutil.rmtree(item_path)
@@ -959,8 +1004,7 @@ class HarbourMaster():
                 elif item_path.is_file():
                     item_path.unlink()
 
-        if self.callback is not None:
-            self.callback.message_box(f"Successfully uninstalled {port_name}")
+        self.callback.message_box(f"Successfully uninstalled {port_name}")
 
         del port_loc[port_name.casefold()]
         return 0

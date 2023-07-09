@@ -406,10 +406,17 @@ def make_temp_directory():
         shutil.rmtree(temp_dir)
 
 
+class CancelEvent(Exception):
+    pass
+
+
 class Callback:
     """
     This is a simple class that is used by harbourmaster to cooperate with gui code.
     """
+    def __init__(self):
+        self.was_cancelled = False
+
     def progress(self, message, amount, total=None):
         pass
 
@@ -425,9 +432,30 @@ class Callback:
     def message_box(self, message):
         pass
 
+    def do_cancel(self):
+        pass
+
+    @contextlib.contextmanager
+    def enable_messages(self):
+        try:
+            self.was_cancelled = False
+            yield
+
+        finally:
+            pass
+
+    @contextlib.contextmanager
+    def enable_cancellable(self, cancellable=False):
+        try:
+            yield
+
+        finally:
+            pass
+
 
 __all__ = (
     'Callback',
+    'CancelEvent',
     'add_dict_list_unique',
     'add_list_unique',
     'add_pm_signature',

@@ -115,6 +115,7 @@ Install/Uninstall:
 
 """
 
+
 def theme_apply(gui, section_data, base_data, elements):
     new_data = {}
 
@@ -125,16 +126,22 @@ def theme_apply(gui, section_data, base_data, elements):
 
         elif region_name.startswith("#element:"):
             element_name = region_name.split(':', 1)[1]
+            if ':' in element_name:
+                element_name, region_name = element_name.split(':', 1)
+            else:
+                region_name = element_name
+
             if element_name not in elements:
                 print(f"Error: Unknown element {element_name}")
                 continue
 
-            new_data[element_name] = pySDL2gui.deep_merge(base_data, pySDL2gui.deep_merge(elements[element_name], region_data))
+            new_data[region_name] = pySDL2gui.deep_merge(base_data, pySDL2gui.deep_merge(elements[element_name], region_data))
             continue
 
         new_data[region_name] = pySDL2gui.deep_merge(base_data, region_data)
 
     return new_data
+
 
 def theme_load(gui, theme_file):
     print(f"Loading theme {theme_file}")
@@ -177,10 +184,6 @@ def theme_load(gui, theme_file):
             sections[section_name] = theme_apply(gui, section_data, base_data, elements)
 
     return sections
-
-
-class CancelEvent(Exception):
-    pass
 
 
 class BaseScene:
@@ -229,32 +232,73 @@ class BaseScene:
 
             region.draw()
 
-
 class MainMenuScene(BaseScene):
     def __init__(self, gui):
         super().__init__(gui)
 
         self.load_regions("main_menu", ['option_list', ])
 
-        if len(self.tags['option_list'].list) != 4:
-            raise RuntimeError("The main_menu -> option_list.list needs to be 4 elements long")
+        if len(self.tags['option_list'].list) != len(self.tags['option_list'].option):
+            raise RuntimeError("The main_menu -> option_list.list doesnt match the option_list.option")
+
+        self.option = self.tags['option_list'].option
 
     def do_update(self, events):
         super().do_update(events)
 
         if events.was_pressed('START') or events.was_pressed('A'):
-            selected_option = self.tags['option_list'].selected
+            selected_option = self.option[self.tags['option_list'].selected]
 
-            if selected_option == 0:
-                self.gui.push_scene('ports', PortsListScene(self.gui))
+            if selected_option == 'install':
+                self.gui.push_scene('ports', PortsListScene(self.gui, {'mode': 'install', 'filters': []}))
                 return True
 
-            if selected_option == 3:
+            elif selected_option == 'uninstall':
+                self.gui.push_scene('ports', PortsListScene(self.gui, {'mode': 'uninstall', 'filters': ['installed', ]}))
+                return True
+
+            elif selected_option == 'option':
+                self.gui.push_scene('option', OptionScene(self.gui))
+                return True
+
+            elif selected_option == 'quit':
                 self.gui.do_cancel()
                 return True
 
         elif events.was_pressed('B'):
             self.gui.do_cancel()
+            return True
+
+
+class OptionScene(BaseScene):
+    def __init__(self, gui):
+        super().__init__(gui)
+
+        self.load_regions("option_menu", ['option_list', ])
+
+        if len(self.tags['option_list'].list) != len(self.tags['option_list'].option):
+            raise RuntimeError("The main_menu -> option_list.list doesnt match the option_list.option")
+
+        self.option = self.tags['option_list'].option
+
+    def do_update(self, events):
+        super().do_update(events)
+
+        if events.was_pressed('START') or events.was_pressed('A'):
+            selected_option = self.option[self.tags['option_list'].selected]
+
+            print(f"Selected {selected_option}")
+
+            if selected_option == 'update-ports':
+                self.gui.do_update_ports()
+                return True
+
+            elif selected_option == 'back':
+                self.gui.pop_scene()
+                return True
+
+        elif events.was_pressed('B'):
+            self.gui.pop_scene()
             return True
 
 
@@ -264,8 +308,10 @@ class InstallMenuScene(BaseScene):
 
 
 class PortsListScene(BaseScene):
-    def __init__(self, gui):
+    def __init__(self, gui, options):
         super().__init__(gui)
+
+        self.options = options
 
         self.load_regions("ports_list", [
             'ports_list',
@@ -274,23 +320,49 @@ class PortsListScene(BaseScene):
             'port_image',
             ])
 
+        self.ready = False
         self.update_ports()
 
     def update_ports(self):
-        self.all_ports = self.gui.hm.list_ports()
+        if self.gui.hm is None:
+            self.all_ports = {}
+            self.port_list = []
+            self.last_port = 0
+            self.tags['ports_list'].selected = 0
+            return
+
+        self.all_ports = self.gui.hm.list_ports(filters=self.options['filters'])
         self.port_list = list(self.all_ports.keys())
-        self.tags['ports_list'].selected = 0
 
-        self.tags['ports_list'].list = [
-            self.all_ports[port_name]['attr']['title']
-            for port_name in self.port_list]
+        if len(self.port_list) == 0:
+            self.tags['ports_list'].list = [
+                'NO PORTS']
 
-        self.last_port = 1
+            self.tags['port_title'].text = "** NO PORTS FOUND **"
+            self.tags['port_desc'].text = "Download ports first."
+
+            image = self.gui.resources.find("no-image.jpg")
+            self.tags['port_image'].image = self.gui.images.load(image)
+
+        else:
+            self.tags['ports_list'].list = [
+                self.all_ports[port_name]['attr']['title']
+                for port_name in self.port_list]
+
+        if self.tags['ports_list'].selected > len(self.port_list):
+            self.tags['ports_list'].selected = 0
+
+        self.last_port = self.tags['ports_list'].selected + 1
+        self.ready = True
 
     def do_update(self, events):
         super().do_update(events)
+        if not self.ready:
+            self.update_ports()
+            if not self.ready:
+                return
 
-        if self.last_port != self.tags['ports_list'].selected:
+        if len(self.port_list) > 0 and self.last_port != self.tags['ports_list'].selected:
             self.last_port = self.tags['ports_list'].selected
             port_name = self.port_list[self.last_port]
             port_info = self.all_ports[port_name]
@@ -311,22 +383,77 @@ class PortsListScene(BaseScene):
             self.gui.pop_scene()
             return True
 
-        if events.was_pressed('A'):
+        if events.was_pressed('A') and len(self.port_list) > 0:
             self.last_port = self.tags['ports_list'].selected
             port_name = self.port_list[self.last_port]
 
-            self.gui.messages_begin()
-            self.gui.message(f"Installing {self.all_ports[port_name]['attr']['title']}")
-            self.gui.do_loop(no_delay=True)
-            with self.gui.enable_cancellable(True):
-                self.gui.hm.install_port(port_name)
-            self.gui.messages_end()
+            if self.options['mode'] == 'install':
+                self.ready = False
+                self.gui.push_scene('port_info', PortInfoScene(self.gui, port_name, 'install'))
+
+            elif self.options['mode'] == 'uninstall':
+                self.ready = False
+                self.gui.push_scene('port_info', PortInfoScene(self.gui, port_name, 'uninstall'))
+
             return True
 
 
-class PortDetailScene(BaseScene):
-    def __init__(self, gui):
+class PortInfoScene(BaseScene):
+    def __init__(self, gui, port_name, action):
         super().__init__(gui)
+
+        self.load_regions("port_info", [
+            'port_title',
+            'port_desc',
+            'port_image',
+
+            'back_button',
+            'ok_button',
+            ])
+
+        self.port_name = port_name
+        self.action = action
+        self.ready = False
+        self.update_port()
+
+    def update_port(self):
+        if self.gui.hm is None:
+            return
+
+        self.port_info = self.gui.hm.port_info(self.port_name)
+
+        image = self.gui.hm.port_images(self.port_name)
+        if image is not None:
+            image = image.get('screenshot', None)
+
+        if image is None:
+            image = self.gui.resources.find("no-image.jpg")
+
+        self.tags['port_title'].text = self.port_info['attr']['title']
+        self.tags['port_desc'].text = self.port_info['attr']['desc']
+        self.tags['port_image'].image = self.gui.images.load(image)
+
+        self.tags['ok_button'].text = self.action
+
+        self.ready = True
+
+    def do_update(self, events):
+        super().do_update(events)
+
+        if events.was_pressed('A'):
+            self.gui.pop_scene()
+
+            if self.action == 'install':
+                self.gui.do_install(self.port_name)
+
+            elif self.action == 'uninstall':
+                self.gui.do_uninstall(self.port_name)
+
+            return True
+
+        if events.was_pressed('B'):
+            self.gui.pop_scene()
+            return True
 
 
 class MessageWindowScene(BaseScene):
@@ -348,7 +475,18 @@ class MessageWindowScene(BaseScene):
 
 
 class MessageBoxScene(BaseScene):
-    ...
+    def __init__(self, gui, message, *, want_cancel=False, want_ok=True):
+        super().__init__(gui)
+
+        self.load_regions("message_box", ['message_text', ])
+
+        self.tags['message_text'].text = message
+
+        if 'cancel_button' in self.tags:
+            self.tags['cancel_button'].visible = want_cancel
+
+        if 'ok_button' in self.tags:
+            self.tags['ok_button'].visible = want_ok
 
 
 class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
@@ -407,25 +545,27 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.callback_progress = None
         self.message_box_depth = 0
         self.message_box_scene = None
+        self.was_cancelled = False
 
         self.updated = False
 
+    ## Loop stuff.
     def run(self):
         try:
             while True:
                 self.do_loop()
 
-        except CancelEvent:
+        except harbourmaster.CancelEvent:
             pass
 
-    def do_loop(self, no_delay=False):
+    def do_loop(self, *, no_delay=False):
         events = self.events
         events.handle_events()
 
-        if not events.running:
-            self.do_cancel()
-
         if events.buttons['START'] and self.events.buttons['BACK']:
+            events.running = False
+
+        if not events.running:
             self.do_cancel()
 
         self.do_update()
@@ -458,6 +598,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         # Clean up
         sdl2.ext.quit()
 
+    ## Messagebox / Callback stuff
     def callback_update(self):
         if self.message_box_scene:
             messages = self.callback_messages[-15:]
@@ -484,25 +625,86 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.callback_messages.append(message)
         self.callback_update()
 
-    def message_box(self, message):
-        self.callback_messages.append(message)
-        self.callback_update()
+    def message_box(self, message, want_cancel=False, want_ok=True):
+        """
+        Display a message box
+        """
 
-    def messages_begin(self):
+        with self.enable_cancellable(True):
+            self.push_scene('message_box', MessageBoxScene(self, message, want_cancel=want_cancel, want_ok=want_ok))
+
+            try:
+                while True:
+                    if self.events.was_pressed('B'):
+                        if want_cancel:
+                            return False
+
+                        return True
+
+                    if self.events.was_pressed('A'):
+                        return True
+
+                    self.do_loop()
+
+            finally:
+                self.pop_scene()
+
+    def messages_begin(self, *, internal=False):
+        """
+        Show messages window.
+
+        Deprecated, use `with gui.enable_messages():` instead
+        """
+
+        if not internal:
+            logger.error("Using old messages begin/end api is deprecated.")
+
+        if self.message_box_depth < 0:
+            self.message_box_depth = 0
+            self.callback_messages.clear()
+
         if self.message_box_depth == 0:
             self.message_box_scene = MessageWindowScene(self)
             self.push_scene('messages', self.message_box_scene)
+
         self.message_box_depth += 1
 
-    def messages_end(self):
+    def messages_end(self, *, internal=False):
+        """
+        Hide messages window.
+
+        Deprecated, use `with gui.enable_messages():` instead
+        """
+        if not internal:
+            logger.error("Using old messages begin/end api is deprecated.")
+
         self.message_box_depth -= 1
         if self.message_box_depth <= 0 and self.message_box_scene:
             self.message_box_depth = 0
             self.callback_messages.clear()
             self.message_box_scene = None
+            self.callback_progress = None
             self.pop_scene()
 
+    @contextlib.contextmanager
+    def enable_messages(self):
+        """
+        Shows and hides the messages window.
+        """
+        try:
+            self.messages_begin(internal=True)
+
+            yield
+
+        finally:
+            self.messages_end(internal=True)
+
     ## Scene code.
+    def scene_list(self):
+        return [
+            scene[0]
+            for scene in self.scenes]
+
     def push_scene(self, name, scene):
         """
         Add a scene, if the name is the same as the current layer it is added to it.
@@ -510,10 +712,13 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         if name == self.scenes[-1][0]:
             logger.debug(f"PUSH SCENE ADD {name}")
             self.scenes[-1][1].append(scene)
+            logger.debug(f"SCENE LIST: {self.scene_list()}")
 
         else:
             logger.debug(f"PUSH SCENE LAYER {name}")
             self.scenes.append((name, [scene]))
+
+            logger.debug(f"SCENE LIST: {self.scene_list()}")
 
     def pop_scene(self, name=None):
         """
@@ -526,15 +731,21 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
                 self.scenes[-1][1].pop(-1)
 
+                logger.debug(f"SCENE LIST: {self.scene_list()}")
+
             elif len(self.scenes) > 1:
                 logger.debug(f"POP SCENE LAYER {self.scenes[-1][0]}")
                 self.scenes.pop(-1)
+
+                logger.debug(f"SCENE LIST: {self.scene_list()}")
 
         elif name == self.scenes[-1][0]:
             # If name is the active, scene, just remove a single scene layer from it.
             logger.debug(f"POP SCENE {name} REM {self.scenes[-1][0]}")
             if len(self.scenes[-1][1]) > 1:
                 self.scenes[-1][1].pop(-1)
+
+            logger.debug(f"SCENE LIST: {self.scene_list()}")
 
         else:
 
@@ -546,23 +757,68 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
                 self.scenes.pop(-1)
 
+            logger.debug(f"SCENE LIST: {self.scene_list()}")
+
+    ## Cancelling code.
     def do_cancel(self):
+        """
+        Cancel if it is possible
+        """
         if self.cancellable is True:
-            raise CancelEvent()
+            raise harbourmaster.CancelEvent()
 
     @contextlib.contextmanager
     def enable_cancellable(self, cancellable=False):
+        """
+        Controls whether you
+        """
         old_cancellable = self.cancellable
         self.cancellable = cancellable
+        self.was_cancelled = False
 
         try:
             yield
 
-        except CancelEvent:
-            pass
+        except requests.exceptions.ConnectionError as err:
+            # self.do_popup_message(f"Connection Error: {err}")
+            logger.error(f"Connection Error: {err}")
+            self.was_cancelled = True
+
+        except harbourmaster.CancelEvent:
+            self.was_cancelled = True
 
         finally:
             self.cancellable = old_cancellable
+
+    ## HarbourMaster Commands.
+    def do_install(self, port_name):
+
+        with self.enable_messages():
+            self.message(f"Installing {port_name}")
+            self.do_loop(no_delay=True)
+
+            with self.enable_cancellable(True):
+                self.hm.install_port(port_name)
+                self.hm.load_ports()
+
+    def do_uninstall(self, port_name):
+
+        with self.enable_messages():
+            self.message(f"Uninstalling {port_name}")
+            self.do_loop(no_delay=True)
+
+            with self.enable_cancellable(False):
+                self.hm.uninstall_port(port_name)
+                self.hm.load_ports()
+
+    def do_update_ports(self):
+        with self.enable_messages():
+            with self.enable_cancellable(False):
+                self.message('Updating all port sources:')
+                for source in self.hm.sources:
+                    self.hm.sources[source].update()
+
+                self.hm.load_ports()
 
 
 @logger.catch
@@ -616,23 +872,18 @@ def main(argv):
         elif config['force-colour']:
             utility.do_color(True)
 
-
         pm = PortMasterGUI()
-
-        pm.events.disable_quit = True
 
         with pm.enable_cancellable(False):
             hm = HarbourMaster(config, temp_dir=temp_dir, callback=pm)
 
-        pm.events.disable_quit = False
-
         pm.hm = hm
 
-        pm.run()
+        with pm.enable_cancellable(True):
+            pm.run()
 
         pm.quit()
 
 
 if __name__ == '__main__':
     exit(main(sys.argv))
-

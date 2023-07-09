@@ -3,7 +3,10 @@
         "font": "DejaVuSans.ttf"
     },
     "#pallet": {
-        "background": [200, 200, 200, 255]
+        "background": [200, 200, 200, 255],
+        "list_text": [0, 0, 0, 255],
+        "list_selected": [128, 0, 0, 255],
+        "button": [200, 200, 200, 255]
     },
     "#resources": {
         "nine.png": {
@@ -42,7 +45,16 @@
             "fontsize": 36,
             "fontcolor": [0, 0, 0]
         },
-        "button_bar": {
+        "small_button": {
+            "fill": "button",
+            "outline": [0, 0, 0, 255],
+            "thickness": 3,
+            "roundness": 10,
+            "borderx": 8,
+            "fontsize": 22,
+            "fontcolor": [0, 0, 0]
+        },
+        "button_bar_filters": {
             "area": [0.60, 0.93, 0.95, 1.0],
             "fontsize": 16,
             "fontcolor": [0, 0, 0],
@@ -51,8 +63,27 @@
                 "_B", "Back",
                 "_X", "Filter"
             ]
+        },
+        "button_bar": {
+            "area": [0.60, 0.93, 0.95, 1.0],
+            "fontsize": 16,
+            "fontcolor": [0, 0, 0],
+            "bar": [
+                "_A", "Install",
+                "_B", "Back"
+            ]
+        },
+        "option_list": {
+            "area": [0.25, 0.25, 0.75, 0.75],
+            "fill": [230, 230, 230],
+            "border": 8,
+            "fontsize": 30,
+            "fontcolor": "list_text",
+            "select": "list_selected",
+            "thickness": 6
         }
     },
+
     "ports_list": {
         "#element:background": {},
 
@@ -63,7 +94,7 @@
             "thickness": 6,
             "border": 8,
             "fontsize": 24,
-            "fontcolor": [0,0,0],
+            "fontcolor": [0, 0, 0],
             "wrap": true
         },
 
@@ -72,8 +103,8 @@
             "borderx": 14,
             "roundness": 10,
             "fontsize": 12,
-            "fontcolor": [0, 0, 0],
-            "select": [100, 230, 100]
+            "fontcolor": "list_text",
+            "select": "list_selected"
         },
 
         "port_desc": {
@@ -97,35 +128,101 @@
             "image": "no-image.jpg"
         },
 
+        "#element:button_bar_filters": {}
+    },
+
+    "port_info": {
+        "#element:background": {},
+
+        "port_info": {
+            "area": [0.52, 0.05, 0.95, 0.95],
+            "fill": [230, 230, 230],
+            "roundness": 20,
+            "thickness": 6,
+            "border": 8,
+            "fontsize": 24,
+            "fontcolor": [0, 0, 0],
+            "wrap": true
+        },
+
+        "port_desc": {
+            "area": [0.1, 0.75, 0.8, 0.9],
+            "fontsize": 24,
+            "fontcolor": [0, 0, 0],
+            "autoscroll": 0,
+            "wrap": true
+        },
+
+        "port_title": {
+            "area": [0.00, 0.00, 1.00, 0.10],
+            "fontsize": 24,
+            "fontcolor": [0, 0, 0],
+            "autoscroll": 0,
+            "wrap": true
+        },
+
+        "port_image": {
+            "area": [0.45, 0.1, 1.0, 0.65],
+            "image": "no-image.jpg"
+        },
+
+        "#element:small_button:ok_button": {
+            "area": [0.6, 0.6, 0.7, 0.7],
+            "text": "Okay"
+        },
+
+        "#element:small_button:back_button": {
+            "area": [0.2, 0.6, 0.5, 0.7],
+            "text": "Back"
+        },
+
         "#element:button_bar": {}
     },
 
     "main_menu": {
         "#element:background": {},
 
-        "option_list": {
-            "area": [0.25, 0.25, 0.75, 0.75],
-            "fill": [230, 230, 230],
-            "border": 8,
-            "fontsize": 30,
-            "fontcolor": [0, 0, 0],
-            "select": [78, 78, 78],
-
+        "#element:option_list": {
             "list": [
                 "Install Port",
                 "Uninstall Port",
+                "",
                 "Option Menu",
                 "Exit"
             ],
-
+            "option": [
+                "install",
+                "uninstall",
+                "",
+                "option",
+                "exit"
+            ],
             "info": [
                 "Install a new port onto your device.",
                 "Remove a port that has been installed onto your device",
-                "Update port data including the list of ports and screenshots.",
+                "PortMaster options",
                 "Exit Portmaster and return to your game list."
-            ],
+            ]
+        },
+        "#element:button_bar": {}
+    },
 
-            "thickness": 6
+    "option_menu": {
+        "#element:background": {},
+
+        "#element:option_list": {
+            "list": [
+                "Update ports",
+                "- * -",
+                "- * -",
+                "Back"
+            ],
+            "option": [
+                "update-ports",
+                "option-2",
+                "option-3",
+                "back"
+            ]
         },
 
         "#element:button_bar": {}
@@ -136,13 +233,32 @@
 
         "message_text": {
             "area": [0.05, 0.05, 0.95, 0.95],
-            "fill": [230,230,230],
+            "fill": [230, 230, 230],
             "roundness": 20,
             "thickness": 6,
             "border": 8,
             "fontsize": 24,
-            "fontcolor": [0,0,0],
+            "fontcolor": [0, 0, 0],
             "align": "topleft",
+            "text": "",
+            "wrap": true
+        },
+
+        "#element:button_bar": {}
+    },
+
+    "message_box": {
+        "#element:background": {},
+
+        "message_text": {
+            "area": [0.05, 0.05, 0.95, 0.95],
+            "fill": [230, 230, 230],
+            "roundness": 20,
+            "thickness": 6,
+            "border": 8,
+            "fontsize": 24,
+            "fontcolor": [0, 0, 0],
+            "align": "center",
             "text": "",
             "wrap": true
         },

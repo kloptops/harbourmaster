@@ -746,7 +746,7 @@ def get_text_size(font, text=''):
     return text_w.value, text_h.value
 
 
-char_map = ''' ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,?!-:'"_=+&<^>~@/\\|(%)'''
+char_map = ''' ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,?!-:'"_=+&<^>~@/\\|(%)*'''
 class FontManager():
     '''
     The FontManager class loads ttf TODO (otf?) fonts, caches them, and draws text
@@ -1114,7 +1114,6 @@ class EventManager:
         self.controller = None
         self.trigger_min = self.TRIGGER_MIN
         self.analog_min = self.ANALOG_MIN
-        self.disable_quit = False
         self.ticks = sdl2.SDL_GetTicks()
 
         ## Change this to handle other controllers.
@@ -1125,8 +1124,10 @@ class EventManager:
     def _axis_map(self, axis, limit):
         if abs(axis) < limit:
             return 1
+
         if axis < 0:
             return 0
+
         return 2
 
     def handle_events(self):
@@ -1138,19 +1139,16 @@ class EventManager:
 
         for event in sdl2.ext.get_events():
             if event.type == sdl2.SDL_QUIT:
-                if not self.disable_quit:
-                    self.running = False
-                    break
+                self.running = False
 
             elif event.type == sdl2.SDL_KEYDOWN:
                 if event.key.keysym.sym == sdl2.SDLK_ESCAPE:
-                    if not self.disable_quit:
-                        self.running = False
-                        break
+                    self.running = False
+                    break
 
                 key = self.KEY_MAP.get(event.key.keysym.sym, None)
                 if key is not None:
-                    print(f'PRESSED {key}')
+                    # print(f'PRESSED {key}')
                     self.buttons[key] = True
 
                     if key in self.repeat:
@@ -1159,7 +1157,7 @@ class EventManager:
             elif event.type == sdl2.SDL_KEYUP:
                 key = self.KEY_MAP.get(event.key.keysym.sym, None)
                 if key is not None:
-                    print(f'RELEASED {key}')
+                    # print(f'RELEASED {key}')
                     self.buttons[key] = False
 
                     if key in self.repeat:
@@ -1168,7 +1166,7 @@ class EventManager:
             elif event.type == sdl2.SDL_CONTROLLERBUTTONDOWN:
                 key = self.BUTTON_MAP.get(event.cbutton.button, None)
                 if key is not None:
-                    print(f'PRESSED {key}')
+                    # print(f'PRESSED {key}')
                     self.buttons[key] = True
 
                     if key in self.repeat:
@@ -1177,7 +1175,7 @@ class EventManager:
             elif event.type == sdl2.SDL_CONTROLLERBUTTONUP:
                 key = self.BUTTON_MAP.get(event.cbutton.button, None)
                 if key is not None:
-                    print(f'RELEASED {key}')
+                    # print(f'RELEASED {key}')
                     self.buttons[key] = False
 
                     if key in self.repeat:
@@ -1194,20 +1192,20 @@ class EventManager:
 
                     if axis_key is not None:
                         if last_axis_key is None:
-                            print(f"PRESSED {axis_key}")
+                            # print(f"PRESSED {axis_key}")
                             self.buttons[axis_key] = True
 
                             if axis_key in self.repeat:
                                 self.repeat[axis_key] = ticks_now + self.REPEAT_DELAY
                         elif last_axis_key != axis_key:
-                            print(f"RELEASED {last_axis_key}")
+                            # print(f"RELEASED {last_axis_key}")
                             self.buttons[last_axis_key] = True
                             if last_axis_key in self.repeat:
                                 self.repeat[last_axis_key] = None
 
                     elif axis_key is None:
                         if last_axis_key is not None:
-                            print(f"RELEASED {last_axis_key}")
+                            # print(f"RELEASED {last_axis_key}")
                             self.buttons[last_axis_key] = True
                             if last_axis_key in self.repeat:
                                 self.repeat[last_axis_key] = None
@@ -1219,7 +1217,7 @@ class EventManager:
             if next_repeat is not None and next_repeat <= ticks_now:
                 # Trigger was_pressed state
                 self.last_buttons[key] = False
-                print(f'REPEAT {key} {ticks_now - next_repeat}')
+                # print(f'REPEAT {key} {ticks_now - next_repeat}')
                 self.repeat[key] = ticks_now + self.REPEAT_RATE
 
 
@@ -1390,57 +1388,58 @@ class Region:
     interactive list, or a horizontal toolbar. These attributes are loaded
     from a json file and then passed to the class as a standard dict.
 
-FILL AND OUTLINE
-area: 4-tuple representing a rectangular area for the region, defined in (left, top, right, bottom) format, not in (x, y, width, height) format like a normal Rect object. It can be in pixels (10, 10, 200, 400), or in screen percent (0.1, 0.1, 0.5, 0.9).
-fill: 3-tuple rgb fill color
-outline: 3-tuple rgb outline color
-thickness: int outline thickness,
-roundness: int radius to draw the region as a rounded rectangle
-border: int border around all sides of text, or use borderx and bordery instead
-borderx: int left/right border around text
-bordery: int top/bottom border around text
+    FILL AND OUTLINE
+    area: 4-tuple representing a rectangular area for the region, defined in (left, top, right, bottom) format, not in (x, y, width, height) format like a normal Rect object. It can be in pixels (10, 10, 200, 400), or in screen percent (0.1, 0.1, 0.5, 0.9).
+    fill: 3-tuple rgb fill color
+    outline: 3-tuple rgb outline color
+    thickness: int outline thickness,
+    roundness: int radius to draw the region as a rounded rectangle
+    border: int border around all sides of text, or use borderx and bordery instead
+    borderx: int left/right border around text
+    bordery: int top/bottom border around text
 
-IMAGE RENDERING
-image: filename for an image to draw in the region
-imagesize: an 2-tuple of ints (width, height) to draw image at a specific size
-imagemode: draw mode for the image can be 'fit', 'stretch', or 'repeat'
-imagealign: string options to align the image include: topleft, topright, midtop,
-midleft, center, midright, bottomleft, midbottom, and bottomright
-patch: a 4-tuple of ints (left, top, right, bottom) that defines the size of
-non-stretched portions of the image when drawing as a 9-patch, or None to
-render it normally
-pattern: (TODO) if True the image attribute is loaded as a base64 string value
-pimage: filename or image to use for patch rendering if different than image
+    IMAGE RENDERING
+    image: filename for an image to draw in the region
+    imagesize: an 2-tuple of ints (width, height) to draw image at a specific size
+    imagemode: draw mode for the image can be 'fit', 'stretch', or 'repeat'
+    imagealign: string options to align the image include: topleft, topright, midtop,
+    midleft, center, midright, bottomleft, midbottom, and bottomright
+    patch: a 4-tuple of ints (left, top, right, bottom) that defines the size of
+    non-stretched portions of the image when drawing as a 9-patch, or None to
+    render it normally
+    pattern: (TODO) if True the image attribute is loaded as a base64 string value
+    pimage: filename or image to use for patch rendering if different than image
 
-TEXT RENDERING
-align: string options to align the text include: topleft, topright, midtop,
-midleft, center, midright, bottomleft, midbottom, and bottomright
-autoscroll: number of rendered frames (update calls) between each line of auto
-scrolling for the text, or 0 to disable auto-scrolling (default)
-font: filename for the font to draw with
-fontsize: int size of font to draw with
-fontcolor: 3-tuple rgb color used to draw text
-fontoutline: 2-tuple (RGB 3-tuple color, int outline thickness)
-linespace: int extra space between each line of wrapped text
-scrollable: bool that allows up/down events to scroll wrapped text when set to True
-text: text string to draw, which may include newlines
-wrap: set True to allow multiline text wrapping
+    TEXT RENDERING
+    align: string options to align the text include: topleft, topright, midtop,
+    midleft, center, midright, bottomleft, midbottom, and bottomright
+    autoscroll: number of rendered frames (update calls) between each line of auto
+    scrolling for the text, or 0 to disable auto-scrolling (default)
+    font: filename for the font to draw with
+    fontsize: int size of font to draw with
+    fontcolor: 3-tuple rgb color used to draw text
+    fontoutline: 2-tuple (RGB 3-tuple color, int outline thickness)
+    linespace: int extra space between each line of wrapped text
+    scrollable: bool that allows up/down events to scroll wrapped text when set to True
+    text: text string to draw, which may include newlines
+    wrap: set True to allow multiline text wrapping
 
-LIST RENDERING
-list: a list of items to be displayed and selected from
-itemsize: the height that each list item is drawn with
-select: a 3-tuple rgb color for the selected item, or a Region for rendering it
-selectable: a list including the index for each item of the list that may be selected by the user
-selected: the currently selected list item, which will be drawn using the color or Region referenced by the select attribute
+    LIST RENDERING
+    list: a list of items to be displayed and selected from
+    itemsize: the height that each list item is drawn with
+    select: a 3-tuple rgb color for the selected item, or a Region for rendering it
+    selectable: a list including the index for each item of the list that may be selected by the user
+    selected: the currently selected list item, which will be drawn using the color or Region referenced by the select attribute
 
-BARS (toolbars)
-bar: a list that may include strings, Image objects, and image filenames. They will be drawn as a horizontal bar. A single null value will split the bar into 2 sides, the first one left aligned and the second one right aligned
-barspace: additional space between each bar item beyond its natural size
-barwidth: the minimum width for each bar item
-selectablex: TODO a list indluding the index for each item in the bar that may be selected by the user
-selectedx: the currently selected list item, or -1 if nothing is selected.
-The selected item will be drawn in the color of or with the Region referenced by the select attribute.
-'''
+    BARS (toolbars)
+    bar: a list that may include strings, Image objects, and image filenames. They will be drawn as a horizontal bar. A single null value will split the bar into 2 sides, the first one left aligned and the second one right aligned
+    barspace: additional space between each bar item beyond its natural size
+    barwidth: the minimum width for each bar item
+    selectablex: TODO a list indluding the index for each item in the bar that may be selected by the user
+    selectedx: the currently selected list item, or -1 if nothing is selected.
+    The selected item will be drawn in the color of or with the Region referenced by the select attribute.
+    '''
+
     DATA = {}
 
     def __init__(self, data, gui):
@@ -1512,6 +1511,9 @@ The selected item will be drawn in the color of or with the Region referenced by
         self.scroll_delay = -self.autoscroll * 2
         self.selected = 0
         self.selectedx = -1
+
+        self.info = self._verify_list('info', optional=True)
+        self.option = self._verify_list('option', optional=True)
 
     def draw(self, area=None, text=None, image=None):
         '''
