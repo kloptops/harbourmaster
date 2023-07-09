@@ -41,7 +41,7 @@
         "background": {
             "area": [0.0, 0.0, 1.0, 1.0],
             "fill": "background",
-            "borderx": 8,
+            "border": 8,
             "fontsize": 36,
             "fontcolor": [0, 0, 0]
         },
@@ -50,8 +50,8 @@
             "outline": [0, 0, 0, 255],
             "thickness": 3,
             "roundness": 10,
-            "borderx": 8,
-            "fontsize": 22,
+            "border": 8,
+            "fontsize": 16,
             "fontcolor": [0, 0, 0]
         },
         "button_bar_filters": {
@@ -167,12 +167,12 @@
         },
 
         "#element:small_button:ok_button": {
-            "area": [0.6, 0.6, 0.7, 0.7],
+            "area": [0.6, 0.6, 0.8, 0.7],
             "text": "Okay"
         },
 
         "#element:small_button:back_button": {
-            "area": [0.2, 0.6, 0.5, 0.7],
+            "area": [0.2, 0.6, 0.4, 0.7],
             "text": "Back"
         },
 
@@ -184,16 +184,16 @@
 
         "#element:option_list": {
             "list": [
-                "Install Port",
-                "Uninstall Port",
-                "",
+                "Install All Ports",
+                "Install Ready to Run Ports",
+                "Uninstall Ports",
                 "Option Menu",
                 "Exit"
             ],
             "option": [
                 "install",
+                "install-rtr",
                 "uninstall",
-                "",
                 "option",
                 "exit"
             ],
@@ -236,12 +236,11 @@
             "fill": [230, 230, 230],
             "roundness": 20,
             "thickness": 6,
-            "border": 8,
+            "border": 10,
             "fontsize": 24,
             "fontcolor": [0, 0, 0],
             "align": "topleft",
-            "text": "",
-            "wrap": true
+            "text": ""
         },
 
         "#element:button_bar": {}
@@ -261,6 +260,16 @@
             "align": "center",
             "text": "",
             "wrap": true
+        },
+
+        "#element:small_button:ok_button": {
+            "area": [0.6, 0.8, 0.8, 0.9],
+            "text": "Okay"
+        },
+
+        "#element:small_button:back_button": {
+            "area": [0.2, 0.8, 0.4, 0.9],
+            "text": "Back"
         },
 
         "#element:button_bar": {}

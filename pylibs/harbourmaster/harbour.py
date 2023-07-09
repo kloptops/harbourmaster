@@ -620,17 +620,15 @@ class HarbourMaster():
         return None
 
     def port_info(self, port_name, installed=False):
-        port_name = name_cleaner(port_name)
-
         if installed:
             if port_name in self.installed_ports:
-                return self.installed_ports[port_name]
+                return self.installed_ports[name_cleaner(port_name)]
 
             if port_name in self.broken_ports:
-                return self.broken_ports[port_name]
+                return self.broken_ports[name_cleaner(port_name)]
 
         for source_prefix, source in self.sources.items():
-            for port_name in source.ports:
+            if source.clean_name(port_name) in source.ports:
                 return source.port_info(port_name)
 
         return None
@@ -827,7 +825,7 @@ class HarbourMaster():
 
         return 0
 
-    def check_runtime(self, runtime):
+    def check_runtime(self, runtime, port_name=None):
         if isinstance(runtime, str):
             if '/' in runtime:
                 self.callback.message_box(f"Port {runtime} contains a bad runtime, game may not run correctly.")
@@ -869,6 +867,7 @@ class HarbourMaster():
                         self.callback.message_box(f"Unable to download {runtime}, game may not run correctly.")
                         return 255
 
+                    self.callback.message_box(f"Successfully downloaded {runtime}.")
                     return 0
                 else:
                     self.callback.message(f"Unable to find a download for {runtime}.")

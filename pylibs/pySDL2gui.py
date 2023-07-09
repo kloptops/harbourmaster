@@ -1481,17 +1481,17 @@ class Region:
         self.font = self._verify_file('font', optional=True)
         self.fontsize = self._verify_int('fontsize', 30)
         self.fontcolor = self._verify_color('fontcolor', (255, 255, 255))
-        self.fontoutline = self._verify_outline('fontoutline', None, True)
+        self.fontoutline = self._verify_outline('fontoutline', None, optional=True)
         self._text = self._verify_text('text', optional=True)
-        self.wrap = self._verify_bool('wrap', False, True)
-        self.linespace = self._verify_int('linespace', 0, True)
+        self.wrap = self._verify_bool('wrap', False, optional=True)
+        self.linespace = self._verify_int('linespace', 0, optional=True)
         self.align = self._verify_option('align', Rect.POINTS, 'topleft')
 
         self.list = self._verify_list('list', optional=True)
         self.selectable = None
         self.imagelist = 0 ## TODO
         self.ilistalign = 0 ## TODO
-        self.itemsize = self._verify_int('itemsize', None, True)
+        self.itemsize = self._verify_int('itemsize', None, optional=True)
         self.select = self._verify_color('select', optional=True)
 
         self.click_sound = self._verify_text('click_sound', optional=True)

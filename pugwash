@@ -253,6 +253,10 @@ class MainMenuScene(BaseScene):
                 self.gui.push_scene('ports', PortsListScene(self.gui, {'mode': 'install', 'filters': []}))
                 return True
 
+            elif selected_option == 'install-rtr':
+                self.gui.push_scene('ports', PortsListScene(self.gui, {'mode': 'install', 'filters': ['rtr', ]}))
+                return True
+
             elif selected_option == 'uninstall':
                 self.gui.push_scene('ports', PortsListScene(self.gui, {'mode': 'uninstall', 'filters': ['installed', ]}))
                 return True
@@ -387,6 +391,7 @@ class PortsListScene(BaseScene):
             self.last_port = self.tags['ports_list'].selected
             port_name = self.port_list[self.last_port]
 
+            logger.debug(f"{self.options['mode']}: {port_name}")
             if self.options['mode'] == 'install':
                 self.ready = False
                 self.gui.push_scene('port_info', PortInfoScene(self.gui, port_name, 'install'))
@@ -421,6 +426,7 @@ class PortInfoScene(BaseScene):
             return
 
         self.port_info = self.gui.hm.port_info(self.port_name)
+        logger.debug(f"{self.action}: {self.port_name} -> {self.port_info}")
 
         image = self.gui.hm.port_images(self.port_name)
         if image is not None:
@@ -433,7 +439,8 @@ class PortInfoScene(BaseScene):
         self.tags['port_desc'].text = self.port_info['attr']['desc']
         self.tags['port_image'].image = self.gui.images.load(image)
 
-        self.tags['ok_button'].text = self.action
+        self.tags['ok_button'].text = self.action.title()
+        self.tags['back_button'].text = "Back"
 
         self.ready = True
 
@@ -601,7 +608,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
     ## Messagebox / Callback stuff
     def callback_update(self):
         if self.message_box_scene:
-            messages = self.callback_messages[-15:]
+            messages = self.callback_messages[-13:]
             if self.callback_progress is not None:
                 messages.append(self.callback_progress)
 
@@ -635,13 +642,13 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
             try:
                 while True:
+                    if self.events.was_pressed('A'):
+                        return True
+
                     if self.events.was_pressed('B'):
                         if want_cancel:
                             return False
 
-                        return True
-
-                    if self.events.was_pressed('A'):
                         return True
 
                     self.do_loop()

@@ -275,6 +275,9 @@ def download(file_name, file_url, md5_source=None, md5_result=None, callback=Non
 
         logger.warning(f"No md5 to check against: {md5_file}")
 
+    if callback is not None:
+        callback.progress(None, None, None)
+
     md5_result[0] = md5_file
 
     return file_name
