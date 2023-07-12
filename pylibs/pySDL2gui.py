@@ -718,6 +718,31 @@ class ImageManager():
 
         return images
 
+    def load_static(self, filename):
+        '''
+        Load image with filename.
+
+        This does not get removed from the cache.
+
+        :param filename: (str) filename of image to load into a texture
+        :rvalue gui.Image: image loaded from filename
+
+        '''
+        res_filename = self.gui.resources.find(filename)
+
+        if res_filename is None:
+            return None
+
+        surf = sdl2.ext.image.load_img(res_filename)
+
+        texture = sdl2.ext.renderer.Texture(self.renderer, surf)
+
+        image = Image(texture, renderer=self.renderer)
+
+        self.images[filename] = image
+
+        return image
+
     def _clean(self):
         'Remove old images when max_images is reached'
         for filename in self.cache[self.max_images:]:
@@ -868,11 +893,11 @@ class FontManager():
             wrapped_text = self._split_lines(text, clip)
             lines = len(wrapped_text)
             if lines > 1:
-
                 if align in ('midleft', 'center', 'midright'):
                     y -= (self.height * lines) // 2 + (linespace * (lines / 2))
                 elif align in ('bottomleft', 'midbottom', 'bottomright'):
                     y -= (self.height) * lines + linespace * lines
+
                 for line in wrapped_text:
                     self.draw(line, x, y, color, alpha, align, clip)
                     y += self.height + linespace
@@ -1514,6 +1539,10 @@ class Region:
 
         self.info = self._verify_list('info', optional=True)
         self.option = self._verify_list('option', optional=True)
+
+        if self._text is not None:
+            # Trigger text setting code
+            self.text = self._text
 
     def draw(self, area=None, text=None, image=None):
         '''

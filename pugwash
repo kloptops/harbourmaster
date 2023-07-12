@@ -165,8 +165,12 @@ def theme_load(gui, theme_file):
             elif section_name == "#resources":
                 print("- loading resources:")
                 for resource_name, resource_data in section_data.items():
-                    print(f"  - loading {resource_name}")
-                    gui.images.load_atlas(resource_name, resource_data)
+                    if len(resource_data) == 0:
+                        print(f"  - loading static {resource_name} - [{gui.images.load_static(resource_name) is None and 'FAIL' or 'OKAY'}]")
+
+                    else:
+                        print(f"  - loading atas {resource_name} - [{gui.images.load_atlas(resource_name, resource_data) is None and 'FAIL' or 'OKAY'}]")
+                        gui.images.load_atlas(resource_name, resource_data)
 
             elif section_name == "#elements":
                 print("- loading elements:")
@@ -175,7 +179,6 @@ def theme_load(gui, theme_file):
 
             elif section_name == "#pallet":
                 print("- loading pallet:")
-
                 for pallet_name, pallet_value in section_data.items():
                     gui.pallet[pallet_name] = pallet_value
 
