@@ -171,6 +171,8 @@ class ResourceManager:
 
 
 class Point:
+    __slots__ = ('x', 'y')
+
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -188,6 +190,8 @@ class Rect:
         'midbottom',
         'bottomright',
         )
+
+    __slots__ = ('x', 'y', 'width', 'height')
 
     def __init__(self, x, y, width, height):
         self.x = int(x)
@@ -226,7 +230,7 @@ class Rect:
         '''
         xr = self.width / other.width
         yr = self.height / other.height
-        mr = xr if yr < xr else yr
+        mr = max(xr, yr)
 
         w = int(self.width / mr)
         h = int(self.height / mr)
@@ -234,6 +238,7 @@ class Rect:
         y = int(other.y + (other.height - h) / 2)
         return Rect(x, y, w, h)
 
+    @staticmethod
     def from_corners(x, y, x2, y2):
         '''
         Creat a new rect using bottom and right coordinates instead
@@ -241,6 +246,7 @@ class Rect:
         '''
         return Rect(x, y, x2 - x, y2 - y)
 
+    @staticmethod
     def from_sdl(r):
         '''
         Create a new rect based on the position and size of an sdl_rect
@@ -252,7 +258,9 @@ class Rect:
         Add x to width and y to height of rect, or x to both.
         The rect will remain centered around the same point
         '''
-        y = y if y is not None else x
+        if y is None:
+            y = x
+
         self.x -= x // 2
         self.y -= y // 2
         self.width += x
@@ -264,7 +272,9 @@ class Rect:
         height of rect, or x to both. The rect will remain centered
         around the same point
         '''
-        y = y if y is not None else x
+        if y is None:
+            y = x
+
         nx = self.x - x // 2
         ny = self.y - y // 2
         nw = self.width + x
@@ -272,33 +282,45 @@ class Rect:
         return Rect(nx, ny, nw, nh)
 
     def move(self, x, y):
-        'Move self by x/y pixels'
+        '''
+        Move self by x/y pixels
+        '''
         self.x += x
         self.y += y
 
     def moved(self, x, y):
-        'Return copy of self moved by x/y pixels'
+        '''
+        Return copy of self moved by x/y pixels
+        '''
         return Rect(
             self.x + x, self.y + y,
             self.width, self.height)
 
     def sdl(self):
-        'Return my value as an sdl_rect'
+        '''
+        Return my value as an sdl_rect
+        '''
         return sdl2.SDL_Rect(self.x, self.y, self.width, self.height)
 
     def tuple(self):
-        'Return my value as a 4-tuple'
+        '''
+        Return my value as a 4-tuple
+        '''
         return self.x, self.y, self.width, self.height
 
     def update(self, x, y, w, h):
-        'Update myself with new position and size'
+        '''
+        Update myself with new position and size
+        '''
         self.x = x
         self.y = y
         self.width = w
         self.height = h
 
     def clip(self, other):
-        'Return copy of self cropped to fit inside other Rect'
+        '''
+        Return copy of self cropped to fit inside other Rect
+        '''
         # LEFT
         if self.x >= other.x and self.x < (other.x + other.width):
             x = self.x

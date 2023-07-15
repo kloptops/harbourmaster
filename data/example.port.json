@@ -33,7 +33,7 @@
         "rtr": false,
         /* What runtime do we require? */
         "runtime": null,
-        /* Any hardware/software requiremeents. opengl/power */
+        /* Any hardware/software requirements: opengl, power, 4:3, 3:2, 16:9, lowres, hires */
         "reqs": [],
     },
     /* These bits get filled out when installed by harbourmaster. */

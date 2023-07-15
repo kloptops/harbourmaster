@@ -17,6 +17,7 @@ from utility import cprint
 
 # Module imports
 from .config import *
+from .hardware import *
 from .util import *
 from .info import *
 from .source import *
@@ -68,6 +69,8 @@ class HarbourMaster():
             'quiet': config.get('quiet', False),
             'debug': config.get('debug', False),
             }
+
+        self.device = device_info()
 
         self.callback = callback
         self.ports = []
@@ -572,6 +575,41 @@ class HarbourMaster():
 
         return True
 
+    def match_requirements(self, port_info):
+        """
+        Matches hardware capabilities to port requirements.
+        """
+
+        capabilities = self.device['capabilities']
+
+        requirements = port_info.get('attr', {}).get('reqs', [])
+        if len(requirements) == 0:
+            return True
+
+        passed = True
+        for requirement in requirements:
+            match_not = True
+
+            if requirement.startswith('!'):
+                match_not = False
+                requirement = requirement[1:]
+
+            if '|' in requirement:
+                passed = any(
+                    req in capabilities
+                    for req in requirement.split('|')) == match_not
+
+            else:
+                if requirement in capabilities:
+                    passed = match_not
+                else:
+                    passed = not match_not
+
+            if not passed:
+                break
+
+        return passed
+
     def list_ports(self, filters=[]):
         ## Filters can be genre, runtime
 
@@ -585,6 +623,9 @@ class HarbourMaster():
                 port_info = source.port_info(port_name)
 
                 if not self.match_filters(filters, port_info):
+                    continue
+
+                if not self.match_requirements(port_info):
                     continue
 
                 ports[port_name.casefold()] = port_info

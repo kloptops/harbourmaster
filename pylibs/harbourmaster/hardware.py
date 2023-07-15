@@ -1,6 +1,7 @@
 
 # System imports
 import datetime
+import fnmatch
 import json
 import math
 import pathlib
@@ -18,6 +19,51 @@ from loguru import logger
 from .config import *
 from .info import *
 from .util import *
+
+
+HW_ANY = object()
+
+HW_INFO = {
+    # Anbernic Devices
+    'rg552':   {'resolution': (1920, 1152), 'analogsticks': 2, 'cpu': 'rk3399', 'capabilities': ['5:3', 'power', 'hires']},
+    'rg503':   {'resolution': ( 960,  544), 'analogsticks': 2, 'cpu': 'rk3566', 'capabilities': ['30:17', 'power', 'hires']},
+    'rg353v':  {'resolution': ( 640,  480), 'analogsticks': 2, 'cpu': 'rk3366', 'capabilities': ['4:3', 'power']},
+    'rg353p':  {'resolution': ( 640,  480), 'analogsticks': 2, 'cpu': 'rk3366', 'capabilities': ['4:3', 'power']},
+    'rg353m':  {'resolution': ( 640,  480), 'analogsticks': 2, 'cpu': 'rk3366', 'capabilities': ['4:3', 'power']},
+    'rg351mp': {'resolution': ( 640,  480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['4:3']},
+    'rg351v':  {'resolution': ( 640,  480), 'analogsticks': 1, 'cpu': 'rk3326', 'capabilities': ['4:3']},
+    'rg351p':  {'resolution': ( 480,  320), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['3:2', 'lowres']},
+
+    # Hardkernel Devices
+    'oga': {'resolution': (480, 320), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['3:2', 'lowres']},
+    'ogs': {'resolution': (854, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['427:240', 'power', 'hires']},
+    'ogu': {'resolution': (854, 480), 'analogsticks': 2, 'cpu': 's922x',  'capabilities': ['427:240', 'power', 'hires']},
+
+    # Powkiddy
+    'x55':       {'resolution': (1280, 720), 'analogsticks': 2, 'cpu': 'rk3566', 'capabilities': ['16:9', 'power', 'hires']},
+    'rgb10max3': {'resolution': ( 854, 480), 'analogsticks': 2, 'cpu': 's922x',  'capabilities': ['427:240', 'power', 'hires']},
+    'rgb10max2': {'resolution': ( 854, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['427:240', 'hires']},
+    'rgb10max':  {'resolution': ( 854, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['427:240', 'hires']},
+    'rk2023':    {'resolution': ( 640, 480), 'analogsticks': 2, 'cpu': 'rk3566', 'capabilities': ['4:3', 'power']},
+    'rgb20s':    {'resolution': ( 640, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['4:3']},
+
+    # Gameforce Chi
+    'chi':     {'resolution': (640, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['4:3']},
+
+    # Computer/Testing
+    'pc':      {'resolution': (640, 480), 'analogsticks': 2, 'cpu': 'unknown', 'capabilities': ['4:3', 'opengl', 'power']},
+
+    # Default
+    'default': {'resolution': (640, 480), 'analogsticks': 2, 'cpu': 'unknown', 'capabilities': ['4:3']},
+    }
+
+
+CFW_INFO = {
+    ## From PortMaster.sh from JELOS, all devices except x55 and rg10max3 have opengl
+    ('jelos', 'x55'): {'capabilities': []},
+    ('jelos', 'rgb10max3'): {'capabilities': []},
+    ('jelos', HW_ANY): {'capabilities': ['opengl']},
+    }
 
 
 def safe_cat(file_name):
@@ -40,130 +86,166 @@ def file_exists(file_name):
     return Path(file_name).exists()
 
 
-def device_info():
+def nice_device_to_device(raw_device):
+    raw_device = raw_device.split('\0', 1)[0]
+
+    pattern_to_device = (
+        ('Hardkernel ODROID-GO-Ultra', 'ogu'),
+        ('ODROID-GO Advance*', 'oga'),
+        ('ODROID-GO Super*', 'ogs'),
+
+        ('Powkiddy RGB10 MAX 3', 'rgb10max3'),
+        ('Powkiddy RK2023',  'rk2023'),
+        ('Powkiddy x55',     'x55'),
+
+        ('Anbernic RG351MP', 'rg351mp'),
+        ('Anbernic RG351V',  'rg351v'),
+        ('Anbernic RG351*',  'rg351p'),
+        ('Anbernic RG353MP', 'rg353mp'),
+        ('Anbernic RG353V',  'rg353v'),
+        ('Anbernic RG353P',  'rg353p'),
+        )
+
+    for pattern, device in pattern_to_device:
+        if fnmatch.fnmatch(raw_device, pattern):
+            raw_device = device
+            break
+    else:
+        raw_device = raw_device.lower()
+
+    if raw_device not in HW_INFO:
+        logger.debug(f"nice_device_to_device -->> {raw_device!r} <<--")
+        raw_device = 'default'
+
+    return raw_device.lower()
+
+
+def new_device_info():
     if HM_TESTING:
         return {
             'name': platform.system(),
             'version': platform.release(),
-            'device': 'PC',
+            'device': 'pc',
             }
 
-    all_data = {}
+    info = {}
 
     ## Get Device
 
     # Works on ArkOS
     config_device = safe_cat('~/.config/.DEVICE')
     if config_device != '':
-        all_data.setdefault('device', config_device.strip())
+        info.setdefault('device', config_device.strip())
 
     # Works on ArkOS
     plymouth = safe_cat('/usr/share/plymouth/themes/text.plymouth')
     if plymouth != '':
-        for result in re.findall(r'^title=(.*?) \(([^\)]+)\)$', plymouth, re.I|re.M):
-            all_data['name'] = result[0]
-            all_data['version'] = result[1]
+        for result in re.findall(r'^title=(.*?) \(([^\)]+)\)$', plymouth, re.I | re.M):
+            info['name'] = result[0]
+            info['version'] = result[1]
 
     # Works on uOS / JELOS
     sfdbm = safe_cat('/sys/firmware/devicetree/base/model')
     if sfdbm != '':
-        all_data.setdefault('device', sfdbm.split(' ')[1].strip().rstrip('\0'))
+        device = nice_device_to_device(sfdbm)
+        if device is not None:
+            info.setdefault('device', device)
 
     # Works on AmberELEC / uOS / JELOS
     os_release = safe_cat('/etc/os-release')
-    for result in re.findall(r'^([a-z0-9_]+)="([^"]+)"$', os_release, re.I|re.M):
+    for result in re.findall(r'^([a-z0-9_]+)="([^"]+)"$', os_release, re.I | re.M):
         if result[0] in ('NAME', 'VERSION', 'OS_NAME', 'OS_VERSION', 'HW_DEVICE', 'COREELEC_DEVICE'):
-            all_data.setdefault(result[0].rsplit('_', 1)[-1].lower(), result[1].strip())
+            key = result[0].rsplit('_', 1)[-1].lower()
+            value = result[1].strip()
+            if key == 'device':
+                value = nice_device_to_device(value)
 
-    return all_data
+            info.setdefault(key, value)
+
+    if 'device' not in info:
+        info['device'] = old_device_info()
+
+    info.setdefault('name', 'unknown')
+    info.setdefault('version', '0.0.0')
+
+    return info
 
 
-def hardware_features():
-    device = device_info()
-    hardware = {
-        'analogsticks': 2,
-        'resolution': (640, 480),
-        'device': 'unknown',
-        'joystick': 'unknown',
-        'hotkey': None,
-        'features': [],
-        }
-
+def old_device_info():
+    # From PortMaster/control.txt
     if file_exists('/dev/input/by-path/platform-ff300000.usb-usb-0:1.2:1.0-event-joystick'):
-        # RG351P/M
-        hardware['joystick'] = "03000000091200000031000011010000"
-        hardware['device'] = "rg351p"
-        hardware['resolution'] = (480, 320)
-
         if file_exists('/boot/rk3326-rg351v-linux.dtb') or safe_cat("/storage/.config/.OS_ARCH").strip().casefold() == "rg351v":
             # RG351V
-            hardware['device'] = "rg351v"
-            hardware['analogsticks'] = 1
-            hardware['resolution'] = (640, 480)
+            return "rg351v"
+
+        # RG351P/M
+        return "rg351p"
 
     elif file_exists('/dev/input/by-path/platform-odroidgo2-joypad-event-joystick'):
         if "190000004b4800000010000001010000" in safe_cat('/etc/emulationstation/es_input.cfg'):
-            hardware['joystick'] = "190000004b4800000010000001010000"
-            hardware['device'] = "oga"
-            hardware['hotkey'] = "l3"
+            return "oga"
         else:
-            if file_exists('/usr/lib/aarch64-linux-gnu/libSDL2-2.0.so.0.2600.2'):
-                hardware['joystick'] = "19005b284b4800000010000000010000"
-            else:
-                hardware['joystick'] = "190000004b4800000010000000010000"
+            return "rk2020"
 
-            hardware['device'] = "rk2020"
-
-        hardware['resolution'] = (480, 320)
-        hardware['analogsticks'] = 1
+        return "rgb10s"
 
     elif file_exists('/dev/input/by-path/platform-odroidgo3-joypad-event-joystick'):
-        hardware['joystick'] = "190000004b4800000011000000010000"
-        hardware['device'] = "ogs"
-
-        if (
-                safe_cat('/etc/emulationstation/es_input.cfg').strip().casefold() == "arkos" and
-                safe_cat('/etc/emulationstation/es_input.cfg').strip().casefold() == "rgb10max"):
-            hardware['hotkey'] = "guide"
+        if ("rgb10max" in safe_cat('/etc/emulationstation/es_input.cfg').strip().casefold()):
+            return "rgb10max"
 
         if file_exists('/opt/.retrooz/device'):
-            hardware['device'] = safe_cat("/opt/.retrooz/device").strip().casefold()
-            if "rgb10max2native" in hardware['device']:
-                hardware['device'] = "rgb10maxnative"
-            if "rgb10max2top" in hardware['device']:
-                hardware['device'] = "rgb10max2top"
+            device = safe_cat("/opt/.retrooz/device").strip().casefold()
+            if "rgb10max2native" in device:
+                return "rgb10max"
+
+            if "rgb10max2top" in device:
+                return "rgb10max"
+
+        return "ogs"
 
     elif file_exists('/dev/input/by-path/platform-gameforce-gamepad-event-joystick'):
-        hardware['joystick'] = "19000000030000000300000002030000"
-        hardware['device'] = "chi"
-        hardware['hotkey'] = "l3"
+        return "chi"
 
-    elif file_exists('/dev/input/by-path/platform-singleadc-joypad-event-joystick'):
-        hardware['joystick'] = "190000004b4800000111000000010000"
-        hardware['device']   = device['device'].casefold()
-        if device['device'].casefold() in ('rg552'):
-            hardware['resolution'] = (1920, 1152)
-
-        hardware['features'].append('power')
-
-    ## TODO: figure out features based on OS & Hardware.
-    if hardware['resolution'][0] < 640:
-        hardware['features'].append('lowres')
-
-    if hardware['resolution'][0] > 640:
-        hardware['features'].append('hires')
-
-    gcd = math.gcd(hardware['resolution'][0], hardware['resolution'][1])
-
-    hardware['features'].append(f"{hardware['resolution'][0] // gcd}:{hardware['resolution'][1] // gcd}")
-    hardware['features'].append(f"{hardware['resolution'][0]}x{hardware['resolution'][1]}")
-
-    return hardware
+    return 'unknown'
 
 
-logger.debug(f'HARDWARE: {device_info()}, {hardware_features()}')
+def _merge_info(info, new_info):
+    for key, value in new_info.items():
+        if key not in info:
+            info[key] = value
+            continue
+
+        if isinstance(value, list):
+            info[key] = list(set(info[key]) | set(value))
+
+        elif isinstance(value, (str, tuple, int)):
+            info[key] = value
+
+    return info
+
+
+__root_info = None
+def device_info():
+    global __root_info
+    if __root_info is not None:
+        return __root_info
+
+    # Best guess at what device we are running on, and what it is capable of.
+    info = new_device_info()
+
+    _merge_info(info, HW_INFO.get(info['device'], HW_INFO['default']))
+
+    if (info['name'], info['device']) in CFW_INFO:
+        _merge_info(info, CFW_INFO[(info['name'], info['device'])])
+
+    elif (info['name'], HW_ANY) in CFW_INFO:
+        _merge_info(info, CFW_INFO[(info['name'], HW_ANY)])
+
+    logger.debug(f"DEVICE INFO: {info}")
+    __root_info = info
+    return info
+
 
 __all__ = (
     'device_info',
-    'hardware_features',
     )

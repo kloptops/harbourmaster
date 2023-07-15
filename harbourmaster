@@ -2,7 +2,6 @@
 
 import hashlib
 import os
-import platform
 import shutil
 import sys
 import textwrap
@@ -18,7 +17,7 @@ PYLIB_ZIP     = Path(__file__).parent / 'pylibs.zip'
 PYLIB_ZIP_MD5 = Path(__file__).parent / 'pylibs.zip.md5'
 PYLIB_PATH    = Path(__file__).parent / 'pylibs'
 
-if platform.system() in ('Darwin', 'Windows'):
+if (Path(__file__).parent / 'exlibs').is_dir():
     EXLIB_PATH = Path(__file__).parent / 'exlibs'
     sys.path.insert(0, str(EXLIB_PATH))
     sys.path.insert(0, str(PYLIB_PATH))

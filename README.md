@@ -113,8 +113,10 @@ Some ports, because of their nature, cannot or do not exist on PortMaster. So th
 - [colorama][colorama]
 - [idna][idna]
 - [loguru][loguru]
+- [PySDL2][pysdl2]
 - [requests][requests]
 - [urllib3][urllib3]
+- [port_gui][port_gui] - used as pySDL2gui
 
 
 [PortMaster]: https://github.com/christianhaitian/PortMaster
@@ -131,3 +133,5 @@ Some ports, because of their nature, cannot or do not exist on PortMaster. So th
 [loguru]: https://pypi.org/project/loguru/
 [requests]: https://pypi.org/project/requests/
 [urllib3]: https://pypi.org/project/urllib3/
+[pysdl2]: https://pypi.org/project/PySDL2/
+[port_gui]: https://github.com/mcpalmer1980/port_gui

@@ -46,7 +46,6 @@ from .source import (
     )
 
 from .hardware import (
-    hardware_features,
     device_info,
     )
 
