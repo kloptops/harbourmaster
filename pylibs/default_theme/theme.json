@@ -1,4 +1,9 @@
 {
+    "#info": {
+        "version": 1,
+        "name": "Default Theme",
+        "creator": "Tekkenfede and Kloptops"
+    },
     "#base": {
         "font": "DejaVuSans.ttf"
     },
@@ -260,7 +265,7 @@
             "border": 10,
             "fontsize": 24,
             "fontcolor": [0, 0, 0],
-            "align": "topleft",
+            "align": "bottomleft",
             "text": ""
         },
 

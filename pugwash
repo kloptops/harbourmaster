@@ -478,6 +478,7 @@ class MessageWindowScene(BaseScene):
 
     def do_update(self, events):
         super().do_update(events)
+        # sdl2.SDL_Delay(1000)
 
         if events.was_pressed('B'):
             self.gui.do_cancel()
@@ -599,6 +600,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
                 scene.do_draw()
 
             self.renderer.present()
+            self.clean()
             # self.window.refresh()
 
         # self.updated = False

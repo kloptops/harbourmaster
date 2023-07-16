@@ -106,11 +106,17 @@ class GUI:
 
         self.resources = ResourceManager(self)
         self.fonts = FontManager(self)
+        self.text = TextManager(self)
         self.images = ImageManager(self)
         self.sounds = SoundManager(self)
         self.events = EventManager(self)
         self.pallet = {}
 
+    def clean(self):
+        '''
+        Call after a frame to clean up extra textures/resources no longer needed.
+        '''
+        self.text.clean()
 
 class ResourceManager:
     def __init__(self, gui):
@@ -526,6 +532,115 @@ class Rect:
         self.center = cx, cy
 
 
+class Texture:
+    '''
+    The Texture class is a base texture class used within pySDL2gui.
+
+    The texture can be a subtexture by using srcrect.
+    '''
+    def __init__(self, gui, texture, size=None, parent=None, srcrect=None):
+        self.gui = gui
+        self.renderer = gui.renderer
+        self.parent = parent
+        self.texture = texture
+        self.children = []
+        self.__in_delete = False
+
+        if isinstance(size, Rect):
+            self.size = size
+        elif isinstance(size, (list, tuple)) and len(size) == 4:
+            self.size = Rect(*size)
+        elif isinstance(size, (sdl2.SDL_Rect)):
+            self.size = Rect.from_sdl(size)
+        elif size is None:
+            self.size = Rect(0, 0, *texture.size)
+        else:
+            raise GUIValueError('srcrect not a supported type')
+
+        if parent is not None:
+            parent.children.append(self)
+        # else:
+        #     self.gui.textures.append(self)
+
+        if isinstance(srcrect, Rect):
+            self.srcrect = srcrect.sdl()
+        elif isinstance(srcrect, (list, tuple)) and len(srcrect) == 4:
+            self.srcrect = sdl2.SDL_Rect(*srcrect)
+        elif isinstance(srcrect, (sdl2.SDL_Rect)):
+            self.srcrect = srcrect
+        elif srcrect is None:
+            self.srcrect = sdl2.SDL_Rect(0, 0, *texture.size)
+        else:
+            raise GUIValueError('srcrect not a supported type')
+
+    def __del__(self):
+        if self.__in_delete:
+            return
+
+        self.__in_delete = True
+
+        if self.parent is not None:
+            if self in self.parent.children:
+                self.parent.children.remove(self)
+
+        # else:
+        #     if self in self.gui.textures:
+        #         self.gui.textures.remove(self)
+
+        children = self.children
+        self.children = []
+        for child in self.children:
+            del child
+
+        self.texture.destroy()
+
+    def draw(self):
+        self.renderer.copy(self.texture, self.srcrect, dstrect=self.size.sdl())
+
+    def draw_at(self, x, y):
+        '''
+        Draw image with topleft corner at x, y and at the original size.
+
+        x: x position to draw at
+        y: y position to draw at
+        '''
+
+        self.renderer.copy(self.texture, self.srcrect, dstrect=(x, y))
+
+    def draw_in(self, dest, fit=False, clip=False):
+        '''
+        Draw image inside given Rect region (may squish or stretch image)
+
+        dest: Rect area to draw the image into
+        fit: set true to fit the image into dest without changing its aspect
+             ratio
+        clip: set true to clip the image into the dest.
+        '''
+
+        if fit:
+            dest = self.size.fitted(dest)
+            self.renderer.copy(self.texture, self.srcrect, dstrect=dest.sdl())
+
+        elif clip:
+
+            dstrect = self.size.clip(dest)
+            srcrect = Rect(*self.srcrect)
+
+            if (dstrect.x - self.size.x) > 0:
+                srcrect.x += (dstrect.x - self.size.x)
+
+            if (dstrect.y - self.size.y) > 0:
+                srcrect.y += (dstrect.y - self.size.y)
+
+            self.renderer.copy(
+                self.texture,
+                srcrect.sdl(),
+                dstrect=dstrect.sdl())
+
+        else:
+            self.renderer.copy(self.texture, self.srcrect, dstrect=dest.sdl())
+
+
 class Image:
     renderer = None
     '''
@@ -791,6 +906,73 @@ def get_text_size(font, text=''):
     if not text:
         return text_h.value
     return text_w.value, text_h.value
+
+
+class FontTTF(sdl2.ext.FontTTF):
+    """
+    Adds quick_render to sdl2.ext.FontTTF
+    """
+
+    def quick_render(self, text, size, color, width=None, align='left'):
+        """Renders a string of text to a new surface.
+
+        Uses render_text to render text to a new surface.
+
+        It adds a style that matches what we need if it doesnt exist,
+        """
+        style_key = f"{size},{color}"
+        if style_key not in self._styles:
+            self.add_style(style_key, size, color)
+
+        return self.render_text(text, style_key, width=width, align=align)
+
+
+class TextManager:
+    MAX_TEXTURES = 100
+
+    def __init__(self, gui):
+        self.gui = gui
+        self.renderer = gui.renderer
+        self._textures = {}
+        self._texture_list = collections.deque([])
+        self.fonts = {}
+
+    def add_font(self, font_name, font_file):
+        if font_name not in self.fonts:
+            self.fonts[font_name] = FontTTF(str(font_file), 22, (0, 0, 0, 255))
+
+    def clean(self):
+        """
+        Call at the end of a frame to clean up any of the oldest textures.
+        """
+
+        while len(self._texture_list) > self.MAX_TEXTURES:
+            key = self._texture_list.pop()
+            del self._textures[key]
+
+    def render_text(self, text, font_name, size, color, *, width=None, align="left"):
+        if font_name not in self.fonts:
+            font_file = self.gui.resources.find(font_name)
+            if font_file is None:
+                raise GUIValueError(f"Unknown font {font_name}.")
+
+            self.add_font(font_name, font_file)
+
+        font = self.fonts[font_name]
+
+        key = f"{font.family_name}:{size!r}:{color!r}:{width}:{align}:{text}"
+        if key not in self._textures:
+            surface = font.quick_render(text, size, color, width=width, align=align)
+            texture = self._textures[key] = Texture(
+                self.gui,
+                sdl2.ext.Texture(self.renderer, surface))
+            sdl2.SDL_FreeSurface(surface)
+            self._texture_list.appendleft(key)
+            return texture
+
+        self._texture_list.remove(key)
+        self._texture_list.appendleft(key)
+        return self._textures[key]
 
 
 char_map = ''' ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,?!-:'"_=+&<^>~@/\\|(%)*'''
@@ -1664,16 +1846,40 @@ class Region:
                     text_area, outline=self.fontoutline).height + self.linespace
 
         elif self._text:
-            pos = self.scroll_pos % len(self._text)
+            align_to_textalign = {
+                'center': 'center',
+                'topleft': 'left',
+                'midleft': 'left',
+                'bottomleft': 'left',
+                'topcenter': 'center',
+                'topcenter': 'center',
+                'bottomcenter': 'center',
+                'topright': 'right',
+                'midright': 'right',
+                'bottomright': 'right',
+                }
 
-            x, y = getattr(text_area, self.align, text_area.topleft)
-            #y += self.linespace // 2
-            for l in self._text[pos:]:
-                if y + self.fonts.height > text_area.bottom:
-                    break
+            if text_area.width > 0 and text_area.height > 0:
+                texture = self.gui.text.render_text(
+                    self._text,
+                    self.font, self.fontsize, self.fontcolor,
+                    width=text_area.width, align=align_to_textalign[self.align])
 
-                y += self.fonts.draw(l, x, y, self.fontcolor, 255, self.align,
-                        text_area, outline=self.fontoutline).height + self.linespace
+                x, y = getattr(text_area, self.align, text_area.topleft)
+                setattr(texture.size, self.align, (x, y))
+
+                texture.draw_in(text_area, clip=True)
+
+            # pos = self.scroll_pos % len(self._text)
+
+            # x, y = getattr(text_area, self.align, text_area.topleft)
+            # #y += self.linespace // 2
+            # for l in self._text[pos:]:
+            #     if y + self.fonts.height > text_area.bottom:
+            #         break
+
+            #     y += self.fonts.draw(l, x, y, self.fontcolor, 255, self.align,
+            #             text_area, outline=self.fontoutline).height + self.linespace
 
         # RENDER LIST
         elif self.list:
@@ -1776,13 +1982,11 @@ class Region:
     def text(self, val):
         'Process text for proper wrapping when user changes it.'
         if self.wrap:
-            self.fonts.load(self.font, self.fontsize)
-            text_area = self.area.inflated(-self.borderx * 2, -self.bordery * 2)
-            self._text = self.fonts._split_lines(val, text_area)
+            self._text = val
             self.scroll_delay = -self.autoscroll
             self.scroll_pos = 0
         else:
-            self._text = val.split('\n')
+            self._text = val
         #print(f'text set to:\n{self._text}')
 
     @property

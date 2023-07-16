@@ -35,7 +35,7 @@ HW_INFO = {
     'rg351p':  {'resolution': ( 480,  320), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['3:2', 'lowres']},
 
     # Hardkernel Devices
-    'oga': {'resolution': (480, 320), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['3:2', 'lowres']},
+    'oga': {'resolution': (480, 320), 'analogsticks': 1, 'cpu': 'rk3326', 'capabilities': ['3:2', 'lowres']},
     'ogs': {'resolution': (854, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['427:240', 'power', 'hires']},
     'ogu': {'resolution': (854, 480), 'analogsticks': 2, 'cpu': 's922x',  'capabilities': ['427:240', 'power', 'hires']},
 
@@ -44,8 +44,10 @@ HW_INFO = {
     'rgb10max3': {'resolution': ( 854, 480), 'analogsticks': 2, 'cpu': 's922x',  'capabilities': ['427:240', 'power', 'hires']},
     'rgb10max2': {'resolution': ( 854, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['427:240', 'hires']},
     'rgb10max':  {'resolution': ( 854, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['427:240', 'hires']},
-    'rk2023':    {'resolution': ( 640, 480), 'analogsticks': 2, 'cpu': 'rk3566', 'capabilities': ['4:3', 'power']},
+    'rgb10s':    {'resolution': ( 480, 320), 'analogsticks': 1, 'cpu': 'rk3326', 'capabilities': ['3:2', 'lowres']},
     'rgb20s':    {'resolution': ( 640, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['4:3']},
+    'rk2023':    {'resolution': ( 640, 480), 'analogsticks': 2, 'cpu': 'rk3566', 'capabilities': ['4:3', 'power']},
+    'rk2020':    {'resolution': ( 480, 320), 'analogsticks': 1, 'cpu': 'rk3326', 'capabilities': ['3:2', 'lowres']},
 
     # Gameforce Chi
     'chi':     {'resolution': (640, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['4:3']},
