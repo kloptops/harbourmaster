@@ -28,7 +28,7 @@ class BaseSource():
 
 
 class GitHubRawReleaseV1(BaseSource):
-    VERSION = 3
+    VERSION = 4
 
     def __init__(self, hm, file_name, config):
         self.hm = hm
@@ -49,6 +49,8 @@ class GitHubRawReleaseV1(BaseSource):
 
         if config['version'] != self.VERSION:
             self._wants_update = "Cache out of date."
+            if config['version'] < 4:
+                self._images_md5 = None
 
         elif self._config['last_checked'] is None:
             self._wants_update = "First check."
@@ -238,7 +240,7 @@ class GitHubRawReleaseV1(BaseSource):
 
 
 class PortMasterV1(GitHubRawReleaseV1):
-    VERSION = 3
+    VERSION = 4
 
     def _load(self):
         self._info = self._config.setdefault('data', {}).setdefault('info', {})
@@ -293,7 +295,7 @@ class PortMasterV1(GitHubRawReleaseV1):
                     if zip_name.casefold().rsplit('.')[-1] not in ('jpg', 'png'):
                         continue
 
-                    file_name = self._images_dir / zip_name.rsplit('/', 1)[-1]
+                    file_name = self._images_dir / self.clean_name(zip_name.rsplit('/', 1)[-1])
                     logger.debug(f"adding {file_name}")
                     with open(file_name, 'wb') as fh:
                         fh.write(zf.read(zip_name))

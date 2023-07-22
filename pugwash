@@ -3,6 +3,7 @@
 import contextlib
 import hashlib
 import os
+import re
 import shutil
 import sys
 import textwrap
@@ -112,6 +113,26 @@ Install/Uninstall:
   -> Message Screen
   -> Back
 
+
+Current Template Tags:
+
+    port_info.title
+    port_info.description
+    port_info.instructions
+    port_info.genres
+    port_info.porter
+    port_info.ready_to_run
+
+Future Template Tags:
+
+    system.time_24hr
+    system.time_12hr
+    system.free_space
+    system.used_space
+    system.cfw_name
+    system.cfw_version
+    system.device_name
+
 """
 
 
@@ -188,6 +209,32 @@ def theme_load(gui, theme_file):
     return sections
 
 
+class StringFormatter:
+    def __init__(self, data_dict):
+        self.data_dict = data_dict
+
+    def _get_value(self, key):
+        try:
+            return self.data_dict[key]
+
+        except (KeyError, TypeError):
+            return None
+
+    def format_string(self, input_string, used_keys=None):
+        def replace_key(match):
+            key = match.group(1)
+            if used_keys is not None and key not in used_keys:
+                used_keys.append(key)
+
+            value = self._get_value(key)
+            return str(value) if value is not None else f'{{{key}}}'
+
+        pattern = r'\{(.*?)}'
+        formatted_string = re.sub(pattern, replace_key, input_string)
+
+        return formatted_string
+
+
 class BaseScene:
     """
     Scenes handle drawing / logic, different scenes can be transitioned to and or layered.
@@ -199,12 +246,22 @@ class BaseScene:
         self.gui = gui
         self.tags = {}
         self.regions = []
+        self.text_regions = {}
+        self.update_regions = {}
 
     def load_regions(self, section, required_tags):
         temp_required_tags = list(required_tags)
         for region_name, region_data in self.gui.theme_data[section].items():
             print(f"Loading region {region_name}: {region_data}")
             region = pySDL2gui.Region(region_data, self.gui)
+
+            if "text" in region_data and "{" in region_data["text"]:
+                text_keys = []
+                region.text = self.gui.format_data(region_data["text"], text_keys)
+
+                self.text_regions[region_name] = (region, region_data["text"])
+                for key in text_keys:
+                    self.update_regions.setdefault(key, []).append(region_name)
 
             region_tag = region_data.get("tag", region_name)
             if region_tag is not None:
@@ -218,6 +275,17 @@ class BaseScene:
         if len(temp_required_tags) > 0:
             logger.error(f"Error: missing one or more tags for section {section}: {', '.join(temp_required_tags)}")
             raise RuntimeError("Error missing section tag in theme")
+
+    def update_data(self, keys):
+        regions = set()
+
+        for key in keys:
+            if key in self.update_regions:
+                regions.update(self.update_regions[key])
+
+        for region_name in regions:
+            region, text = self.text_regions[region_name]
+            region.text = self.gui.format_data(text)
 
     def do_update(self, events):
         for region in self.regions:
@@ -233,6 +301,7 @@ class BaseScene:
                 continue
 
             region.draw()
+
 
 class MainMenuScene(BaseScene):
     def __init__(self, gui):
@@ -321,8 +390,6 @@ class PortsListScene(BaseScene):
 
         self.load_regions("ports_list", [
             'ports_list',
-            'port_title',
-            'port_desc',
             'port_image',
             ])
 
@@ -344,19 +411,22 @@ class PortsListScene(BaseScene):
             self.tags['ports_list'].list = [
                 'NO PORTS']
 
-            self.tags['port_title'].text = "** NO PORTS FOUND **"
-            self.tags['port_desc'].text = "Download ports first."
+            self.tags['port_image'].image = self.gui.get_port_image("no-image")
+            self.gui.set_port_info(None, {})
 
-            image = self.gui.resources.find("no-image.jpg")
-            self.tags['port_image'].image = self.gui.images.load(image)
+            self.gui.set_data("port_info.title", "** NO PORTS FOUND **")
+            self.gui.set_data("port_info.description", "Download ports first.")
 
         else:
             self.tags['ports_list'].list = [
                 self.all_ports[port_name]['attr']['title']
                 for port_name in self.port_list]
 
-        if self.tags['ports_list'].selected > len(self.port_list):
-            self.tags['ports_list'].selected = 0
+        if self.tags['ports_list'].selected >= len(self.port_list):
+            if len(self.port_list) == 0:
+                self.tags['ports_list'].selected = 0
+            else:
+                self.tags['ports_list'].selected = len(self.port_list) - 1
 
         self.last_port = self.tags['ports_list'].selected + 1
         self.ready = True
@@ -370,20 +440,12 @@ class PortsListScene(BaseScene):
 
         if len(self.port_list) > 0 and self.last_port != self.tags['ports_list'].selected:
             self.last_port = self.tags['ports_list'].selected
+
             port_name = self.port_list[self.last_port]
             port_info = self.all_ports[port_name]
-            self.tags['port_title'].text = port_info['attr']['title']
-            self.tags['port_desc'].text = port_info['attr']['desc']
-            ## TODO: add ready to run, genres, porter, etc.
-            image = self.gui.hm.port_images(port_name)
-            if image is not None:
-                # print(image)
-                image = image.get('screenshot', None)
+            self.gui.set_port_info(port_name, port_info)
 
-            if image is None:
-                image = self.gui.resources.find("no-image.jpg")
-
-            self.tags['port_image'].image = self.gui.images.load(image)
+            self.tags['port_image'].image = self.gui.get_port_image(port_name)
 
         if events.was_pressed('B'):
             self.gui.pop_scene()
@@ -410,10 +472,6 @@ class PortInfoScene(BaseScene):
         super().__init__(gui)
 
         self.load_regions("port_info", [
-            'port_title',
-            'port_desc',
-            'port_image',
-
             'back_button',
             'ok_button',
             ])
@@ -427,19 +485,11 @@ class PortInfoScene(BaseScene):
         if self.gui.hm is None:
             return
 
-        self.port_info = self.gui.hm.port_info(self.port_name)
+        self.port_info = port_info = self.gui.hm.port_info(self.port_name)
         logger.debug(f"{self.action}: {self.port_name} -> {self.port_info}")
 
-        image = self.gui.hm.port_images(self.port_name)
-        if image is not None:
-            image = image.get('screenshot', None)
-
-        if image is None:
-            image = self.gui.resources.find("no-image.jpg")
-
-        self.tags['port_title'].text = self.port_info['attr']['title']
-        self.tags['port_desc'].text = self.port_info['attr']['desc']
-        self.tags['port_image'].image = self.gui.images.load(image)
+        self.tags['port_image'].image = self.gui.get_port_image(self.port_name)
+        self.gui.set_port_info(self.port_name, self.port_info)
 
         self.tags['ok_button'].text = self.action.title()
         self.tags['back_button'].text = "Back"
@@ -545,6 +595,10 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         if theme_file is None:
             raise RuntimeError("FUCK IT ALL!")
 
+        self.text_data = {}
+        self.changed_keys = set()
+        self.formatter = StringFormatter(self.text_data)
+
         self.theme_data = theme_load(self, theme_file)
 
         self.scenes = [
@@ -592,18 +646,66 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
                 break
 
     def do_draw(self):
+        ## Check for any keys changed in our template system.
+        if len(self.changed_keys):
+            for layer in self.scenes:
+                for scene in layer[1]:
+                    scene.update_data(self.changed_keys)
+
+            self.changed_keys.clear()
+
         # Drawing happens in forwards order
         # if self.updated:
-            self.renderer.clear()
+        self.renderer.clear()
 
-            for scene in self.scenes[-1][1]:
-                scene.do_draw()
+        for scene in self.scenes[-1][1]:
+            scene.do_draw()
 
-            self.renderer.present()
-            self.clean()
+        self.renderer.present()
+        self.clean()
             # self.window.refresh()
 
         # self.updated = False
+
+    def get_port_image(self, port_name):
+        image = None
+        if self.hm is not None:
+            image = self.hm.port_images(port_name)
+
+            if image is not None:
+                image = image.get('screenshot', None)
+
+        if image is None:
+            image = self.resources.find("no-image.jpg")
+
+        return self.images.load(image)
+
+    def set_port_info(self, port_name, port_info):
+        if port_name is None:
+            self.set_data("port_info.title", "** NO PORT **")
+            self.set_data("port_info.description", "")
+            self.set_data("port_info.instructions", "")
+            self.set_data("port_info.genres", "")
+            self.set_data("port_info.porter", "")
+            self.set_data("port_info.ready_to_run", "")
+            return
+
+        self.set_data("port_info.title", port_info['attr']['title'])
+        self.set_data("port_info.description", port_info['attr']['desc'])
+        self.set_data("port_info.instructions", port_info['attr']['inst'])
+        self.set_data("port_info.genres", ', '.join(port_info['attr']['genres']))
+        self.set_data("port_info.porter", port_info['attr']['porter'])
+        self.set_data("port_info.ready_to_run", port_info['attr']['rtr'] and "Ready to Run" or "Files Required")
+
+    def set_data(self, key, value):
+        if self.text_data.get(key, None) == value:
+            return
+
+        self.text_data[key] = value
+        self.changed_keys.add(key)
+
+    def format_data(self, input_string, used_keys=None):
+        return self.formatter.format_string(input_string, used_keys)
 
     def quit(self):
         # Clean up

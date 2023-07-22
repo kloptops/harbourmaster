@@ -912,6 +912,12 @@ class FontTTF(sdl2.ext.FontTTF):
     """
     Adds quick_render to sdl2.ext.FontTTF
     """
+    def line_height(self, size, color=(0, 0, 0)):
+        style_key = f"{size},{color}"
+        if style_key not in self._styles:
+            self.add_style(style_key, size, color)
+
+        return self._get_line_size("", style_key)[1]
 
     def quick_render(self, text, size, color, width=None, align='left'):
         """Renders a string of text to a new surface.
@@ -949,6 +955,18 @@ class TextManager:
         while len(self._texture_list) > self.MAX_TEXTURES:
             key = self._texture_list.pop()
             del self._textures[key]
+
+    def line_height(self, font_name, size):
+        if font_name not in self.fonts:
+            font_file = self.gui.resources.find(font_name)
+            if font_file is None:
+                raise GUIValueError(f"Unknown font {font_name}.")
+
+            self.add_font(font_name, font_file)
+
+        font = self.fonts[font_name]
+
+        return font.line_height(size)
 
     def render_text(self, text, font_name, size, color, *, width=None, align="left"):
         if font_name not in self.fonts:
@@ -1679,6 +1697,7 @@ class Region:
         self.renderer = gui.renderer
         self.images = gui.images
         self.fonts = gui.fonts
+        self.texts = gui.text
         self.pallet = gui.pallet
 
         self.z_index = self._verify_int('z-index', default=None, optional=True)
@@ -1690,14 +1709,14 @@ class Region:
         self.thickness = self._verify_int('thickness', 0)
         self.roundness = self._verify_int('roundness', 0)
         self.borderx = self._verify_int('border', 0)
-        self.bordery = self._verify_int('bordery', self.borderx) or 0
-        self.borderx = self._verify_int('borderx', self.borderx)
+        self.bordery = self._verify_int('border-y', self.borderx) or 0
+        self.borderx = self._verify_int('border-x', self.borderx)
 
         self.image = self.images.load(self._dict.get('image'))
-        self.imagesize = self._verify_ints('imagesize', 2, None, optional=True)
-        self.imagemode = self._verify_option('imagemode',
+        self.imagesize = self._verify_ints('image-size', 2, None, optional=True)
+        self.imagemode = self._verify_option('image-mode',
                 ('fit', 'stretch', 'repeat', None), 'fit')
-        self.imagealign = self._verify_option('imagealign', Rect.POINTS, None)
+        self.imagealign = self._verify_option('image-align', Rect.POINTS, None)
         self.patch = self._verify_ints('patch', 4, optional=True)
         self.pimage = self.images.load(self._dict.get('pimage'))
         if self.patch and not self.pimage:
@@ -1708,9 +1727,9 @@ class Region:
 
         # TODO figure out how to use default/system fonts
         self.font = self._verify_file('font', optional=True)
-        self.fontsize = self._verify_int('fontsize', 30)
-        self.fontcolor = self._verify_color('fontcolor', (255, 255, 255))
-        self.fontoutline = self._verify_outline('fontoutline', None, optional=True)
+        self.fontsize = self._verify_int('font-size', 30)
+        self.fontcolor = self._verify_color('font-color', (255, 255, 255))
+        self.fontoutline = self._verify_outline('font-outline', None, optional=True)
         self._text = self._verify_text('text', optional=True)
         self.wrap = self._verify_bool('wrap', False, optional=True)
         self.linespace = self._verify_int('linespace', 0, optional=True)
@@ -1720,8 +1739,8 @@ class Region:
         self.selectable = None
         self.imagelist = 0 ## TODO
         self.ilistalign = 0 ## TODO
-        self.itemsize = self._verify_int('itemsize', None, optional=True)
-        self.select = self._verify_color('select', optional=True)
+        self.itemsize = self._verify_int('item-size', None, optional=True)
+        self.select = self._verify_color('select-color', optional=True)
 
         self.click_sound = self._verify_text('click_sound', optional=True)
         self.cancel_sound = self._verify_text('cancel_sound', optional=True)
@@ -1836,6 +1855,19 @@ class Region:
             return
 
         # RENDER BAR (toolbarish)
+        align_to_textalign = {
+            'center': 'center',
+            'topleft': 'left',
+            'midleft': 'left',
+            'bottomleft': 'left',
+            'topcenter': 'center',
+            'topcenter': 'center',
+            'bottomcenter': 'center',
+            'topright': 'right',
+            'midright': 'right',
+            'bottomright': 'right',
+            }
+
         if self._bar:
             self._draw_bar(text_area, self._bar)
 
@@ -1846,21 +1878,9 @@ class Region:
                     text_area, outline=self.fontoutline).height + self.linespace
 
         elif self._text:
-            align_to_textalign = {
-                'center': 'center',
-                'topleft': 'left',
-                'midleft': 'left',
-                'bottomleft': 'left',
-                'topcenter': 'center',
-                'topcenter': 'center',
-                'bottomcenter': 'center',
-                'topright': 'right',
-                'midright': 'right',
-                'bottomright': 'right',
-                }
 
             if text_area.width > 0 and text_area.height > 0:
-                texture = self.gui.text.render_text(
+                texture = self.texts.render_text(
                     self._text,
                     self.font, self.fontsize, self.fontcolor,
                     width=text_area.width, align=align_to_textalign[self.align])
@@ -1883,11 +1903,15 @@ class Region:
 
         # RENDER LIST
         elif self.list:
-            itemsize = self.itemsize or self.fonts.height + self.bordery
+            if self.itemsize is not None:
+                itemsize = self.itemsize  # + self.bordery
+            else:
+                itemsize = self.texts.line_height(self.font, self.fontsize)  # + self.bordery
+
             self.page_size = area.height // itemsize
             self.selected = self.selected % len(self.list)
 
-            self.fonts.load(self.font, self.fontsize)
+            # self.fonts.load(self.font, self.fontsize)
             if len(self.list) > self.page_size:
                 start = max(0, min(self.selected - self.page_size // 3,
                         len(self.list) -self.page_size))
@@ -1900,23 +1924,41 @@ class Region:
             for t in self.list[start: start + self.page_size]:
                 if isinstance(t, (list, tuple)):
                     bar = self._verify_bar(None, t, irect)
+
                     if i == self.selected and self.selectedx >= 0:
                         x = self.selectedx
-                    else: x = None
+                    else:
+                        x = None
+
                     self._draw_bar(irect, bar, x)
 
                 elif self.selected == i:
-                    if isinstance(self.select, Region):
-                        r = irect.inflated(self.borderx * 2, self.bordery * 2)
-                        self.select.draw(irect, t)
-                        self.fonts.load(self.font, self.fontsize)
-                    else:
-                        self.fonts.draw(t, *irect.midleft, self.select, 255,
-                                'midleft', text_area, outline=self.fontoutline)
+                    ## Not sure what this is used for.
+                    #
+                    # if isinstance(self.select, Region):
+                    #     r = irect.inflated(self.borderx * 2, self.bordery * 2)
+                    #     self.select.draw(irect, t)
+                    #     self.fonts.load(self.font, self.fontsize)
+                    # else:
+                    texture = self.texts.render_text(
+                        t,
+                        self.font, self.fontsize, self.select, align=align_to_textalign[self.align])
+
+                    x, y = getattr(irect, self.align, irect.topleft)
+                    setattr(texture.size, self.align, (x, y))
+
+                    texture.draw_in(irect, clip=True)
 
                 else:
-                    self.fonts.draw(t,  *irect.midleft, self.fontcolor, 255,
-                            "midleft", text_area, outline=self.fontoutline)
+                    texture = self.texts.render_text(
+                        t,
+                        self.font, self.fontsize, self.fontcolor, align=align_to_textalign[self.align])
+
+                    x, y = getattr(irect, self.align, irect.topleft)
+                    setattr(texture.size, self.align, (x, y))
+
+                    texture.draw_in(irect, clip=True)
+
                 irect.y += itemsize
                 i += 1
 
@@ -1934,9 +1976,9 @@ class Region:
             if self.scroll_delay >= self.autoscroll:
                 self.scroll_pos += 1
                 self.scroll_delay = 0
-                if self.scroll_pos > len(self.text):
-                    self.scroll_delay = -self.autoscroll
-                    self.scroll_pos = 0
+                # if self.scroll_pos > len(self.text):
+                #     self.scroll_delay = -self.autoscroll
+                #     self.scroll_pos = 0
 
                 updated = True
 

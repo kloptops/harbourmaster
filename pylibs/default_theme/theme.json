@@ -47,20 +47,20 @@
             "area": [ 0.0, 0.0, 1.0, 1.0 ],
             "fill": "background",
             "border": 8,
-            "fontsize": 36,
-            "fontcolor": [ 0, 0, 0 ]
+            "font-size": 36,
+            "font-color": [ 0, 0, 0 ]
         },
         "small_button": {
             "fill": "button",
             "outline": [ 0, 0, 0, 255 ],
             "thickness": 1,
-            "fontsize": 16,
-            "fontcolor": [ 0, 0, 0 ]
+            "font-size": 16,
+            "font-color": [ 0, 0, 0 ]
         },
         "button_bar_filters": {
             "area": [ 0.5, 0.93, 0.95, 1.0 ],
-            "fontsize": 16,
-            "fontcolor": [ 0, 0, 0 ],
+            "font-size": 16,
+            "font-color": [ 0, 0, 0 ],
             "bar": [
                 "_A",
                 "Accept",
@@ -72,8 +72,8 @@
         },
         "button_bar": {
             "area": [ 0.60, 0.93, 0.95, 1.0 ],
-            "fontsize": 16,
-            "fontcolor": [ 0, 0, 0 ],
+            "font-size": 16,
+            "font-color": [ 0, 0, 0 ],
             "bar": [
                 "_A",
                 "Accept",
@@ -83,8 +83,8 @@
         },
         "button_bar2": {
             "area": [ 0.40, 0.93, 0.95, 1.0 ],
-            "fontsize": 16,
-            "fontcolor": [ 0, 0, 0 ],
+            "font-size": 16,
+            "font-color": [ 0, 0, 0 ],
             "bar": [
                 "_A",
                 "Install",
@@ -94,8 +94,8 @@
         },
         "button_bar3": {
             "area": [ 0.55, 0.93, 0.95, 1.0 ],
-            "fontsize": 16,
-            "fontcolor": [ 0, 0, 0 ],
+            "font-size": 16,
+            "font-color": [ 0, 0, 0 ],
             "bar": [
                 "_B",
                 "Back"
@@ -104,9 +104,9 @@
         "option_list": {
             "area": [ 0.25, 0.25, 0.75, 0.75 ],
             "border": 8,
-            "fontsize": 30,
-            "fontcolor": "list_text",
-            "select": "list_selected",
+            "font-size": 30,
+            "font-color": "list_text",
+            "select-color": "list_selected",
             "thickness": 10
         }
     },
@@ -119,32 +119,38 @@
             "fill": [ 230, 230, 230 ],
             "thickness": 10,
             "border": 8,
-            "fontsize": 24,
-            "fontcolor": [ 0, 0, 0 ],
+            "font-size": 24,
+            "font-color": [ 0, 0, 0 ],
             "wrap": true
         },
 
         "ports_list": {
             "area": [0.0, 0.1, 0.4, 0.95],
-            "borderx": 16,
+            "border-x": 16,
             "roundness": 10,
-            "fontsize": 14,
-            "fontcolor": "list_text",
-            "select": "list_selected"
+            "font-size": 14,
+            "font-color": "list_text",
+            "select-color": "list_selected",
+            "autoscroll": 0,
+            "scroll-speed": 1,
+            "scroll-delay-start": 500,
+            "scroll-delay-end":   500
         },
 
         "port_desc": {
+            "text": "{port_info.description}",
             "area": [0.5, 0.55, 0.99, 0.99],
-            "fontsize": 12,
-            "fontcolor": [0, 0, 0],
+            "font-size": 12,
+            "font-color": [0, 0, 0],
             "autoscroll": 0,
             "wrap": true
         },
 
         "port_title": {
+            "text": "{port_info.title}",
             "area": [0.5, 0.02, 1.00, 0.10],
-            "fontsize": 16,
-            "fontcolor": [ 255, 0, 0 ],
+            "font-size": 16,
+            "font-color": [ 255, 0, 0 ],
             "autoscroll": 0,
             "wrap": false,
             "align": "top-center"
@@ -166,23 +172,25 @@
             "fill": [ 230, 230, 230 ],
             "thickness": 6,
             "border": 8,
-            "fontsize": 24,
-            "fontcolor": [ 0, 0, 0 ],
+            "font-size": 24,
+            "font-color": [ 0, 0, 0 ],
             "wrap": true
         },
 
         "port_desc": {
+            "text": "{port_info.description}",
             "area": [ 0.05, 0.7, 1.0, 0.9 ],
-            "fontsize": 13,
-            "fontcolor": [ 0, 0, 0 ],
+            "font-size": 13,
+            "font-color": [ 0, 0, 0 ],
             "autoscroll": 0,
             "wrap": true
         },
 
         "port_title": {
+            "text": "{port_info.title}",
             "area": [ 0.00, 0.00, 1.00, 0.10 ],
-            "fontsize": 24,
-            "fontcolor": [ 0, 0, 0 ],
+            "font-size": 24,
+            "font-color": [ 0, 0, 0 ],
             "autoscroll": 0,
             "wrap": true
         },
@@ -210,6 +218,7 @@
         "#element:background": {},
 
         "#element:option_list": {
+            "align": "center",
             "list": [
                 "Install All Ports",
                 "Install Ready to Run Ports",
@@ -263,8 +272,8 @@
             "fill": [230, 230, 230],
             "thickness": 6,
             "border": 10,
-            "fontsize": 24,
-            "fontcolor": [0, 0, 0],
+            "font-size": 24,
+            "font-color": [0, 0, 0],
             "align": "bottomleft",
             "text": ""
         },
@@ -280,8 +289,8 @@
             "fill": [230, 230, 230],
             "thickness": 6,
             "border": 8,
-            "fontsize": 24,
-            "fontcolor": [0, 0, 0],
+            "font-size": 24,
+            "font-color": [0, 0, 0],
             "align": "center",
             "text": "",
             "wrap": true
