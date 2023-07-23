@@ -100,12 +100,12 @@ def nice_device_to_device(raw_device):
         ('Powkiddy RK2023',  'rk2023'),
         ('Powkiddy x55',     'x55'),
 
-        ('Anbernic RG351MP', 'rg351mp'),
-        ('Anbernic RG351V',  'rg351v'),
+        ('Anbernic RG351MP*', 'rg351mp'),
+        ('Anbernic RG351V*',  'rg351v'),
         ('Anbernic RG351*',  'rg351p'),
-        ('Anbernic RG353MP', 'rg353mp'),
-        ('Anbernic RG353V',  'rg353v'),
-        ('Anbernic RG353P',  'rg353p'),
+        ('Anbernic RG353MP*', 'rg353mp'),
+        ('Anbernic RG353V*',  'rg353v'),
+        ('Anbernic RG353P*',  'rg353p'),
         )
 
     for pattern, device in pattern_to_device:
@@ -137,7 +137,7 @@ def new_device_info():
     # Works on ArkOS
     config_device = safe_cat('~/.config/.DEVICE')
     if config_device != '':
-        info.setdefault('device', config_device.strip())
+        info.setdefault('device', config_device.strip().lower())
 
     # Works on ArkOS
     plymouth = safe_cat('/usr/share/plymouth/themes/text.plymouth')

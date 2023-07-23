@@ -1,4 +1,6 @@
 
+HARBOURMASTER_VERSION = '0.4.8'
+
 from .config import (
     HM_UPDATE_FREQUENCY,
     HM_TOOLS_DIR,

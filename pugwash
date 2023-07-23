@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
+PORTMASTER_VERSION = '8.1.0a'
+
 import contextlib
+import datetime
 import hashlib
 import os
 import re
@@ -122,8 +125,9 @@ Current Template Tags:
     port_info.genres
     port_info.porter
     port_info.ready_to_run
-
-Future Template Tags:
+    port_info.download_size
+    port_info.runtime
+    port_info.runtime_status
 
     system.time_24hr
     system.time_12hr
@@ -132,6 +136,7 @@ Future Template Tags:
     system.cfw_name
     system.cfw_version
     system.device_name
+    system.battery_level
 
 """
 
@@ -551,6 +556,7 @@ class MessageBoxScene(BaseScene):
 
 class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
     TICK_INTERVAL = 1000 // 5
+    TEXT_DATA_FREQ = 5000
 
     def __init__(self):
         # Initialize SDL
@@ -596,6 +602,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             raise RuntimeError("FUCK IT ALL!")
 
         self.text_data = {}
+        self.text_data_updated = sdl2.SDL_GetTicks64() - self.TEXT_DATA_FREQ - 1
         self.changed_keys = set()
         self.formatter = StringFormatter(self.text_data)
 
@@ -612,6 +619,13 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.was_cancelled = False
 
         self.updated = False
+
+        device_info = harbourmaster.device_info()
+        self.set_data('system.portmaster_version', PORTMASTER_VERSION)
+        self.set_data('system.harbourmaster_version', harbourmaster.HARBOURMASTER_VERSION)
+        self.set_data('system.cfw_name', device_info['name'])
+        self.set_data('system.cfw_version', device_info['version'])
+        self.set_data('system.device_name', device_info['device'])
 
     ## Loop stuff.
     def run(self):
@@ -640,6 +654,27 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             sdl2.SDL_Delay(30)
 
     def do_update(self):
+        # Update tags
+        time = sdl2.SDL_GetTicks64()
+        if (time - self.text_data_updated) > self.TEXT_DATA_FREQ:
+            self.set_data("system.time_24hr", datetime.datetime.now().strftime("%H:%M"))
+            self.set_data("system.time_12hr", datetime.datetime.now().strftime("%I:%M %p"))
+
+            disk_usage = shutil.disk_usage(str(harbourmaster.HM_PORTS_DIR))
+
+            self.set_data("system.free_space", harbourmaster.nice_size(disk_usage.free))
+            self.set_data("system.used_space", harbourmaster.nice_size(disk_usage.used))
+            self.set_data("system.total_space", harbourmaster.nice_size(disk_usage.total))
+
+            battery_file = Path("/sys/class/power_supply/battery/capacity")
+            if battery_file.exists():
+                self.set_data("system.battery_level", f"{int(battery_file.read_text().strip())}%")
+
+            else:
+                self.set_data("system.battery_level", "N/A")
+
+            self.text_data_updated = time
+
         # Events get handled in reversed order.
         for scene in reversed(self.scenes[-1][1]):
             if scene.do_update(self.events):
@@ -681,6 +716,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         return self.images.load(image)
 
     def set_port_info(self, port_name, port_info):
+        ## TODO: make this better :D
         if port_name is None:
             self.set_data("port_info.title", "** NO PORT **")
             self.set_data("port_info.description", "")
@@ -688,6 +724,8 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             self.set_data("port_info.genres", "")
             self.set_data("port_info.porter", "")
             self.set_data("port_info.ready_to_run", "")
+            self.set_data("port_info.runtime", "")
+            self.set_data("port_info.download_size", "")
             return
 
         self.set_data("port_info.title", port_info['attr']['title'])
@@ -697,12 +735,27 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.set_data("port_info.porter", port_info['attr']['porter'])
         self.set_data("port_info.ready_to_run", port_info['attr']['rtr'] and "Ready to Run" or "Files Required")
 
+        runtime = port_info['attr']['runtime']
+        if runtime is not None:
+            self.set_data("port_info.runtime", runtime_nicename(runtime))
+            if (self.hm.libs_dir / runtime).is_file():
+                self.set_data("port_info.runtime_status", "Installed")
+            else:
+                self.set_data("port_info.runtime_status", "Missing")
+
+        else:
+            self.set_data("port_info.runtime", "None")
+            self.set_data("port_info.runtime_status", "N/A")
+
+        self.set_data("port_info.download_size", harbourmaster.nice_size(self.hm.port_download_size(port_name)))
+
     def set_data(self, key, value):
         if self.text_data.get(key, None) == value:
             return
 
         self.text_data[key] = value
         self.changed_keys.add(key)
+        logger.debug(f"{key}: {value}")
 
     def format_data(self, input_string, used_keys=None):
         return self.formatter.format_string(input_string, used_keys)
@@ -934,6 +987,19 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
                 self.hm.load_ports()
 
 
+def runtime_nicename(runtime):
+    if runtime.startswith("frt"):
+        return f"Godot/FRT {runtime.split('_', 1)[1].rsplit('.', 1)[0]}"
+
+    if runtime.startswith("mono"):
+        return f"Mono {runtime.split('-', 1)[1].rsplit('-', 1)[0]}"
+
+    if "jdk" in runtime and runtime.startswith("zulu11"):
+        return f"JDK {runtime.split('-')[2][3:]}"
+
+    return runtime
+
+
 @logger.catch
 def main(argv):
     global LOG_FILE_HANDLE
@@ -986,6 +1052,7 @@ def main(argv):
             utility.do_color(True)
 
         pm = PortMasterGUI()
+        pm.hm = None
 
         with pm.enable_cancellable(False):
             hm = HarbourMaster(config, temp_dir=temp_dir, callback=pm)

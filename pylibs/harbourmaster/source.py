@@ -238,6 +238,26 @@ class GitHubRawReleaseV1(BaseSource):
 
         return self._info[port_name]
 
+    def port_download_size(self, port_name):
+        port_name = self.clean_name(port_name)
+
+        if port_name not in getattr(self, '_data', {}):
+            return 0
+
+        size = self._data[port_name]['size']
+
+        if port_name in self._info:
+            port_info = self._info[port_name]
+
+            if port_info['attr'].get('runtime', None) is not None:
+                runtime = port_info['attr']['runtime']
+
+                runtime_file = (self.hm.libs_dir / runtime)
+                if not runtime_file.exists():
+                    size += self.hm.port_download_size(runtime)
+
+        return size
+
 
 class PortMasterV1(GitHubRawReleaseV1):
     VERSION = 4
