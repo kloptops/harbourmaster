@@ -93,7 +93,7 @@
             ]
         },
         "button_bar3": {
-            "area": [ 0.55, 0.93, 0.95, 1.0 ],
+            "area": [ 0.5, 0.93, 0.95, 1.0 ],
             "font-size": 16,
             "font-color": [ 0, 0, 0 ],
             "bar": [
@@ -102,7 +102,7 @@
             ]
         },
         "option_list": {
-            "area": [ 0.25, 0.25, 0.75, 0.75 ],
+            "area": [ 0.1, 0.25, 0.9, 0.9 ],
             "border": 8,
             "font-size": 30,
             "font-color": "list_text",
@@ -138,11 +138,11 @@
         },
 
         "port_desc": {
-            "text": "{port_info.description}\n\nPorter: {port_info.porter}\nGenres: {port_info.genres}\nDownload Size: {port_info.download_size}\nRuntime: {port_info.runtime} ({port_info.runtime_status})",
-            "area": [0.5, 0.55, 0.99, 0.99],
-            "font-size": 12,
-            "font-color": [0, 0, 0],
-            "autoscroll": 0,
+            "text": "{port_info.description}\n\nGenres: {port_info.genres}\nDownload Size: {port_info.download_size}\nRuntime: {port_info.runtime} ({port_info.runtime_status})",
+            "area": [ 0.5, 0.52, 0.99, 0.99 ],
+            "font-size": 11,
+            "font-color": [ 0, 0, 0 ],
+
             "wrap": true
         },
 
@@ -166,37 +166,42 @@
 
     "port_info": {
         "#element:background": {},
-
-        "port_info": {
-            "area": [ 0.0, 0.7, 1.0, 1.0 ],
+       
+        "free_space": {
+            "area": [ 0.0, 0.1, 0.2, 0.2 ],
             "fill": [ 230, 230, 230 ],
+            "text": "Free Space: {system.free_space}",
             "thickness": 6,
             "border": 8,
-            "font-size": 24,
+            "font-size": 11,
             "font-color": [ 0, 0, 0 ],
             "wrap": true
         },
 
-        "port_desc": {
+        "port_info": {
+            "area": [ 0.0, 0.68, 1.0, 1.0 ],
+            "fill": [ 230, 230, 230 ],
             "text": "{port_info.description}\n\nPorter: {port_info.porter}\nGenres: {port_info.genres}\nDownload Size: {port_info.download_size}\nRuntime: {port_info.runtime} ({port_info.runtime_status})",
-            "area": [ 0.05, 0.7, 1.0, 0.9 ],
-            "font-size": 13,
+            "thickness": 6,
+            "border": 8,
+            "font-size": 11,
             "font-color": [ 0, 0, 0 ],
-            "autoscroll": 0,
             "wrap": true
         },
+
 
         "port_title": {
             "text": "{port_info.title}",
-            "area": [ 0.00, 0.00, 1.00, 0.10 ],
+            "area": [ 0.00, 0.00, 1.00, 0.1 ],
             "font-size": 24,
-            "font-color": [ 0, 0, 0 ],
+            "font-color": [ 255, 0, 0 ],
             "autoscroll": 0,
-            "wrap": true
+            "wrap": false,
+            "align": "center"
         },
 
         "port_image": {
-            "area": [0.51, 0.1, 0.5, 0.65],
+            "area": [ 0.51, 0.1, 0.5, 0.65 ],
             "image": "no-image.jpg",
             "align": "center"
         },
@@ -207,7 +212,7 @@
         },
 
         "#element:small_button:back_button": {
-            "area": [0.0, 0.0, 0.0, 0.0],
+            "area": [ 0.0, 0.0, 0.0, 0.0 ],
             "text": "Back"
         },
 
@@ -243,11 +248,18 @@
         "#element:button_bar": {},
 
         "system_time": {
-            "text": "Time: {system.time_24hr}\nSpace: {system.free_space} free / {system.total_space} total\nCFW: {system.cfw_name} ({system.cfw_version})\nDevice: {system.device_name}\nPM: {system.portmaster_version}\nHM: {system.harbourmaster_version}\nBattery: {system.battery_level}",
-            "font-size": 12,
-            "font-color": [0, 0, 0],
-            "area": [0.05, 0.05, 0.95, 0.95],
-            "align": "topright"
+            "text": "Time: {system.time_24hr}\nCFW: {system.cfw_name} ({system.cfw_version})\nDevice: {system.device_name}\nBattery: {system.battery_level}",
+            "font-size": 13,
+            "font-color": [ 0, 0, 0 ],
+            "area": [ 0.02, 0.05, 0.95, 0.95 ],
+            "align": "topleft"
+        },
+        "system_time_low": {
+            "text": "Space: {system.free_space} free / {system.total_space} total\nPM: {system.portmaster_version}\nHM: {system.harbourmaster_version}",
+            "font-size": 11,
+            "font-color": [ 0, 0, 0 ],
+            "area": [ 0.02, 0.05, 0.95, 0.95 ],
+            "align": "bottomleft"
         }
 
     },
