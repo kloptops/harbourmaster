@@ -341,7 +341,7 @@ class MainMenuScene(BaseScene):
                 self.gui.push_scene('option', OptionScene(self.gui))
                 return True
 
-            elif selected_option == 'quit':
+            elif selected_option == 'exit':
                 self.gui.do_cancel()
                 return True
 
@@ -579,8 +579,12 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             print(f"Display size: {self.display_width}x{self.display_height}")
 
         if harbourmaster.HM_TESTING:
-            self.display_width = 640
-            self.display_height = 480
+
+            self.display_width, self.display_height = 640, 480
+            # self.display_width, self.display_height = 480, 320
+            # self.display_width, self.display_height = 1280, 720
+            # self.display_width, self.display_height = 1920, 1152
+
             print(f"Forcing size: {self.display_width}x{self.display_height}")
 
         # Create the window

@@ -66,6 +66,7 @@ class HarbourMaster():
         self.sources = {}
         self.config = {
             'no-check': config.get('no-check', False),
+            'offline': config.get('offline', False),
             'quiet': config.get('quiet', False),
             'debug': config.get('debug', False),
             }
@@ -869,6 +870,7 @@ class HarbourMaster():
 
         self._fix_permissions()
 
+        logger.debug(port_info)
         if port_info['attr'].get('runtime', None) is not None:
             return self.check_runtime(port_info['attr']['runtime'])
 
@@ -889,6 +891,11 @@ class HarbourMaster():
 
             runtime_file = (self.libs_dir / runtime)
             if not runtime_file.is_file():
+
+                if self.config['offline']:
+                    cprint(f"Unable to download {runtime} when offline")
+                    return 0
+
                 for source_prefix, source in self.sources.items():
                     if runtime not in source.utils:
                         continue
@@ -929,6 +936,10 @@ class HarbourMaster():
     def install_port(self, port_name):
         # Special HTTP download code.
         if port_name.startswith('http'):
+            if self.config['offline']:
+                cprint(f"Unable to download {port_name} when offline")
+                return 255
+
             download_info = raw_download(self.temp_dir, port_name, callback=self.callback)
 
             if download_info is None:
@@ -970,6 +981,10 @@ class HarbourMaster():
 
             if source.clean_name(port_name) not in source.ports:
                 continue
+
+            if self.config['offline']:
+                cprint(f"Unable to download {port_name} when offline")
+                return 255
 
             download_info = source.download(source.clean_name(port_name))
 
