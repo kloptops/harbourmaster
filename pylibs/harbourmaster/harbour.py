@@ -675,15 +675,27 @@ class HarbourMaster():
 
         return None
 
-    def port_download_size(self, port_name):
+    def port_download_size(self, port_name, check_runtime=True):
         for source_prefix, source in self.sources.items():
-            if source.clean_name(port_name) not in source.ports:
-                if source.clean_name(port_name) not in source.utils:
+            clean_name = source.clean_name(port_name)
+            if clean_name not in source.ports:
+                if clean_name not in source.utils:
                     continue
 
-            return source.port_download_size(port_name)
+            return source.port_download_size(port_name, check_runtime)
 
         return 0
+
+    def port_download_url(self, port_name):
+        for source_prefix, source in self.sources.items():
+            clean_name = source.clean_name(port_name)
+            if clean_name not in source.ports:
+                if clean_name not in source.utils:
+                    continue
+
+            return source.port_download_url(port_name)
+
+        return None
 
     def _fix_permissions(self):
         path_fs = get_path_fs(self.ports_dir)
