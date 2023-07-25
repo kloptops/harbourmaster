@@ -530,7 +530,7 @@ class HarbourMaster():
             del port_info['changed']
 
             if changed:
-                if ports_files[port_name].parent.is_file():
+                if ports_files[port_name].parent.is_dir():
                     logger.debug(f"Dumping {str(ports_files[port_name])}: {port_info}")
                     with ports_files[port_name].open('wt') as fh:
                         json.dump(port_info, fh, indent=4)
