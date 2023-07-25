@@ -652,6 +652,19 @@ class HarbourMaster():
 
         return ports
 
+    def list_utils(self):
+
+        utils = []
+
+        for source_prefix, source in self.sources.items():
+            for util_name in source.utils:
+                if util_name in utils:
+                    continue
+
+                utils.append(util_name)
+
+        return utils
+
     def port_images(self, port_name):
         for source_prefix, source in self.sources.items():
             if name_cleaner(port_name) in source.images:

@@ -173,6 +173,21 @@ if not (harbourmaster.HM_TOOLS_DIR / "PortMaster" / "config").is_dir():
 """
 
 ################################################################################
+## Utils
+def runtime_nicename(runtime):
+    if runtime.startswith("frt"):
+        return f"Godot/FRT {runtime.split('_', 1)[1].rsplit('.', 1)[0]}"
+
+    if runtime.startswith("mono"):
+        return f"Mono {runtime.split('-', 1)[1].rsplit('-', 1)[0]}"
+
+    if "jdk" in runtime and runtime.startswith("zulu11"):
+        return f"JDK {runtime.split('-')[2][3:]}"
+
+    return runtime
+
+
+################################################################################
 ## Commands
 
 
@@ -320,7 +335,12 @@ def do_portsjson(hm, argv):
     """
     import json
 
+    ports_json = {}
     ports = hm.list_ports([])
+    utils = {}
+
+    ports_json['ports'] = ports
+    ports_json['utils'] = utils
 
     for port_name, port_info in ports.items():
         images = hm.port_images(port_name)
@@ -338,12 +358,21 @@ def do_portsjson(hm, argv):
         del port_info['status']
         del port_info['files']
 
+    for util_name in hm.list_utils():
+        util_info = {
+            'name': runtime_nicename(util_name),
+            'download_url': hm.port_download_url(util_name),
+            'download_size': hm.port_download_size(util_name),
+            }
+
+        utils[util_name] = util_info
+
     if len(argv) > 0:
         with open(argv[0], 'w') as fh:
-            json.dump(ports, fh, indent=4)
+            json.dump(ports_json, fh, indent=4)
 
     else:
-        print(json.dumps(ports, indent=4))
+        print(json.dumps(ports_json, indent=4))
 
     return 0
 

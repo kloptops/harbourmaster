@@ -246,7 +246,7 @@ class GitHubRawReleaseV1(BaseSource):
 
         size = self._data[port_name]['size']
 
-        if check_runtime and port_name in self._info:
+        if check_runtime and port_name in getattr(self, '_info', {}):
             port_info = self._info[port_name]
 
             if port_info['attr'].get('runtime', None) is not None:
