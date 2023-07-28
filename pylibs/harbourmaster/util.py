@@ -24,6 +24,13 @@ from utility import cprint, cstrip
 
 from .config import *
 
+
+################################################################################
+## Exceptions
+class HarbourException(Exception):
+    ...
+
+
 ################################################################################
 ## Utils
 def json_safe_loads(*args):
@@ -409,7 +416,7 @@ def make_temp_directory():
         shutil.rmtree(temp_dir)
 
 
-class CancelEvent(Exception):
+class CancelEvent(HarbourException):
     pass
 
 
@@ -459,6 +466,7 @@ class Callback:
 __all__ = (
     'Callback',
     'CancelEvent',
+    'HarbourException',
     'add_dict_list_unique',
     'add_list_unique',
     'add_pm_signature',

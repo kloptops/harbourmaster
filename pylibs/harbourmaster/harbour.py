@@ -21,6 +21,7 @@ from .hardware import *
 from .util import *
 from .info import *
 from .source import *
+from .captain import *
 
 
 ################################################################################
@@ -731,7 +732,6 @@ class HarbourMaster():
         We collect a list of top level scripts/directories, this is added to the port.json file.
         """
 
-        port_info_file = None
         items = []
         dirs = []
         scripts = []
@@ -740,65 +740,12 @@ class HarbourMaster():
         is_successs = False
 
         try:
+            extra_info = {}
+            port_info = check_port(download_info['name'], download_info['zip_file'], extra_info)
+
+            port_info_file = self.ports_dir / extra_info['port_info_file']
+
             with zipfile.ZipFile(download_info['zip_file'], 'r') as zf:
-                for file_info in zf.infolist():
-                    if file_info.filename.startswith('/'):
-                        ## Sneaky
-                        logger.error(f"Port {download_info['name']} has an illegal file {file_info.filename!r}, aborting.")
-                        self.callback.message_box(f"Port {download_info['name']} has an illegal file, aborting installation.")
-                        return 255
-
-                    if file_info.filename.startswith('../'):
-                        ## Little
-                        logger.error(f"Port {download_info['name']} has an illegal file {file_info.filename!r}, aborting installation.")
-                        self.callback.message_box(f"Port {download_info['name']} has an illegal file, aborting installation.")
-                        return 255
-
-                    if '/../' in file_info.filename:
-                        ## Shits
-                        logger.error(f"Port {download_info['name']} has an illegal file {file_info.filename!r}, aborting.")
-                        self.callback.message_box(f"Port {download_info['name']} has an illegal file, aborting installation.")
-                        return 255
-
-                    if '/' in file_info.filename:
-                        parts = file_info.filename.split('/')
-
-                        if parts[0] not in dirs:
-                            items.append(parts[0] + '/')
-                            dirs.append(parts[0])
-
-                        if len(parts) == 2:
-                            if parts[1].lower().endswith('.port.json'):
-                                ## TODO: add the ability for multiple port folders to have multiple port.json files. ?
-                                if port_info_file is not None:
-                                    logger.warning(f"Port {download_info['name']} has multiple port.json files.")
-                                    logger.warning(f"- Before: {port_info_file.relative_to(self.ports_dir)!r}")
-                                    logger.warning(f"- Now:    {file_info.filename!r}")
-
-                                port_info_file = self.ports_dir / file_info.filename
-
-                        if file_info.filename.lower().endswith('.sh'):
-                            logger.warning(f"Port {download_info['name']} has {file_info.filename} inside, this can cause issues.")
-
-                    else:
-                        if file_info.filename.lower().endswith('.sh'):
-                            scripts.append(file_info.filename)
-                            items.append(file_info.filename)
-                        else:
-                            logger.warning(f"Port {download_info['name']} contains {file_info.filename} at the top level, but it is not a shell script.")
-
-                if len(dirs) == 0:
-                    logger.error(f"Port {download_info['name']} has no directories, aborting.")
-                    self.callback.message_box(f"Port {download_info['name']} has no directories, aborting installation.")
-
-                    return 255
-
-                if len(scripts) == 0:
-                    logger.error(f"Port {download_info['name']} has no scripts, aborting.")
-                    self.callback.message_box(f"Port {download_info['name']} has no scripts, aborting installation.")
-
-                    return 255
-
                 ## TODO: keep a list of installed files for uninstalling?
                 # At this point the port will be installed
                 # Extract all the files to the specified directory
@@ -826,11 +773,6 @@ class HarbourMaster():
                     cprint(f"- <b>{file_info.filename!r}</b> <d>[{nice_size(file_info.file_size)} ({compress_saving:.0f}%)]</d>")
                     zf.extract(file_info, path=self.ports_dir)
 
-            if port_info_file is not None:
-                port_info = port_info_load(port_info_file)
-            else:
-                port_info = port_info_load({})
-
             # print(f"Port Info: {port_info}")
             # print(f"Download Info: {download_info}")
 
@@ -841,9 +783,6 @@ class HarbourMaster():
             port_info['items'] = items
             port_info['status'] = download_info['status'].copy()
             port_info['status']['status'] = 'Installed'
-
-            if port_info_file is None:
-                port_info_file = self.ports_dir / dirs[0] / (port_info['name'].rsplit('.', 1)[0] + '.port.json')
 
             port_info['files'] = {
                 'port.json': str(port_info_file.relative_to(self.ports_dir)),
@@ -875,6 +814,10 @@ class HarbourMaster():
                 json.dump(port_info, fh, indent=4)
 
             is_successs = True
+
+        except HarbourException as err:
+            is_successs = False
+            pass
 
         finally:
             if not is_successs and len(undo_data) > 0:

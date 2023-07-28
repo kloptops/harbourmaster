@@ -14,6 +14,7 @@ from .config import (
 from .util import (
     Callback,
     CancelEvent,
+    HarbourException,
     add_dict_list_unique,
     add_list_unique,
     add_pm_signature,
@@ -49,6 +50,10 @@ from .source import (
 
 from .hardware import (
     device_info,
+    )
+
+from .captain import (
+    check_port,
     )
 
 from .harbour import (

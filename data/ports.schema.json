@@ -1,0 +1,281 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+
+    "definitions": {
+        "registry": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "ports": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/port_registry"
+                    }
+                },
+                "utils": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/util_registry"
+                    }
+                }
+            },
+            "required": [
+                "ports",
+                "utils"
+            ],
+            "title": "registry"
+        },
+        "port": {
+            "type": "object",
+            "properties": {
+                "version": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "items_opt": {
+                    "anyOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    ]
+                },
+                "attr": {
+                    "$ref": "#/definitions/port_attr"
+                },
+                "download_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "qt-uri-protocols": [
+                        "https"
+                    ],
+                    "qt-uri-extensions": [
+                        ".zip"
+                    ]
+                },
+                "download_size": {
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "attr",
+                "download_size",
+                "download_url",
+                "items",
+                "items_opt",
+                "name",
+                "version"
+            ],
+            "title": "port"
+        },
+        "port_registry": {
+          "allOf": [
+                { "$ref": "#/definitions/port" },
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "download_url": {
+                            "type": "string",
+                            "format": "uri",
+                            "qt-uri-protocols": [
+                                "https"
+                            ],
+                            "qt-uri-extensions": [
+                                ".zip"
+                            ]
+                        },
+                        "download_size": {
+                            "type": "integer"
+                        }
+                    },
+                    "required": [
+                        "download_size",
+                        "download_url"
+                    ],
+                    "title": "port_registry"
+                }
+            ]
+        },
+        "port_install": {
+          "allOf": [
+                { "$ref": "#/definitions/port" },
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "status": {
+                            "type": "object",
+                            "properties": {
+                                "source": { "type": "string" },
+                                "md5": { "type": "string" },
+                                "url": { "type": "string" },
+                                "status": {
+                                    "type": "string",
+                                    "enum": ["Downloaded", "Installed", "Broken"]
+                                }
+                            },
+                            "required": [
+                                "source",
+                                "status"
+                            ]
+                        },
+                        "files": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "required": [
+                        "files",
+                        "status"
+                    ],
+                    "title": "port_install"
+                }
+            ]
+        },
+        "port_attr": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "title": {
+                    "type": "string"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "inst": {
+                    "type": "string"
+                },
+                "genres": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": {
+                        "$ref": "#/definitions/port_genre"
+                    }
+                },
+                "porter": {
+                    "type": "string"
+                },
+                "image": {
+                    "oneOf": [
+                        {
+                            "$ref": "#/definitions/port_image"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "rtr": {
+                    "type": "boolean"
+                },
+                "runtime": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "string"
+                        }
+                    ]
+                },
+                "reqs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": [
+                "desc",
+                "genres",
+                "image",
+                "inst",
+                "porter",
+                "reqs",
+                "rtr",
+                "runtime",
+                "title"
+            ],
+            "title": "port_attr"
+        },
+        "port_image": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "screenshot": {
+                    "type": "string"
+                },
+                "banner": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "screenshot"
+            ],
+            "title": "port_image"
+        },
+        "util_registry": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "download_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "qt-uri-protocols": [
+                        "https"
+                    ],
+                    "qt-uri-extensions": [
+                        ".squashfs"
+                    ]
+                },
+                "download_size": {
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "download_size",
+                "download_url",
+                "name"
+            ],
+            "title": "util_ref"
+        },
+        "port_genre": {
+            "type": "string",
+            "enum": [
+                "puzzle",
+                "adventure",
+                "platformer",
+                "action",
+                "fps",
+                "simulation",
+                "strategy",
+                "sports",
+                "racing",
+                "rpg",
+                "arcade",
+                "other",
+                "visual novel",
+                "casino/card"
+            ],
+            "title": "port_genre"
+        }
+    }
+}

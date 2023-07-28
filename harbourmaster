@@ -339,7 +339,7 @@ def do_portsjson(hm, argv):
     ports = hm.list_ports([])
     utils = {}
 
-    ports_json['ports'] = ports
+    ports_json['ports'] = []
     ports_json['utils'] = utils
 
     for port_name, port_info in ports.items():
@@ -357,6 +357,8 @@ def do_portsjson(hm, argv):
 
         del port_info['status']
         del port_info['files']
+
+        ports_json['ports'].append(port_info)
 
     for util_name in hm.list_utils():
         util_info = {
