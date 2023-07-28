@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import datetime
 import hashlib
 import os
 import re
@@ -334,6 +335,9 @@ def do_portsjson(hm, argv):
     {command} ports.json [filename]
     """
     import json
+    from ports_info import ports_info
+
+    default_time = datetime.datetime.today().date().isoformat()
 
     ports_json = {}
     ports = hm.list_ports([])
@@ -353,7 +357,10 @@ def do_portsjson(hm, argv):
         port_info['download_url'] = hm.port_download_url(port_name)
         if "PortMaster-Releases" in port_info['download_url']:
             port_info['download_url'] = re.sub(r"download/\d+-\d+-\d+_\d+/", "latest/download/", port_info['download_url'])
+
         port_info['download_size'] = hm.port_download_size(port_name, check_runtime=False)
+        port_info['date_added'], port_info['date_updated'] = (
+            ports_info.get('ports', {}).get(port_name, {}).get('date', (default_time, default_time)))
 
         del port_info['status']
         del port_info['files']
