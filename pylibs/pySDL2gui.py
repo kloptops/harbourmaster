@@ -1950,14 +1950,15 @@ class Region:
 
                 setattr(texture.size, self.align, (x, y))
 
-                if self.scroll_state == self.SCROLL_FORWADS:
-                    if self.scroll_pos >= self.scroll_max:
-                        self.scroll_state = self.SCROLL_FSM[self.autoscroll][self.scroll_state]
-                        self.scroll_last_update = sdl2.SDL_GetTicks64()
-                elif self.scroll_state == self.SCROLL_BACKWARDS:
-                    if self.scroll_pos <= 0:
-                        self.scroll_state = self.SCROLL_FSM[self.autoscroll][self.scroll_state]
-                        self.scroll_last_update = sdl2.SDL_GetTicks64()
+                if self.autoscroll:
+                    if self.scroll_state == self.SCROLL_FORWADS:
+                        if self.scroll_pos >= self.scroll_max:
+                            self.scroll_state = self.SCROLL_FSM[self.autoscroll][self.scroll_state]
+                            self.scroll_last_update = sdl2.SDL_GetTicks64()
+                    elif self.scroll_state == self.SCROLL_BACKWARDS:
+                        if self.scroll_pos <= 0:
+                            self.scroll_state = self.SCROLL_FSM[self.autoscroll][self.scroll_state]
+                            self.scroll_last_update = sdl2.SDL_GetTicks64()
 
                 if self.textclip:
                     texture.draw_in(text_area, clip=True)
@@ -2018,10 +2019,29 @@ class Region:
                         t,
                         self.font, self.fontsize, self.select, align=align_to_textalign[self.align])
 
-                    x, y = getattr(irect, self.align, irect.topleft)
+                    x, y, self.scroll_max = autoscroll_text(
+                        texture.size,
+                        irect,
+                        self.align,
+                        self.scroll_pos,
+                        self.scroll_direction == 'vertical')
+
                     setattr(texture.size, self.align, (x, y))
 
-                    texture.draw_in(irect, clip=True)
+                    if self.autoscroll:
+                        if self.scroll_state == self.SCROLL_FORWADS:
+                            if self.scroll_pos >= self.scroll_max:
+                                self.scroll_state = self.SCROLL_FSM[self.autoscroll][self.scroll_state]
+                                self.scroll_last_update = sdl2.SDL_GetTicks64()
+                        elif self.scroll_state == self.SCROLL_BACKWARDS:
+                            if self.scroll_pos <= 0:
+                                self.scroll_state = self.SCROLL_FSM[self.autoscroll][self.scroll_state]
+                                self.scroll_last_update = sdl2.SDL_GetTicks64()
+
+                    if self.textclip:
+                        texture.draw_in(irect, clip=True)
+                    else:
+                        texture.draw_in(irect, fit=True)
 
                 else:
                     texture = self.texts.render_text(
@@ -2031,7 +2051,10 @@ class Region:
                     x, y = getattr(irect, self.align, irect.topleft)
                     setattr(texture.size, self.align, (x, y))
 
-                    texture.draw_in(irect, clip=True)
+                    if self.textclip:
+                        texture.draw_in(irect, clip=True)
+                    else:
+                        texture.draw_in(irect, fit=True)
 
                 irect.y += itemsize
                 i += 1
@@ -2078,7 +2101,7 @@ class Region:
                 if self.scroll_state == self.SCROLL_BACKWARDS:
                     self.scroll_pos = self.scroll_max
 
-        elif self.text and self.scrollable:
+        if self.text and self.scrollable:
             if self.gui.events.was_pressed('UP'):
                 updated = True
                 self.scroll_pos -= 1
@@ -2110,6 +2133,9 @@ class Region:
 
             if updated:
                 self.selected = selected
+                if self.autoscroll:
+                    self.scroll_state = self.SCROLL_START_PAUSE
+                    self.scroll_last_update = current_time
 
         return updated
 

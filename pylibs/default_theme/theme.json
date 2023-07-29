@@ -131,7 +131,9 @@
             "font-size": 14,
             "font-color": "list_text",
             "select-color": "list_selected",
-            "autoscroll": null,
+
+            "text-wrap": false,
+            "autoscroll": "slide",
             "scroll-speed": 30,
             "scroll-delay-start": 500,
             "scroll-delay-end":   500
@@ -231,7 +233,7 @@
             "align": "center",
             "list": [
                 "Install All Ports",
-                "Install Ready to Run Ports",
+                "Install Ready to Run Ports 123474747472873982",
                 "Uninstall Ports",
                 "Option Menu",
                 "Exit"
