@@ -490,7 +490,7 @@ class PortInfoScene(BaseScene):
         if self.gui.hm is None:
             return
 
-        self.port_info = port_info = self.gui.hm.port_info(self.port_name)
+        self.port_info = self.gui.hm.port_info(self.port_name)
         logger.debug(f"{self.action}: {self.port_name} -> {self.port_info}")
 
         self.tags['port_image'].image = self.gui.get_port_image(self.port_name)
@@ -580,8 +580,8 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
         if harbourmaster.HM_TESTING:
 
-            self.display_width, self.display_height = 640, 480
-            # self.display_width, self.display_height = 480, 320
+            self.display_width, self.display_height = 480, 320
+            # self.display_width, self.display_height = 640, 480
             # self.display_width, self.display_height = 1280, 720
             # self.display_width, self.display_height = 1920, 1152
 
@@ -593,6 +593,8 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
         # Create a renderer for drawing on the window
         renderer = sdl2.ext.Renderer(self.window, flags=sdl2.SDL_RENDERER_ACCELERATED)
+
+        sdl2.SDL_SetHint(sdl2.SDL_HINT_RENDER_SCALE_QUALITY, b"2")
 
         super().__init__(renderer)
 

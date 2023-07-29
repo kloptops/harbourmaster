@@ -531,6 +531,9 @@ class Rect:
         self.width, self.height = v
         self.center = cx, cy
 
+    def __getitem__(self, i):
+        return (self.x, self.y, self.width, self.height)[i]
+
 
 class Texture:
     '''
@@ -622,20 +625,36 @@ class Texture:
             self.renderer.copy(self.texture, self.srcrect, dstrect=dest.sdl())
 
         elif clip:
+            destrect = Rect(*dest)
 
-            dstrect = self.size.clip(dest)
-            srcrect = Rect(*self.srcrect)
+            # Calculate the scaling factors for width and height
+            width_scale = self.size.width / self.srcrect.w
+            height_scale = self.size.height / self.srcrect.h
 
-            if (dstrect.x - self.size.x) > 0:
-                srcrect.x += (dstrect.x - self.size.x)
+            # Calculate the clipped size
+            clipped_width = min(self.size.width, destrect.width)
+            clipped_height = min(self.size.height, destrect.height)
 
-            if (dstrect.y - self.size.y) > 0:
-                srcrect.y += (dstrect.y - self.size.y)
+            # Calculate the source rectangle within the texture
+            srcrect_x = self.srcrect.x + (destrect.x - self.size.x) / width_scale
+            srcrect_y = self.srcrect.y + (destrect.y - self.size.y) / height_scale
+            srcrect_x = self.srcrect.x + max(0, (destrect.x - self.size.x)) / width_scale
+            srcrect_y = self.srcrect.y + max(0, (destrect.y - self.size.y)) / height_scale
 
-            self.renderer.copy(
-                self.texture,
-                srcrect.sdl(),
-                dstrect=dstrect.sdl())
+            srcrect_width = clipped_width / width_scale
+            srcrect_height = clipped_height / height_scale
+
+            # Calculate the destination rectangle
+            # destrect_x = destrect.x
+            # destrect_y = destrect.y
+            destrect_x = destrect.x + max(0, (self.size.x - destrect.x))
+            destrect_y = destrect.y + max(0, (self.size.y - destrect.y))
+
+            destrect_width = clipped_width
+            destrect_height = clipped_height
+
+            self.renderer.copy(self.texture, (srcrect_x, srcrect_y, srcrect_width, srcrect_height),
+                               dstrect=(destrect_x, destrect_y, destrect_width, destrect_height))
 
         else:
             self.renderer.copy(self.texture, self.srcrect, dstrect=dest.sdl())
@@ -1252,7 +1271,7 @@ class EventManager:
         sdl2.SDL_CONTROLLER_BUTTON_Y: 'Y',
 
         sdl2.SDL_CONTROLLER_BUTTON_LEFTSHOULDER: 'L1',
-        sdl2.SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: 'L1',
+        sdl2.SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: 'R1',
         # sdl2.SDL_CONTROLLER_AXIS_TRIGGERLEFT:    'L2',
         # sdl2.SDL_CONTROLLER_AXIS_TRIGGERRIGHT:   'R2',
         sdl2.SDL_CONTROLLER_BUTTON_LEFTSTICK:    'L3',
@@ -1686,6 +1705,25 @@ class Region:
     selectedx: the currently selected list item, or -1 if nothing is selected.
     The selected item will be drawn in the color of or with the Region referenced by the select attribute.
     '''
+    SCROLL_START_PAUSE, SCROLL_FORWADS, SCROLL_BACKWARDS, SCROLL_END_PAUSE = (
+        'SCROLL_START_PAUSE', 'SCROLL_FORWADS', 'SCROLL_BACKWARDS', 'SCROLL_END_PAUSE')
+
+    SCROLL_FSM = {
+        None: {
+            SCROLL_START_PAUSE: SCROLL_START_PAUSE,
+            },
+        'slide': {
+            SCROLL_START_PAUSE: SCROLL_FORWADS,
+            SCROLL_FORWADS: SCROLL_END_PAUSE,
+            SCROLL_END_PAUSE: SCROLL_FORWADS,
+            },
+        'marquee': {
+            SCROLL_START_PAUSE: SCROLL_FORWADS,
+            SCROLL_FORWADS: SCROLL_END_PAUSE,
+            SCROLL_END_PAUSE: SCROLL_BACKWARDS,
+            SCROLL_BACKWARDS: SCROLL_START_PAUSE,
+            },
+        }
 
     DATA = {}
 
@@ -1731,7 +1769,8 @@ class Region:
         self.fontcolor = self._verify_color('font-color', (255, 255, 255))
         self.fontoutline = self._verify_outline('font-outline', None, optional=True)
         self._text = self._verify_text('text', optional=True)
-        self.wrap = self._verify_bool('wrap', False, optional=True)
+        self.textclip = self._verify_bool('text-clip', True, optional=True)
+        self.textwrap = self._verify_bool('text-wrap', False, optional=True)
         self.linespace = self._verify_int('linespace', 0, optional=True)
         self.align = self._verify_option('align', Rect.POINTS, 'topleft')
 
@@ -1746,7 +1785,17 @@ class Region:
         self.cancel_sound = self._verify_text('cancel_sound', optional=True)
 
         self.scrollable = self._verify_bool('scrollable', False, True)
-        self.autoscroll = self._verify_int('autoscroll', 0, True)
+
+        self.autoscroll = self._verify_option('autoscroll', (None, 'slide', 'marquee'), None)
+        self.scroll_speed = self._verify_int('scroll-speed', 30, True)
+        self.scroll_direction = self._verify_option(
+            'scroll-direction',
+            ('vertical', 'horizontal'),
+            self.textwrap and 'vertical' or 'horizontal')
+
+        self.scroll_delay_start = self._verify_int('scroll-delay-start', 1000, True)
+        self.scroll_delay_end = self._verify_int('scroll-delay-end', 1000, True)
+        self.scroll_state = self.SCROLL_START_PAUSE
 
         self.barspace = self._verify_int('barspace', 4)
         self.barwidth = self._verify_int('barwidth', 0, optional=True)
@@ -1756,7 +1805,9 @@ class Region:
             raise GUIThemeError('Cannot define text and a list')
 
         self.scroll_pos = 0
-        self.scroll_delay = -self.autoscroll * 2
+        self.scroll_max = 10
+        self.scroll_last_update = sdl2.SDL_GetTicks64()
+
         self.selected = 0
         self.selectedx = -1
 
@@ -1878,17 +1929,40 @@ class Region:
                     text_area, outline=self.fontoutline).height + self.linespace
 
         elif self._text:
-
             if text_area.width > 0 and text_area.height > 0:
-                texture = self.texts.render_text(
-                    self._text,
-                    self.font, self.fontsize, self.fontcolor,
-                    width=text_area.width, align=align_to_textalign[self.align])
+                if self.textwrap:
+                    texture = self.texts.render_text(
+                        self._text,
+                        self.font, self.fontsize, self.fontcolor,
+                        width=text_area.width, align=align_to_textalign[self.align])
+                else:
+                    texture = self.texts.render_text(
+                        self._text,
+                        self.font, self.fontsize, self.fontcolor, align=align_to_textalign[self.align])
 
-                x, y = getattr(text_area, self.align, text_area.topleft)
+                # x, y = getattr(text_area, self.align, text_area.topleft)
+                x, y, self.scroll_max = autoscroll_text(
+                    texture.size,
+                    text_area,
+                    self.align,
+                    self.scroll_pos,
+                    self.scroll_direction == 'vertical')
+
                 setattr(texture.size, self.align, (x, y))
 
-                texture.draw_in(text_area, clip=True)
+                if self.scroll_state == self.SCROLL_FORWADS:
+                    if self.scroll_pos >= self.scroll_max:
+                        self.scroll_state = self.SCROLL_FSM[self.autoscroll][self.scroll_state]
+                        self.scroll_last_update = sdl2.SDL_GetTicks64()
+                elif self.scroll_state == self.SCROLL_BACKWARDS:
+                    if self.scroll_pos <= 0:
+                        self.scroll_state = self.SCROLL_FSM[self.autoscroll][self.scroll_state]
+                        self.scroll_last_update = sdl2.SDL_GetTicks64()
+
+                if self.textclip:
+                    texture.draw_in(text_area, clip=True)
+                else:
+                    texture.draw_in(text_area, fit=True)
 
             # pos = self.scroll_pos % len(self._text)
 
@@ -1970,17 +2044,39 @@ class Region:
         RETURNS: True if screen should redraw, otherwise False
         '''
         updated = False
+        current_time = sdl2.SDL_GetTicks64()
 
         if self.autoscroll:
-            self.scroll_delay += 1
-            if self.scroll_delay >= self.autoscroll:
-                self.scroll_pos += 1
-                self.scroll_delay = 0
-                # if self.scroll_pos > len(self.text):
-                #     self.scroll_delay = -self.autoscroll
-                #     self.scroll_pos = 0
+            scroll_change = False
+            scroll_dt = (current_time - self.scroll_last_update)
+            # print(f"{self.autoscroll} -> {self.scroll_state} -> {scroll_dt} -> {self.scroll_pos} / {self.scroll_max}")
+            if self.scroll_state == self.SCROLL_FORWADS:
+                if scroll_dt >= self.scroll_speed:
+                    self.scroll_pos += 1
+                    self.scroll_last_update = current_time
 
-                updated = True
+            elif self.scroll_state == self.SCROLL_BACKWARDS:
+                if scroll_dt >= self.scroll_speed:
+                    self.scroll_pos -= 1
+                    self.scroll_last_update = current_time
+
+            elif self.scroll_state == self.SCROLL_START_PAUSE:
+                if scroll_dt >= self.scroll_delay_start:
+                    self.scroll_state = self.SCROLL_FSM[self.autoscroll][self.scroll_state]
+                    self.scroll_last_update = current_time
+                    scroll_change = True
+
+            elif self.scroll_state == self.SCROLL_END_PAUSE:
+                if scroll_dt >= self.scroll_delay_end:
+                    self.scroll_state = self.SCROLL_FSM[self.autoscroll][self.scroll_state]
+                    self.scroll_last_update = current_time
+                    scroll_change = True
+
+            if scroll_change:
+                if self.scroll_state == self.SCROLL_FORWADS:
+                    self.scroll_pos = 0
+                if self.scroll_state == self.SCROLL_BACKWARDS:
+                    self.scroll_pos = self.scroll_max
 
         elif self.text and self.scrollable:
             if self.gui.events.was_pressed('UP'):
@@ -2023,10 +2119,11 @@ class Region:
     @text.setter
     def text(self, val):
         'Process text for proper wrapping when user changes it.'
-        if self.wrap:
+        if self.textwrap:
             self._text = val
-            self.scroll_delay = -self.autoscroll
+            self.scroll_state = self.SCROLL_START_PAUSE
             self.scroll_pos = 0
+            self.scroll_last_update = sdl2.SDL_GetTicks64()
         else:
             self._text = val
         #print(f'text set to:\n{self._text}')
@@ -2459,6 +2556,33 @@ def set_color_mod(texture, color):
     '''
     r, g, b = c_ubyte(color[0]), c_ubyte(color[1]), c_ubyte(color[2])
     sdl2.SDL_SetTextureColorMod(texture.tx, r, g, b)
+
+
+def autoscroll_text(text_rect, area_rect, alignment, scroll_amount, is_vertical=True):
+    # Calculate the fitted rect for the text within the area
+    x, y = getattr(area_rect, alignment, area_rect.topleft)
+
+    if is_vertical:
+        max_scroll = max(0, text_rect.height - area_rect.height)
+        scroll_amount = min(scroll_amount, max_scroll)
+
+        if 'top' in alignment:
+            y -= scroll_amount
+
+        elif 'bottom' in alignment:
+            y += scroll_amount
+
+    else:
+        max_scroll = max(0, text_rect.width - area_rect.width)
+        scroll_amount = min(scroll_amount, max_scroll)
+
+        if 'left' in alignment:
+            x -= scroll_amount
+
+        elif 'right' in alignment:
+            x += scroll_amount
+
+    return x, y, max_scroll
 
 
 '''

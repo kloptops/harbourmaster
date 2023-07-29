@@ -121,7 +121,7 @@
             "border": 8,
             "font-size": 24,
             "font-color": [ 0, 0, 0 ],
-            "wrap": true
+            "text-wrap": true
         },
 
         "ports_list": {
@@ -131,29 +131,34 @@
             "font-size": 14,
             "font-color": "list_text",
             "select-color": "list_selected",
-            "autoscroll": 0,
-            "scroll-speed": 1,
+            "autoscroll": null,
+            "scroll-speed": 30,
             "scroll-delay-start": 500,
             "scroll-delay-end":   500
         },
 
         "port_desc": {
             "text": "{port_info.description}\n\nGenres: {port_info.genres}\nDownload Size: {port_info.download_size}\nRuntime: {port_info.runtime} ({port_info.runtime_status})",
-            "area": [ 0.5, 0.52, 0.99, 0.99 ],
+            "area": [ 0.5, 0.52, 0.95, 0.9 ],
             "font-size": 11,
             "font-color": [ 0, 0, 0 ],
 
-            "wrap": true
+            "text-wrap": true,
+            "autoscroll": "slide",
+            "scroll-speed": 30,
+            "scroll-delay-start": 500,
+            "scroll-delay-end":   500
         },
 
         "port_title": {
             "text": "{port_info.title}",
-            "area": [0.5, 0.02, 1.00, 0.10],
-            "font-size": 16,
+            "area": [0.5, 0.02, 0.90, 0.10],
+            "font-size": 32,
             "font-color": [ 255, 0, 0 ],
-            "autoscroll": 0,
-            "wrap": false,
-            "align": "top-center"
+            "autoscroll": null,
+            "text-wrap": false,
+            "text-clip": false,
+            "align": "topleft"
         },
 
         "port_image": {
@@ -175,7 +180,7 @@
             "border": 8,
             "font-size": 11,
             "font-color": [ 0, 0, 0 ],
-            "wrap": true
+            "text-wrap": true
         },
 
         "port_info": {
@@ -186,7 +191,7 @@
             "border": 8,
             "font-size": 11,
             "font-color": [ 0, 0, 0 ],
-            "wrap": true
+            "text-wrap": true
         },
 
 
@@ -195,8 +200,8 @@
             "area": [ 0.00, 0.00, 1.00, 0.1 ],
             "font-size": 24,
             "font-color": [ 255, 0, 0 ],
-            "autoscroll": 0,
-            "wrap": false,
+            "autoscroll": null,
+            "text-wrap": false,
             "align": "center"
         },
 
@@ -314,7 +319,7 @@
             "font-color": [0, 0, 0],
             "align": "center",
             "text": "",
-            "wrap": true
+            "text-wrap": true
         },
 
         "#element:small_button:ok_button": {
