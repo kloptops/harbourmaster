@@ -347,13 +347,23 @@ def do_portsjson(hm, argv):
     ports_json['utils'] = utils
 
     for port_name, port_info in ports.items():
+        media = {
+            "screenshot": None,
+            "cover": None,
+            "thumbnail": None,
+            "video" : None, ## Never :D
+            }
+
         images = hm.port_images(port_name)
         if images is not None:
-            images = {
-                key: value.name
-                for key, value in images.items()}
+            for media_name in media.keys():
+                if media_name not in images:
+                    continue
 
-        port_info['attr']['image'] = images
+                media[media_name] = images[media_name].name
+
+        port_info['attr']['media'] = media
+
         port_info['download_url'] = hm.port_download_url(port_name)
         if "PortMaster-Releases" in port_info['download_url']:
             port_info['download_url'] = re.sub(r"download/\d+-\d+-\d+_\d+/", "latest/download/", port_info['download_url'])
