@@ -52,6 +52,7 @@ from .source import (
 
 from .hardware import (
     device_info,
+    HW_INFO,
     )
 
 from .captain import (

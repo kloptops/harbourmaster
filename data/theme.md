@@ -105,6 +105,54 @@ Currently there are the following scenes:
 
 ### Scene: main_menu
 
+This is the main menu scene, it requires the `option_list` element. It is the first scene to load and if backed out of will quit the program.
+
+```json
+    "option_list": {
+        "list": [
+            "Install All Ports",
+            "Install Ready to Run Ports",
+            "Uninstall Ports",
+            "Option Menu",
+            "Exit"
+        ],
+        "option": [
+            "install",
+            "install-rtr",
+            "uninstall",
+            "option",
+            "exit"
+        ]
+    }
+```
+
+Currently the supported options for the main menu are as listed, more can be added as necessary.
+
+### Scene: options_menu
+
+This is the main menu scene, it requires the `option_list` element. It is the first scene to load and if backed out of will quit the program.
+
+```json
+    "option_list": {
+        "list": [
+            "Install All Ports",
+            "Install Ready to Run Ports",
+            "Uninstall Ports",
+            "Option Menu",
+            "Exit"
+        ],
+        "option": [
+            "install",
+            "install-rtr",
+            "uninstall",
+            "option",
+            "exit"
+        ]
+    }
+```
+
+Currently the supported options for the main menu are as listed, more can be added as necessary.
+
 
 ## Element theming
 
@@ -119,23 +167,26 @@ Currently there are a few ways of displaying text.
 It also supports text auto-scrolling if it doesnt fit within the area it is displayed. It will horizontally scroll if the text is wider (word wrap is off), and vertically scroll if it is too tall (word-wrap is on).
 
 ```json
+    "element_name": {
+        // Other element bits and bobs here.
 
-    "text-clip": true,          // This must be true for scrolling to work
-    "text-wrap": false,         // If text-wrap is false, it will default to a horizontal scroll, otherwise it defaults to a vertical scroll
+        "text-clip": true,          // This must be true for scrolling to work
+        "text-wrap": false,         // If text-wrap is false, it will default to a horizontal scroll, otherwise it defaults to a vertical scroll
 
-    "autoscroll": "slide",      // null does nothing, "slide" scrolls down then resets, "marquee" scrolls back and forth
+        "autoscroll": "slide",      // null does nothing, "slide" scrolls down then resets, "marquee" scrolls back and forth
 
-    "scroll-speed": 30,         // How many miliseconds between each scrolling step
-    "scroll-delay-start": 500,  // How many miliseconds to wait before starting to scroll
-    "scroll-delay-end":   500   // How many miliseconds to wait at the end of scrolling
+        "scroll-speed": 30,         // How many miliseconds between each scrolling step
+        "scroll-delay-start": 500,  // How many miliseconds to wait before starting to scroll
+        "scroll-delay-end":   500,   // How many miliseconds to wait at the end of scrolling
 
-    "scroll-direction": "horizontal", // override the defaults assumed based on text-wrap
+        "scroll-direction": "horizontal" // override the defaults assumed based on text-wrap
+    }
 
 ```
 
 ## Text Template System
 
-### System specific tags
+### System tags
 
 - system.time_24hr
 - system.time_12hr
@@ -147,9 +198,9 @@ It also supports text auto-scrolling if it doesnt fit within the area it is disp
 - system.battery_level
 
 - system.progress_text
-- system.progress_bar
+- system.progress_amount
 
-### Port specific tags
+### Port info tags
 
 - port_info.title
 - port_info.description
@@ -160,3 +211,38 @@ It also supports text auto-scrolling if it doesnt fit within the area it is disp
 - port_info.download_size
 - port_info.runtime
 - port_info.runtime_status
+
+
+
+### Control flow of PortMaster
+
+```
+Main:
+  -> Install Menu
+  -> Uninstall Menu -> Port List [Installed filter]
+  -> Options
+  -> Quit
+
+Install Menu:
+  -> All Ports    -> Port List [No filter]
+  -> Ready To Run -> Port List [RTR filter]
+  -> Genres       -> Port List [Genres filters]
+  -> Back
+
+Port List:
+  -> List of Ports
+    -> Inspect
+    -> Back
+
+Options:
+  -> TBD.
+  -> Back
+
+Inspect:
+  -> Install/Re-Install or Uninstall
+  -> Back
+
+Install/Uninstall:
+  -> Message Screen
+  -> Back
+```

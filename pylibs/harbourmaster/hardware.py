@@ -250,4 +250,5 @@ def device_info():
 
 __all__ = (
     'device_info',
+    'HW_INFO',
     )

@@ -187,7 +187,6 @@ def theme_update(target, source):
     for key, value in source.items():
         key, requirements = extract_requirements(key)
         if requirements is not None:
-            print(key, requirements)
             if not harbourmaster.match_requirements(capabilities, requirements):
                 continue
 
@@ -200,10 +199,8 @@ def theme_update(target, source):
 
 
 def theme_merge(target, source):
-    print(target, source)
     temp = theme_update({}, target)
     temp = theme_update(temp, source)
-    print("--> ", temp)
     return temp
 
 
@@ -228,7 +225,7 @@ def theme_apply(gui, section_data, base_data, elements):
                 continue
 
             if element_name not in elements:
-                print(f"Error: Unknown element {element_name}")
+                logger.debug(f"Error: Unknown element {element_name}")
                 continue
 
             new_data[region_name] = theme_merge(base_data, theme_merge(elements[element_name], region_data))
@@ -792,12 +789,22 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             print(f"Display size: {self.display_width}x{self.display_height}")
 
         if harbourmaster.HM_TESTING:
-            capabilities = harbourmaster.device_info()['capabilities']
+            capabilities = harbourmaster.device_info()
 
-            self.display_width, self.display_height = 480, 320; capabilities.append('lowres')
-            # self.display_width, self.display_height = 640, 480
-            # self.display_width, self.display_height = 1280, 720; capabilities.append('hires')
-            self.display_width, self.display_height = 1920, 1152; capabilities.extend(['hires', '5:2'])
+            ## Uncomment one of these to pretend to be a different device. more devices in pylibs/harbourmaster/hardware.py
+            pretend_device = (
+                # 'rg351p'
+                # 'rg552'
+                'rg503'
+                # 'rg351v'
+                # 'rg353v'
+                # 'ogs'
+                # 'x55'
+                )
+
+            if pretend_device in harbourmaster.HW_INFO:
+                capabilities.update(**harbourmaster.HW_INFO[pretend_device])
+                self.display_width, self.display_height = capabilities['resolution']
 
             print(f"Forcing size: {self.display_width}x{self.display_height}")
 
