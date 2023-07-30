@@ -1885,6 +1885,23 @@ class Region:
                 # print(self.fill)
                 self.renderer.fill(area.sdl(), self.fill)
 
+            if self.progress_amount > 0 and self.progress_fill:
+                amount = int(min(self.progress_amount, 100))
+
+                progress_area = area.copy()
+                progress_area.width = int(area.width / 100 * amount)
+
+                print(f"progress_area -> {self.progress_amount} -> {progress_area}")
+
+                if self.roundness and sdlgfx:
+                    sdlgfx.roundedBoxRGBA(self.renderer.sdlrenderer,
+                        progress_area.x, progress_area.y, progress_area.right, progress_area.bottom,
+                        self.roundness, *self.progress_fill)
+
+                else:
+                    progress_area.inflate(-self.thickness)
+                    self.renderer.fill(progress_area.sdl(), self.progress_fill)
+
         elif self.outline:
             r = area.sdl()
             for _ in range(self.thickness - 1):

@@ -340,8 +340,7 @@
             "font-size": 14,
             "font-color": [0, 0, 0],
             "border": 3,
-            "thickness": 2,
-            "outline": [0, 0, 0]
+            "thickness": 2
         },
 
         "progress_bar_amount": {
