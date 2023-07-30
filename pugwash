@@ -140,6 +140,27 @@ Current Template Tags:
 
 """
 
+def format_progress(amount, total, fmt=None):
+    if fmt == 'data':
+        if total is None:
+            return f"{harbourmaster.nice_size(amount)}"
+
+        else:
+            return f"{harbourmaster.nice_size(amount)} / {harbourmaster.nice_size(total)}"
+
+    elif fmt == '%':
+        if total is None:
+            return f"{min(amount, 100):.02f} %"
+
+        else:
+            return f"{min(amount / total * 100, 100):.02f} %"
+
+    else:
+        if total is None:
+            return f"{amount}"
+
+        else:
+            return f"{amount} / {total}"
 
 def theme_apply(gui, section_data, base_data, elements):
     new_data = {}
@@ -392,6 +413,8 @@ class PortsListScene(BaseScene):
         super().__init__(gui)
 
         self.options = options
+        self.options.setdefault('base_filters', [])
+        self.options.setdefault('filters', [])
 
         self.load_regions("ports_list", [
             'ports_list',
@@ -409,7 +432,7 @@ class PortsListScene(BaseScene):
             self.tags['ports_list'].selected = 0
             return
 
-        self.all_ports = self.gui.hm.list_ports(filters=self.options['filters'])
+        self.all_ports = self.gui.hm.list_ports(filters=(self.options['base_filters'] + self.options['filters']))
         self.port_list = list(self.all_ports.keys())
 
         if len(self.port_list) == 0:
@@ -436,12 +459,36 @@ class PortsListScene(BaseScene):
         self.last_port = self.tags['ports_list'].selected + 1
         self.ready = True
 
+    def try_to_select(self, port_name, port_title):
+        ## Try and select a port
+        if port_name in self.port_list:
+            # We found it
+            self.tags['ports_list'].selected = self.port_list.index(port_name)
+            self.last_port = self.tags['ports_list'].selected + 1
+            return
+
+        ## Okay find a port with a name greater than ours, and then select the one before it.
+        for i in range(len(self.port_list)):
+            if self.all_ports[self.port_list[i]]['attr']['title'] > port_title:
+                self.tags['ports_list'].selected = max(i-1, 0)
+                self.last_port = self.tags['ports_list'].selected + 1
+                return
+
+        ## Do nothing.
+
+    def selected_port(self):
+        if len(self.port_list) == 0:
+            return 0
+
+        self.last_port = self.tags['ports_list'].selected
+        return self.port_list[self.last_port]
+
     def do_update(self, events):
         super().do_update(events)
         if not self.ready:
             self.update_ports()
             if not self.ready:
-                return
+                return True
 
         if len(self.port_list) > 0 and self.last_port != self.tags['ports_list'].selected:
             self.last_port = self.tags['ports_list'].selected
@@ -451,6 +498,12 @@ class PortsListScene(BaseScene):
             self.gui.set_port_info(port_name, port_info)
 
             self.tags['port_image'].image = self.gui.get_port_image(port_name)
+
+        if events.was_pressed('X'):
+            if len(self.port_list) > 0:
+                self.gui.push_scene('ports', FiltersScene(self.gui, self))
+
+            return True
 
         if events.was_pressed('B'):
             self.gui.pop_scene()
@@ -519,6 +572,81 @@ class PortInfoScene(BaseScene):
             self.gui.pop_scene()
             return True
 
+        return True
+
+
+class FiltersScene(BaseScene):
+    def __init__(self, gui, list_scene):
+        super().__init__(gui)
+
+        self.load_regions("filter_list", [
+            'filter_list',
+            ])
+
+        self.list_scene = list_scene
+        self.locked_genres = list(list_scene.options['base_filters'])
+        self.selected_genres = list(list_scene.options['filters'])
+        self.selected_port = list_scene.selected_port()
+        self.selected_port_title = list_scene.all_ports[self.selected_port]['attr']['title']
+        self.port_list = []
+
+        self.ready = False
+        self.update_filters()
+
+    def update_filters(self):
+        if self.gui.hm is None:
+            return
+
+        genres = self.locked_genres + self.selected_genres
+        total_ports = len(self.gui.hm.list_ports(genres))
+
+        new_list = []
+        self.port_list = []
+        for hm_genre in harbourmaster.HM_GENRES:
+            if hm_genre in self.locked_genres:
+                continue
+
+            if hm_genre in genres:
+                ports = total_ports
+                text = f"[x]  {hm_genre}   ({ports})"
+            else:
+                ports = len(self.gui.hm.list_ports(genres + [hm_genre]))
+                text = f"[ ]  {hm_genre}   ({ports})"
+
+            new_list.append(text)
+            self.port_list.append(hm_genre)
+
+        self.tags['filter_list'].list = new_list
+
+        self.ready = True
+
+    def do_update(self, events):
+        super().do_update(events)
+        if not self.ready:
+            self.update_filters()
+            if not self.ready:
+                return True
+
+        if events.was_pressed('A'):
+            selected_filter = self.port_list[self.tags['filter_list'].selected]
+
+            if selected_filter in self.selected_genres:
+                self.selected_genres.remove(selected_filter)
+            else:
+                self.selected_genres.append(selected_filter)
+
+            self.update_filters()
+            self.list_scene.options['filters'] = self.selected_genres
+            self.list_scene.update_ports()
+            self.list_scene.try_to_select(self.selected_port, self.selected_port_title)
+            return True
+
+        if events.was_pressed('B'):
+            self.gui.pop_scene()
+            return True
+
+        return True
+
 
 class MessageWindowScene(BaseScene):
     """
@@ -529,11 +657,19 @@ class MessageWindowScene(BaseScene):
     def __init__(self, gui):
         super().__init__(gui)
 
-        self.load_regions("message_window", ['message_text', ])
+        self.load_regions("message_window", [
+            'message_text',
+            'progress_bar',
+            ])
 
     def do_update(self, events):
         super().do_update(events)
         # sdl2.SDL_Delay(1000)
+
+        if self.gui.callback_amount is not None:
+            self.tags['progress_bar'].progress_amount = self.gui.callback_amount
+        else:
+            self.tags['progress_bar'].progress_amount = 0
 
         if events.was_pressed('B'):
             self.gui.do_cancel()
@@ -620,6 +756,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
         self.callback_messages = []
         self.callback_progress = None
+        self.callback_amount = 0
         self.message_box_depth = 0
         self.message_box_scene = None
         self.was_cancelled = False
@@ -632,6 +769,8 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.set_data('system.cfw_name', device_info['name'])
         self.set_data('system.cfw_version', device_info['version'])
         self.set_data('system.device_name', device_info['device'])
+        self.set_data('system.progress_text', "")
+        self.set_data('system.progress_amount', "")
 
     ## Loop stuff.
     def run(self):
@@ -761,7 +900,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
         self.text_data[key] = value
         self.changed_keys.add(key)
-        logger.debug(f"{key}: {value}")
+        # logger.debug(f"{key}: {value}")
 
     def format_data(self, input_string, used_keys=None):
         return self.formatter.format_string(input_string, used_keys)
@@ -773,23 +912,25 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
     ## Messagebox / Callback stuff
     def callback_update(self):
         if self.message_box_scene:
-            messages = self.callback_messages[-13:]
-            if self.callback_progress is not None:
-                messages.append(self.callback_progress)
-
-            self.message_box_scene.tags['message_text'].text = '\n'.join(messages)
+            self.message_box_scene.tags['message_text'].text = '\n'.join(self.callback_messages[-13:])
 
             self.do_loop(no_delay=True)
 
-    def progress(self, message, amount, total=None):
+    def progress(self, message, amount, total=None, fmt=None):
         if message is None:
             self.callback_progress = None
-
-        elif total is None:
-            self.callback_progress = f"{message} - [{amount}]"
+            self.callback_amount = 0
+            self.set_data("system.progress_text", "")
+            self.set_data("system.progress_amount", "")
 
         else:
-            self.callback_progress = f"{message} - [{amount} / {total}]"
+            if total is not None:
+                self.callback_amount = int(amount / total * 100)
+            else:
+                self.callback_amount = 0
+
+            self.set_data("system.progress_text", message)
+            self.set_data("system.progress_amount", format_progress(amount, total, fmt))
 
         self.callback_update()
 
@@ -867,6 +1008,9 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             self.messages_begin(internal=True)
 
             yield
+
+            ## Fix a bug
+            self.progress(None, None, None)
 
         finally:
             self.messages_end(internal=True)

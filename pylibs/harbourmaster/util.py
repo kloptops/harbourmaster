@@ -246,7 +246,7 @@ def download(file_name, file_url, md5_source=None, md5_result=None, callback=Non
             length += len(data)
 
             if callback is not None:
-                callback.progress("Downloading file.", nice_size(length), total_length_mb)
+                callback.progress("Downloading file.", length, total_length, 'data')
 
             if total_length is None:
                 sys.stdout.write(f"\r[{'?' * 40}] - {nice_size(length)} / {total_length_mb} ")
@@ -258,7 +258,7 @@ def download(file_name, file_url, md5_source=None, md5_result=None, callback=Non
         cprint("\n")
 
         if callback is not None:
-            callback.progress("Downloading file.", nice_size(length), total_length_mb)
+            callback.progress("Downloading file.", length, total_length, 'data')
 
     md5_file = md5.hexdigest()
     if md5_source is not None:

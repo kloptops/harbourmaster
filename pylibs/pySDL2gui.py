@@ -1743,12 +1743,13 @@ class Region:
 
         self.area = self._verify_rect('area')
         self.fill = self._verify_color('fill', optional=True)
+        self.progress_fill = self._verify_color('progress-fill', optional=True)
         self.outline = self._verify_color('outline', optional=True)
         self.thickness = self._verify_int('thickness', 0)
         self.roundness = self._verify_int('roundness', 0)
-        self.borderx = self._verify_int('border', 0)
-        self.bordery = self._verify_int('border-y', self.borderx) or 0
-        self.borderx = self._verify_int('border-x', self.borderx)
+        self.border = self._verify_int('border', 0)
+        self.bordery = self._verify_int('border-y', self.border) or 0
+        self.borderx = self._verify_int('border-x', self.border)
 
         self.image = self.images.load(self._dict.get('image'))
         self.imagesize = self._verify_ints('image-size', 2, None, optional=True)
@@ -1807,6 +1808,7 @@ class Region:
         self.scroll_pos = 0
         self.scroll_max = 10
         self.scroll_last_update = sdl2.SDL_GetTicks64()
+        self.progress_amount = 0
 
         self.selected = 0
         self.selectedx = -1
@@ -1843,7 +1845,9 @@ class Region:
                 sdlgfx.roundedBoxRGBA(self.renderer.sdlrenderer,
                     area.x, area.y, area.right, area.bottom,
                     self.roundness, *self.outline)
+
             area.inflate(-self.thickness)
+
             if self.roundness and sdlgfx:
                 sdlgfx.roundedBoxRGBA(self.renderer.sdlrenderer,
                     area.x, area.y, area.right, area.bottom,
@@ -1853,6 +1857,23 @@ class Region:
                 self.renderer.fill(area.sdl(), self.outline)
                 area.inflate(-self.thickness)
                 self.renderer.fill(area.sdl(), self.fill)
+
+            if self.progress_amount > 0 and self.progress_fill:
+                amount = int(min(self.progress_amount, 100))
+
+                progress_area = area.copy()
+                progress_area.width = int(area.width / 100 * amount)
+
+                print(f"progress_area -> {self.progress_amount} -> {progress_area}")
+
+                if self.roundness and sdlgfx:
+                    sdlgfx.roundedBoxRGBA(self.renderer.sdlrenderer,
+                        progress_area.x, progress_area.y, progress_area.right, progress_area.bottom,
+                        self.roundness, *self.progress_fill)
+
+                else:
+                    progress_area.inflate(-self.thickness)
+                    self.renderer.fill(progress_area.sdl(), self.progress_fill)
 
         elif self.fill:
             if self.roundness and sdlgfx:

@@ -1,6 +1,7 @@
 
 # System imports
 import fnmatch
+import functools
 import json
 import pathlib
 import shutil
@@ -753,13 +754,15 @@ class HarbourMaster():
                 cprint("<b>Extracting port.</b>")
                 self.callback.message(f"Installing {download_info['name']}.")
 
-                for file_info in zf.infolist():
+                total_files = len(zf.infolist())
+                for file_number, file_info in enumerate(zf.infolist()):
                     if file_info.file_size == 0:
                         compress_saving = 100
                     else:
                         compress_saving = file_info.compress_size / file_info.file_size * 100
 
                     self.callback.message(f"- {file_info.filename}")
+                    self.callback.progress("Installing", file_number+1, total_files, '%')
 
                     dest_file = path=self.ports_dir / file_info.filename
 

@@ -9,6 +9,7 @@
     },
     "#pallet": {
         "background": [200, 200, 200, 255],
+        "background_fade": [200, 200, 200, 32],
         "list_text": [0, 0, 0, 255],
         "list_selected": [255, 0, 0, 255],
         "button": [200, 200, 200, 255]
@@ -107,6 +108,7 @@
             "font-size": 30,
             "font-color": "list_text",
             "select-color": "list_selected",
+            "text-clip": false,
             "thickness": 10
         }
     },
@@ -131,7 +133,7 @@
             "font-size": 14,
             "font-color": "list_text",
             "select-color": "list_selected",
-
+            "text-clip": true,
             "text-wrap": false,
             "autoscroll": "slide",
             "scroll-speed": 30,
@@ -233,7 +235,7 @@
             "align": "center",
             "list": [
                 "Install All Ports",
-                "Install Ready to Run Ports 123474747472873982",
+                "Install Ready to Run Ports",
                 "Uninstall Ports",
                 "Option Menu",
                 "Exit"
@@ -292,6 +294,18 @@
         "#element:button_bar": {}
     },
 
+    "filter_list": {
+        "filter_list": {
+            "area": [0.25, 0.25, 0.75, 0.75],
+            "fill": [230, 230, 230],
+            "border": 5,
+            "font-size": 13,
+            "font-color": "list_text",
+            "select-color": "list_selected",
+            "list": []
+        }
+    },
+
     "message_window": {
         "#element:background": {},
 
@@ -299,11 +313,35 @@
             "area": [0.05, 0.05, 0.95, 0.8],
             "fill": [230, 230, 230],
             "thickness": 6,
+            "text-wrap": true,
             "border": 10,
             "font-size": 24,
             "font-color": [0, 0, 0],
             "align": "bottomleft",
             "text": ""
+        },
+
+        "progress_bar": {
+            "area": [0.05, 0.82, 0.95, 0.90],
+            "fill": [230, 230, 230],
+            "progress-fill": [120, 120, 240],
+            "text": "{system.progress_text}",
+            "align": "midleft",
+            "font-size": 14,
+            "font-color": [0, 0, 0],
+            "border": 3,
+            "thickness": 2,
+            "outline": [0, 0, 0]
+        },
+
+        "progress_bar_amount": {
+            "area": [0.05, 0.82, 0.95, 0.90],
+            "text": "{system.progress_amount}",
+            "align": "midright",
+            "font-size": 14,
+            "font-color": [0, 0, 0],
+            "thickness": 2,
+            "border": 3
         },
 
         "#element:button_bar": {}
