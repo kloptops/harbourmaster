@@ -111,12 +111,16 @@ Some ports, because of their nature, cannot or do not exist on PortMaster. So th
 - [ansimarkup][ansimarkup]
 - [certifi][certifi]
 - [colorama][colorama]
+- [fastjsonschema][fastjsonschema]
 - [idna][idna]
 - [loguru][loguru]
+- [port_gui][port_gui] - used as pySDL2gui
+- [pypng][pypng]
+- [pyqrcode][pyqrcode]
 - [PySDL2][pysdl2]
 - [requests][requests]
+- [typing-extensions][typing_extensions]
 - [urllib3][urllib3]
-- [port_gui][port_gui] - used as pySDL2gui
 
 
 [PortMaster]: https://github.com/christianhaitian/PortMaster
@@ -129,9 +133,13 @@ Some ports, because of their nature, cannot or do not exist on PortMaster. So th
 [ansimarkup]: https://pypi.org/project/ansimarkup/
 [certifi]: https://pypi.org/project/certifi/
 [colorama]: https://pypi.org/project/colorama/
+[fastjsonschema]: https://pypi.org/project/fastjsonschema/
 [idna]: https://pypi.org/project/idna/
 [loguru]: https://pypi.org/project/loguru/
-[requests]: https://pypi.org/project/requests/
-[urllib3]: https://pypi.org/project/urllib3/
-[pysdl2]: https://pypi.org/project/PySDL2/
 [port_gui]: https://github.com/mcpalmer1980/port_gui
+[pypng]: https://pypi.org/project/pypng/
+[pyqrcode]: https://pypi.org/project/qrcode/
+[pysdl2]: https://pypi.org/project/PySDL2/
+[requests]: https://pypi.org/project/requests/
+[typing_extensions]: https://pypi.org/project/typing-extensions/
+[urllib3]: https://pypi.org/project/urllib3/
