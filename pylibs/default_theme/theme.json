@@ -4,9 +4,13 @@
         "name": "Default Theme",
         "creator": "Tekkenfede and Kloptops"
     },
+
     "#base": {
-        "font": "DejaVuSans.ttf"
+        "font": "DejaVuSans.ttf",
+        "font-scale[hires]": 2.0,
+        "font-scale[5:3,hires]": 3.0
     },
+
     "#pallet": {
         "background": [200, 200, 200, 255],
         "background_fade": [200, 200, 200, 32],
@@ -14,6 +18,7 @@
         "list_selected": [255, 0, 0, 255],
         "button": [200, 200, 200, 255]
     },
+
     "#resources": {
         "nine.png": {
             "button":  [  0,   0, 320, 167],
@@ -43,6 +48,7 @@
             "down":      [900, 450, 180,  90]
         }
     },
+
     "#elements": {
         "background": {
             "area": [ 0.0, 0.0, 1.0, 1.0 ],
@@ -82,6 +88,7 @@
                 "Back"
             ]
         },
+
         "button_bar2": {
             "area": [ 0.40, 0.93, 0.95, 1.0 ],
             "font-size": 16,
@@ -140,6 +147,9 @@
             "scroll-delay-start": 500,
             "scroll-delay-end":   500
         },
+        "ports_list[hires]": {
+            "area": [0.0, 0.1, 0.3, 0.95]
+        },
 
         "port_desc": {
             "text": "{port_info.description}\n\nGenres: {port_info.genres}\nDownload Size: {port_info.download_size}\nRuntime: {port_info.runtime} ({port_info.runtime_status})",
@@ -148,10 +158,10 @@
             "font-color": [ 0, 0, 0 ],
 
             "text-wrap": true,
-            "autoscroll": "slide",
-            "scroll-speed": 30,
-            "scroll-delay-start": 500,
-            "scroll-delay-end":   500
+            "autoscroll": "marquee",
+            "scroll-speed": 60,
+            "scroll-delay-start": 1500,
+            "scroll-delay-end":   1500
         },
 
         "port_title": {

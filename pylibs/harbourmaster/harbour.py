@@ -586,32 +586,8 @@ class HarbourMaster():
         capabilities = self.device['capabilities']
 
         requirements = port_info.get('attr', {}).get('reqs', [])
-        if len(requirements) == 0:
-            return True
 
-        passed = True
-        for requirement in requirements:
-            match_not = True
-
-            if requirement.startswith('!'):
-                match_not = False
-                requirement = requirement[1:]
-
-            if '|' in requirement:
-                passed = any(
-                    req in capabilities
-                    for req in requirement.split('|')) == match_not
-
-            else:
-                if requirement in capabilities:
-                    passed = match_not
-                else:
-                    passed = not match_not
-
-            if not passed:
-                break
-
-        return passed
+        return match_requirements(capabilities, requirements)
 
     def list_ports(self, filters=[]):
         ## Filters can be genre, runtime
@@ -669,7 +645,7 @@ class HarbourMaster():
 
     def port_images(self, port_name):
         for source_prefix, source in self.sources.items():
-            if name_cleaner(port_name) in source.images:
+            if name_cleaner(port_name) in getattr(source, 'images', {}):
                 return {
                     image_type: (source._images_dir / image_file)
                     for image_type, image_file in source.images[name_cleaner(port_name)].items()}

@@ -30,6 +30,65 @@ If you use a reusable element the order is:
 element -> element `#element` -> scene `#base` -> global `#base`
 
 
+## Element overrides
+
+You can override values in elements based on hardware by specifying a hardware capabilities on an attribute:
+
+```json
+
+    "#base": {
+        "font": "DejaVuSans.ttf",
+        "font-scale[hires]": 2.0,
+        "font-scale[5:3,hires]": 3.0
+    },
+
+```
+
+You can override entire elements based on hardware capabilities:
+
+```json
+
+        "ports_list": {
+            "area": [0.0, 0.1, 0.4, 0.95],
+            "border-x": 16,
+            "roundness": 10,
+            "font-size": 14,
+            "font-color": "list_text",
+            "select-color": "list_selected",
+            "text-clip": true,
+            "text-wrap": false,
+            "autoscroll": "slide",
+            "scroll-speed": 30,
+            "scroll-delay-start": 500,
+            "scroll-delay-end":   500
+        },
+        "ports_list[hires]": {
+            "area": [0.0, 0.1, 0.3, 0.95]
+        },
+```
+
+Since this uses the capabilities system used in ports you can add them together and or not them.
+
+
+
+Currently the capabilities are:
+
+- `hires`: devices with a screen resolution greater than 640:480
+- `lowres`: devices with a screen resolution smaller then 640:480
+- `power`: any device above an `rk3326` cpu.
+- `opengl`: any device with `OpenGL`, not OpenGLES.
+- `3:2`: aspect ratio of 3:2
+- `4:3`: aspect ratio of 4:3
+- `5:3`: aspect ratio of 5:3
+- `16:9`: aspect ratio of 16:9
+- `427:240`: aspect ratio of 427:240 (ogs/ogu & friends)
+- `wide`: any aspect ratio above 4:3
+
+You can combine them like so:
+
+- `!lowres|hires`: must be exactly 640:480
+
+
 ## Scenes
 
 Scenes can define their own `#base` element, which will cause all elements in that scene to inherit from.
@@ -40,7 +99,7 @@ Currently there are the following scenes:
 - `option_menu`: Options screen
 - `ports_list`: The list of ports
 - `port_info`: Detailed port information.
-- `message_window`: A scrolling list of messages, used during installation, downloading the latest ports information.
+- `message_window`: A scrolling list of messages, used during downloading, installation, and fetching the latest ports information.
 - `message_box`: An alert box
 - `filter_list`: Available filters
 
@@ -49,9 +108,18 @@ Currently there are the following scenes:
 
 ## Element theming
 
-### Auto Scrolling Text
+### Displaying Text
+
+Currently there are a few ways of displaying text.
+
+- shrink/grow the text to fill the region: `"text-clip": false`
+- clip the text and just show what is visible: `"text-clip": true`
+- word wrap the text if it is too wide for the area provided: `"text-wrap": true`
+
+It also supports text auto-scrolling if it doesnt fit within the area it is displayed. It will horizontally scroll if the text is wider (word wrap is off), and vertically scroll if it is too tall (word-wrap is on).
 
 ```json
+
     "text-clip": true,          // This must be true for scrolling to work
     "text-wrap": false,         // If text-wrap is false, it will default to a horizontal scroll, otherwise it defaults to a vertical scroll
 
@@ -61,9 +129,9 @@ Currently there are the following scenes:
     "scroll-delay-start": 500,  // How many miliseconds to wait before starting to scroll
     "scroll-delay-end":   500   // How many miliseconds to wait at the end of scrolling
 
-    "scroll-direction": "horizontal", // override the defaults by text-wrap
-```
+    "scroll-direction": "horizontal", // override the defaults assumed based on text-wrap
 
+```
 
 ## Text Template System
 
@@ -77,6 +145,9 @@ Currently there are the following scenes:
 - system.cfw_version
 - system.device_name
 - system.battery_level
+
+- system.progress_text
+- system.progress_bar
 
 ### Port specific tags
 

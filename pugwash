@@ -162,12 +162,58 @@ def format_progress(amount, total, fmt=None):
         else:
             return f"{amount} / {total}"
 
+
+def extract_requirements(text, strict=False):
+    if strict:
+        default = None
+    else:
+        default = []
+
+    if '[' not in text:
+        return text, default
+
+    if text.count('[') > 1 or not text.endswith(']'):
+        logger.error(f"Bad requirement {text}")
+        return text.split('[')[0] + "_bad", default
+
+    text, requirement = text.split('[', 1)
+    requirements = map(str.strip, requirement[:-1].split(','))
+    return text, list(requirements)
+
+
+def theme_update(target, source):
+    capabilities = harbourmaster.device_info()['capabilities']
+
+    for key, value in source.items():
+        key, requirements = extract_requirements(key)
+        if requirements is not None:
+            print(key, requirements)
+            if not harbourmaster.match_requirements(capabilities, requirements):
+                continue
+
+        if isinstance(value, dict):
+            theme_update(target.setdefault(key, {}), value)
+        else:
+            target[key] = value
+
+    return target
+
+
+def theme_merge(target, source):
+    print(target, source)
+    temp = theme_update({}, target)
+    temp = theme_update(temp, source)
+    print("--> ", temp)
+    return temp
+
+
 def theme_apply(gui, section_data, base_data, elements):
     new_data = {}
+    capabilities = harbourmaster.device_info()['capabilities']
 
     for region_name, region_data in section_data.items():
         if region_name == "#base":
-            base_data = pySDL2gui.deep_merge(base_data, region_data)
+            base_data = theme_merge(base_data, region_data)
             continue
 
         elif region_name.startswith("#element:"):
@@ -177,14 +223,26 @@ def theme_apply(gui, section_data, base_data, elements):
             else:
                 region_name = element_name
 
+            region_name, requirements = extract_requirements(region_name)
+            if not harbourmaster.match_requirements(capabilities, requirements):
+                continue
+
             if element_name not in elements:
                 print(f"Error: Unknown element {element_name}")
                 continue
 
-            new_data[region_name] = pySDL2gui.deep_merge(base_data, pySDL2gui.deep_merge(elements[element_name], region_data))
+            new_data[region_name] = theme_merge(base_data, theme_merge(elements[element_name], region_data))
             continue
 
-        new_data[region_name] = pySDL2gui.deep_merge(base_data, region_data)
+        region_name, requirements = extract_requirements(region_name, strict=True)
+        if requirements is not None:
+            if not harbourmaster.match_requirements(capabilities, requirements):
+                continue
+
+            new_data[region_name] = theme_merge(new_data.get(region_name, base_data), region_data)
+
+        else:
+            new_data[region_name] = theme_merge(base_data, region_data)
 
     return new_data
 
@@ -197,6 +255,8 @@ def theme_load(gui, theme_file):
 
     if theme_data is None:
         raise ValueError(f"Unable to load theme {theme_file}")
+
+    capabilities = harbourmaster.device_info()['capabilities']
 
     base_data = {}
     elements = {}
@@ -221,6 +281,10 @@ def theme_load(gui, theme_file):
             elif section_name == "#elements":
                 print("- loading elements:")
                 for element_name, element_data in section_data.items():
+                    element_name, requirements = extract_requirements(element_name)
+                    if not harbourmaster.match_requirements(capabilities, requirements):
+                        continue
+
                     elements[element_name] = element_data
 
             elif section_name == "#pallet":
@@ -229,8 +293,21 @@ def theme_load(gui, theme_file):
                     gui.pallet[pallet_name] = pallet_value
 
         else:
-            print(f"- loading section {section_name}")
-            sections[section_name] = theme_apply(gui, section_data, base_data, elements)
+            section_name, requirements = extract_requirements(section_name, strict=True)
+            if requirements is not None:
+                if not harbourmaster.match_requirements(capabilities, requirements):
+                    logger.debug(f"Not matched: {section_name} -> {capabilities}, {requirements}")
+                    continue
+
+                if section_name not in sections:
+                    logger.error(f"{section_name} not yet defined, skipping. ({requirement})")
+                    continue
+
+                print(f"  - loading section {section_name} ({requirement})")
+                sections[section_name] = theme_apply(gui, section_data, sections[section_name], elements)
+            else:
+                print(f"  - loading section {section_name}")
+                sections[section_name] = theme_apply(gui, section_data, base_data, elements)
 
     return sections
 
@@ -715,11 +792,12 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             print(f"Display size: {self.display_width}x{self.display_height}")
 
         if harbourmaster.HM_TESTING:
+            capabilities = harbourmaster.device_info()['capabilities']
 
-            self.display_width, self.display_height = 480, 320
+            self.display_width, self.display_height = 480, 320; capabilities.append('lowres')
             # self.display_width, self.display_height = 640, 480
-            # self.display_width, self.display_height = 1280, 720
-            # self.display_width, self.display_height = 1920, 1152
+            # self.display_width, self.display_height = 1280, 720; capabilities.append('hires')
+            self.display_width, self.display_height = 1920, 1152; capabilities.extend(['hires', '5:2'])
 
             print(f"Forcing size: {self.display_width}x{self.display_height}")
 

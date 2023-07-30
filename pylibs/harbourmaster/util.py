@@ -416,6 +416,38 @@ def make_temp_directory():
         shutil.rmtree(temp_dir)
 
 
+def match_requirements(capabilities, requirements):
+    """
+    Matches hardware capabilities to port requirements.
+    """
+    if len(requirements) == 0:
+        return True
+
+    passed = True
+    for requirement in requirements:
+        match_not = True
+
+        if requirement.startswith('!'):
+            match_not = False
+            requirement = requirement[1:]
+
+        if '|' in requirement:
+            passed = any(
+                req in capabilities
+                for req in requirement.split('|')) == match_not
+
+        else:
+            if requirement in capabilities:
+                passed = match_not
+            else:
+                passed = not match_not
+
+        if not passed:
+            break
+
+    return passed
+
+
 class CancelEvent(HarbourException):
     pass
 
@@ -482,6 +514,7 @@ __all__ = (
     'json_safe_loads',
     'load_pm_signature',
     'make_temp_directory',
+    'match_requirements',
     'name_cleaner',
     'nice_size',
     'remove_dict_list',

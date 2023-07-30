@@ -25,8 +25,8 @@ HW_ANY = object()
 
 HW_INFO = {
     # Anbernic Devices
-    'rg552':   {'resolution': (1920, 1152), 'analogsticks': 2, 'cpu': 'rk3399', 'capabilities': ['5:3', 'power', 'hires']},
-    'rg503':   {'resolution': ( 960,  544), 'analogsticks': 2, 'cpu': 'rk3566', 'capabilities': ['30:17', 'power', 'hires']},
+    'rg552':   {'resolution': (1920, 1152), 'analogsticks': 2, 'cpu': 'rk3399', 'capabilities': ['5:3', 'power', 'hires', 'wide']},
+    'rg503':   {'resolution': ( 960,  544), 'analogsticks': 2, 'cpu': 'rk3566', 'capabilities': ['30:17', 'power', 'hires', 'wide']},
     'rg353v':  {'resolution': ( 640,  480), 'analogsticks': 2, 'cpu': 'rk3366', 'capabilities': ['4:3', 'power']},
     'rg353p':  {'resolution': ( 640,  480), 'analogsticks': 2, 'cpu': 'rk3366', 'capabilities': ['4:3', 'power']},
     'rg353m':  {'resolution': ( 640,  480), 'analogsticks': 2, 'cpu': 'rk3366', 'capabilities': ['4:3', 'power']},
@@ -36,14 +36,14 @@ HW_INFO = {
 
     # Hardkernel Devices
     'oga': {'resolution': (480, 320), 'analogsticks': 1, 'cpu': 'rk3326', 'capabilities': ['3:2', 'lowres']},
-    'ogs': {'resolution': (854, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['427:240', 'power', 'hires']},
-    'ogu': {'resolution': (854, 480), 'analogsticks': 2, 'cpu': 's922x',  'capabilities': ['427:240', 'power', 'hires']},
+    'ogs': {'resolution': (854, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['427:240', 'hires', 'wide']},
+    'ogu': {'resolution': (854, 480), 'analogsticks': 2, 'cpu': 's922x',  'capabilities': ['427:240', 'power', 'hires', 'wide']},
 
     # Powkiddy
-    'x55':       {'resolution': (1280, 720), 'analogsticks': 2, 'cpu': 'rk3566', 'capabilities': ['16:9', 'power', 'hires']},
-    'rgb10max3': {'resolution': ( 854, 480), 'analogsticks': 2, 'cpu': 's922x',  'capabilities': ['427:240', 'power', 'hires']},
-    'rgb10max2': {'resolution': ( 854, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['427:240', 'hires']},
-    'rgb10max':  {'resolution': ( 854, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['427:240', 'hires']},
+    'x55':       {'resolution': (1280, 720), 'analogsticks': 2, 'cpu': 'rk3566', 'capabilities': ['16:9', 'power', 'hires', 'wide']},
+    'rgb10max3': {'resolution': ( 854, 480), 'analogsticks': 2, 'cpu': 's922x',  'capabilities': ['427:240', 'power', 'hires', 'wide']},
+    'rgb10max2': {'resolution': ( 854, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['427:240', 'hires', 'wide']},
+    'rgb10max':  {'resolution': ( 854, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['427:240', 'hires', 'wide']},
     'rgb10s':    {'resolution': ( 480, 320), 'analogsticks': 1, 'cpu': 'rk3326', 'capabilities': ['3:2', 'lowres']},
     'rgb20s':    {'resolution': ( 640, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['4:3']},
     'rk2023':    {'resolution': ( 640, 480), 'analogsticks': 2, 'cpu': 'rk3566', 'capabilities': ['4:3', 'power']},

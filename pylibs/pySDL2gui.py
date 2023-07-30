@@ -1767,6 +1767,7 @@ class Region:
         # TODO figure out how to use default/system fonts
         self.font = self._verify_file('font', optional=True)
         self.fontsize = self._verify_int('font-size', 30)
+        self.fontsize *= self._verify_float('font-scale', 1.0, optional=True)
         self.fontcolor = self._verify_color('font-color', (255, 255, 255))
         self.fontoutline = self._verify_outline('font-outline', None, optional=True)
         self._text = self._verify_text('text', optional=True)
@@ -2418,6 +2419,18 @@ class Region:
 
         if not isinstance(val, int):
             raise GUIThemeError(f'{name} is not an int')
+        #print(f'{name}: {val}')
+        return val
+
+    def _verify_float(self, name, default=0, optional=False):
+        'verify that value of self._dict[name] is valid float value'
+
+        val = self._dict.get(name, default)
+        if val is None and optional:
+            return None
+
+        if not isinstance(val, float):
+            raise GUIThemeError(f'{name} is not an float')
         #print(f'{name}: {val}')
         return val
 

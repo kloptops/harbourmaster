@@ -31,6 +31,7 @@ from .util import (
     json_safe_loads,
     load_pm_signature,
     make_temp_directory,
+    match_requirements,
     name_cleaner,
     nice_size,
     remove_dict_list,

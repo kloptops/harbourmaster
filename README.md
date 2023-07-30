@@ -11,7 +11,7 @@ The goal is to have a gui frontend that can display text/images and a descriptio
   - [x] List by Genre
   - [ ] List by Updates
   - [x] List by Ready to Run
-  - [ ] Filter by device/capabilities
+  - [x] Filter by device/capabilities
 - [x] Download Ports
 - [x] Install Ports
 - [x] List ports
