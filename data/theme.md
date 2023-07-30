@@ -126,39 +126,123 @@ This is the main menu scene, it requires the `option_list` element. It is the fi
     }
 ```
 
+The option_list can contain whatever text you feel is most appropriate, the actual option that gets called is the same option in the `option` list.
+
 Currently the supported options for the main menu are as listed, more can be added as necessary.
 
 ### Scene: options_menu
 
-This is the main menu scene, it requires the `option_list` element. It is the first scene to load and if backed out of will quit the program.
+This is the options menu scene, it requires the `option_list` element. It is loaded from main-menu via.
 
 ```json
     "option_list": {
         "list": [
-            "Install All Ports",
-            "Install Ready to Run Ports",
-            "Uninstall Ports",
-            "Option Menu",
-            "Exit"
+            "Update ports",
+            "Back"
         ],
         "option": [
-            "install",
-            "install-rtr",
-            "uninstall",
-            "option",
-            "exit"
+            "update-ports",
+            "back"
         ]
     }
 ```
 
-Currently the supported options for the main menu are as listed, more can be added as necessary.
+The option_list can contain whatever text you feel is most appropriate, the actual option that gets called is the same option in the `option` list.
+
+Currently the supported options for the main menu are as listed, more will be added as necessary.
 
 
-## Element theming
+### Scene: options_menu
+
+This is the options menu scene, it requires the `option_list` element. It is loaded from main-menu via.
+
+```json
+    "option_list": {
+        "list": [
+            "Update ports",
+            "Back"
+        ],
+        "option": [
+            "update-ports",
+            "back"
+        ]
+    }
+```
+
+The option_list can contain whatever text you feel is most appropriate, the actual option that gets called is the same option in the `option` list.
+
+Currently the supported options for the main menu are as listed, more will be added as necessary.
+
+
+## Elements
+
+### The basics
+
+Elements are always rectangles, they must always have an `area` parameter. This can be pixels specifically, or a percentage of the screen.
+
+If you specify the coordinates in pixels it is in thef format: `x, y, width, height`
+
+If you specify it as a percentage of the screen it is as: `top-left-x, top-left-y, bottom-right-x, bottom-right-y`
+
+```json
+
+    "get_rect_perc": {
+        // 25%, 25% to 75%, 75%
+        "area": [0.25, 0.25, 0.75, 0.75]
+    },
+
+    "get_rect_px": {
+        // same as above on a 640x480 display
+        "area": [160, 120, 320, 240]
+    },
+
+```
+
+Elements can be themed by setting a `fill`, `outline`, `thickness`, and `roundness`:
+
+- `fill`: the color to fill in the elements rect
+- `outline`: the color of the outline for the elements rect
+- `thickness`: how thick the stroke of the outline is
+- `roundess`: if sdlGFX is available, it will make a roundrect with x pixels of roundness in the corners.
+- `progress-fill`: this is a special fill colour, used for the progress bar.
 
 ### Displaying Text
 
 Currently there are a few ways of displaying text.
+
+To display text at a minimum you need a `font`, `font-size`, `font-color`, and `text`.
+
+```json
+    "text_element": {
+        "area": [0.25, 0.25, 0.75, 0.75],
+        "text": "Text to be displayed!",
+        "font": "DejaVuSans.ttf",
+        "font-size": 20,
+        "font-color": [0, 0, 0]
+    }
+```
+
+A special option is `font-scale` which should be used to broadly scale fonts across multiple elements or scenes using the element overrides.
+
+```json
+    "#base": {
+        "font-scale[hires]": 2.0,
+    }
+```
+
+You can align text to different positions of the element.
+
+- `topleft`
+- `topcenter`
+- `topright`
+- `midleft`
+- `center`
+- `midright`
+- `bottomleft`
+- `bottomcenter`
+- `bottomright`
+
+You can control the way text is displayed with word wrapping, automatic scrolling, clipping, and scaling.
 
 - shrink/grow the text to fill the region: `"text-clip": false`
 - clip the text and just show what is visible: `"text-clip": true`
@@ -226,7 +310,12 @@ Main:
 Install Menu:
   -> All Ports    -> Port List [No filter]
   -> Ready To Run -> Port List [RTR filter]
-  -> Genres       -> Port List [Genres filters]
+
+  -> Lists 1      -> Custom List
+  -> Lists 2      -> Custom List
+  -> Lists 3      -> Custom List
+  -> Lists 4      -> Custom List
+
   -> Back
 
 Port List:
