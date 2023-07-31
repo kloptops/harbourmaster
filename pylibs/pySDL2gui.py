@@ -1302,8 +1302,8 @@ class EventManager:
         sdl2.SDLK_x:        'B',
         sdl2.SDLK_a:        'X',
         sdl2.SDLK_s:        'Y',
-        sdl2.SDLK_LCTRL:    'L',
-        sdl2.SDLK_LALT:     'R',
+        sdl2.SDLK_q:        'L1',
+        sdl2.SDLK_e:        'R1',
         }
 
     AXIS_MAP = {
@@ -1344,7 +1344,7 @@ class EventManager:
     # Wait 1.5 seconds
     REPEAT_DELAY = 800
     # Trigger every 1 second
-    REPEAT_RATE = 300
+    REPEAT_RATE = 60
 
     ANALOG_MIN = 2048
     TRIGGER_MIN = 1024
@@ -1810,6 +1810,7 @@ class Region:
         self.scroll_max = 10
         self.scroll_last_update = sdl2.SDL_GetTicks64()
         self.progress_amount = 0
+        self.page_size = 1
 
         self.selected = 0
         self.selectedx = -1
@@ -1865,8 +1866,6 @@ class Region:
                 progress_area = area.copy()
                 progress_area.width = int(area.width / 100 * amount)
 
-                print(f"progress_area -> {self.progress_amount} -> {progress_area}")
-
                 if self.roundness and sdlgfx:
                     sdlgfx.roundedBoxRGBA(self.renderer.sdlrenderer,
                         progress_area.x, progress_area.y, progress_area.right, progress_area.bottom,
@@ -1890,8 +1889,6 @@ class Region:
 
                 progress_area = area.copy()
                 progress_area.width = int(area.width / 100 * amount)
-
-                print(f"progress_area -> {self.progress_amount} -> {progress_area}")
 
                 if self.roundness and sdlgfx:
                     sdlgfx.roundedBoxRGBA(self.renderer.sdlrenderer,
@@ -2022,7 +2019,7 @@ class Region:
             else:
                 itemsize = self.texts.line_height(self.font, self.fontsize)  # + self.bordery
 
-            self.page_size = area.height // itemsize
+            self.page_size = max(area.height // itemsize, 1)
             self.selected = self.selected % len(self.list)
 
             # self.fonts.load(self.font, self.fontsize)
@@ -2154,6 +2151,20 @@ class Region:
             l = len(self.list)
             selectable = self.selectable or range(l)
             selected = self.selected
+
+            if self.gui.events.was_pressed('L1'):
+                selected = max(selected - self.page_size, 0)
+                while (selected) % l not in selectable:
+                    selected = (selected + 1) % l
+                self.gui.sounds.play(self.click_sound)
+                updated = True
+
+            if self.gui.events.was_pressed('R1'):
+                selected = min(selected + self.page_size, l-1)
+                while (selected) % l not in selectable:
+                    selected = (selected - 1) % l
+                self.gui.sounds.play(self.click_sound)
+                updated = True
 
             if self.gui.events.was_pressed('UP'):
                 selected = (selected - 1) % l

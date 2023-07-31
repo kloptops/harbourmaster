@@ -134,7 +134,7 @@
         },
 
         "ports_list": {
-            "area": [0.0, 0.1, 0.4, 0.95],
+            "area": [ 0.0, 0.1, 0.4, 0.95 ],
             "border-x": 16,
             "roundness": 10,
             "font-size": 14,
@@ -145,28 +145,35 @@
             "autoscroll": "slide",
             "scroll-speed": 30,
             "scroll-delay-start": 500,
-            "scroll-delay-end":   500
+            "scroll-delay-end": 500
         },
         "ports_list[hires]": {
-            "area": [0.0, 0.1, 0.3, 0.95]
+            "area": [ 0.0, 0.1, 0.3, 0.95 ]
+        },
+
+        "port_general": {
+            "text": "Genres: {port_info.genres}\nDownload Size: {port_info.download_size}\nRuntime: {port_info.runtime} ({port_info.runtime_status})",
+            "area": [ 0.5, 0.52, 0.95, 0.9 ],
+            "font-size": 13,
+            "font-color": [ 0, 0, 0 ],
+            "text-wrap": true
         },
 
         "port_desc": {
-            "text": "{port_info.description}\n\nGenres: {port_info.genres}\nDownload Size: {port_info.download_size}\nRuntime: {port_info.runtime} ({port_info.runtime_status})",
-            "area": [ 0.5, 0.52, 0.95, 0.9 ],
-            "font-size": 11,
+            "text": "{port_info.description}",
+            "area": [ 0.5, 0.65, 0.95, 0.9 ],
+            "font-size": 17,
             "font-color": [ 0, 0, 0 ],
-
             "text-wrap": true,
             "autoscroll": "marquee",
             "scroll-speed": 60,
             "scroll-delay-start": 1500,
-            "scroll-delay-end":   1500
+            "scroll-delay-end": 1500
         },
 
         "port_title": {
             "text": "{port_info.title}",
-            "area": [0.5, 0.02, 0.90, 0.10],
+            "area": [ 0.5, 0.02, 0.90, 0.10 ],
             "font-size": 32,
             "font-color": [ 255, 0, 0 ],
             "autoscroll": null,
@@ -176,7 +183,7 @@
         },
 
         "port_image": {
-            "area": [0.4, 0.1, 1.0, 0.5],
+            "area": [ 0.4, 0.1, 1.0, 0.5 ],
             "image": "no-image.jpg"
         },
 
@@ -192,7 +199,7 @@
             "text": "Free Space: {system.free_space}",
             "thickness": 6,
             "border": 8,
-            "font-size": 11,
+            "font-size": 13,
             "font-color": [ 0, 0, 0 ],
             "text-wrap": true
         },
@@ -271,7 +278,7 @@
             "font-size": 13,
             "font-color": [ 0, 0, 0 ],
             "area": [ 0.02, 0.05, 0.95, 0.95 ],
-            "align": "topleft"
+            "align": "topright"
         },
         "system_time_low": {
             "text": "Space: {system.free_space} free / {system.total_space} total\nPM: {system.portmaster_version}\nHM: {system.harbourmaster_version}",
@@ -306,13 +313,14 @@
 
     "filter_list": {
         "filter_list": {
-            "area": [0.25, 0.25, 0.75, 0.75],
-            "fill": [230, 230, 230],
-            "border": 5,
-            "font-size": 13,
+            "area": [0.5, 0.02, 0.95, 0.92],
+            "fill": [200, 200, 200],
+            "border": 30,
+            "font-size": 18,
             "font-color": "list_text",
             "select-color": "list_selected",
-            "list": []
+            "list": [],
+            "align": "topleft"
         }
     },
 
@@ -332,25 +340,27 @@
         },
 
         "progress_bar": {
-            "area": [0.05, 0.82, 0.95, 0.90],
-            "fill": [230, 230, 230],
-            "progress-fill": [120, 120, 240],
+            "area": [ 0.05, 0.83, 0.95, 0.90 ],
+            "fill": [ 230, 230, 230 ],
+            "progress-fill": [ 120, 120, 240 ],
             "text": "{system.progress_text}",
             "align": "midleft",
             "font-size": 14,
-            "font-color": [0, 0, 0],
-            "border": 3,
-            "thickness": 2
+            "font-color": [ 0, 0, 0 ],
+            "border": 2,
+            "thickness": 1,
+            "roundness": 20
         },
 
         "progress_bar_amount": {
-            "area": [0.05, 0.82, 0.95, 0.90],
+            "area": [0.05, 0.83, 0.95, 0.90],
             "text": "{system.progress_amount}",
             "align": "midright",
             "font-size": 14,
             "font-color": [0, 0, 0],
-            "thickness": 2,
-            "border": 3
+            "thickness": 1,
+            "border": 2,
+            "roundness": 20
         },
 
         "#element:button_bar": {}

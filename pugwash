@@ -795,9 +795,9 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             pretend_device = (
                 # 'rg351p'
                 # 'rg552'
-                'rg503'
+                # 'rg503'
                 # 'rg351v'
-                # 'rg353v'
+                'rg353v'
                 # 'ogs'
                 # 'x55'
                 )
