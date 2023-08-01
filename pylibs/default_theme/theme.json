@@ -50,6 +50,22 @@
     },
 
     "#elements": {
+        "left_pane": {
+            "area": [ 0.0, 0.0, 0.3, 1.0 ],
+            "area[wide]": [ 0.0, 0.0, 0.4, 1.0 ]
+        },
+        "right_pane": {
+            "area": [ 0.3, 0.0, 1.0, 1.0 ],
+            "area[wide]": [ 0.4, 0.0, 1.0, 1.0 ]
+        },
+        "port_info_image_area": {
+            "parent": "right_pane",
+            "area": [ 10, 10, -10, 0.5 ]
+        },
+        "port_info_text_area": {
+            "parent": "right_pane",
+            "area": [ 10, 0.5, -10, -10 ]
+        },
         "background": {
             "area": [ 0.0, 0.0, 1.0, 1.0 ],
             "fill": "background",
@@ -250,8 +266,8 @@
         "#element:option_list": {
             "align": "center",
             "list": [
-                "Install All Ports",
-                "Install Ready to Run Ports",
+                "All Ports",
+                "Ready to Run Ports",
                 "Uninstall Ports",
                 "Option Menu",
                 "Exit"

@@ -192,6 +192,8 @@ def theme_update(target, source):
 
         if isinstance(value, dict):
             theme_update(target.setdefault(key, {}), value)
+        elif isinstance(value, list):
+            target[key] = value[:]
         else:
             target[key] = value
 
@@ -284,6 +286,20 @@ def theme_load(gui, theme_file):
 
                     elements[element_name] = element_data
 
+                    last_value = None
+                    for element_key, element_value in element_data.items():
+                        element_key, requirements = extract_requirements(element_key)
+                        if element_key != 'area':
+                            continue
+
+                        if not harbourmaster.match_requirements(capabilities, requirements):
+                            continue
+
+                        last_value = element_value
+
+                    if last_value is not None:
+                        gui.default_rects.make_rect(element_data.get('parent', 'root'), element_name, last_value)
+
             elif section_name == "#pallet":
                 print("- loading pallet:")
                 for pallet_name, pallet_value in section_data.items():
@@ -350,10 +366,11 @@ class BaseScene:
         self.update_regions = {}
 
     def load_regions(self, section, required_tags):
+        rects = self.gui.new_rects()
         temp_required_tags = list(required_tags)
-        for region_name, region_data in self.gui.theme_data[section].items():
-            print(f"Loading region {region_name}: {region_data}")
-            region = pySDL2gui.Region(region_data, self.gui)
+        for number, (region_name, region_data) in enumerate(self.gui.theme_data[section].items()):
+            # print(f"Loading region {region_name}: {region_data}")
+            region = pySDL2gui.Region(self.gui, region_data, region_name, number, rects)
 
             if "text" in region_data and "{" in region_data["text"]:
                 text_keys = []
@@ -375,6 +392,8 @@ class BaseScene:
         if len(temp_required_tags) > 0:
             logger.error(f"Error: missing one or more tags for section {section}: {', '.join(temp_required_tags)}")
             raise RuntimeError("Error missing section tag in theme")
+
+        self.regions.sort(key=lambda x: (x.z_index, x.z_position))
 
     def update_data(self, keys):
         regions = set()
@@ -793,7 +812,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
             ## Uncomment one of these to pretend to be a different device. more devices in pylibs/harbourmaster/hardware.py
             pretend_device = (
-                'rg351p'
+                # 'rg351p'
                 # 'rg552'
                 # 'rg503'
                 # 'rg351v'
@@ -801,6 +820,9 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
                 # 'ogs'
                 # 'x55'
                 )
+
+            if not pretend_device:
+                pretend_device = 'pc'
 
             if pretend_device in harbourmaster.HW_INFO:
                 capabilities.update(**harbourmaster.HW_INFO[pretend_device])

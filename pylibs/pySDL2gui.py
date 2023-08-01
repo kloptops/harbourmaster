@@ -111,6 +111,10 @@ class GUI:
         self.sounds = SoundManager(self)
         self.events = EventManager(self)
         self.pallet = {}
+        self.default_rects = NamedRects([0, 0, *self.renderer.logical_size])
+
+    def new_rects(self):
+        return self.default_rects.copy()
 
     def clean(self):
         '''
@@ -531,8 +535,84 @@ class Rect:
         self.width, self.height = v
         self.center = cx, cy
 
+    def __len__(self):
+        return 4
+
     def __getitem__(self, i):
         return (self.x, self.y, self.width, self.height)[i]
+
+    def __setitem__(self, i, value):
+        if not isinstance(value, int):
+            raise GUIValueError(f"{value} is not an int")
+
+        if i < 0:
+            i = 4 + i
+
+        if i == 0:
+            self.x = value
+        elif i == 1:
+            self.y = value
+        elif i == 2:
+            self.width = value
+        elif i == 3:
+            self.height = value
+        else:
+            raise GUIValueError(f"{i} is out of bounds.")
+
+
+class NamedRects:
+    def __init__(self, root):
+        self._rects = {
+            'root': Rect(*root),
+            }
+
+    def copy(self):
+        new_rects = NamedRects(self._rects['root'])
+        new_rects._rects.update(self._rects)
+        return new_rects
+
+    def make_rect(self, parent, child, value):
+        if parent in self._rects:
+            root = self._rects[parent]
+        else:
+            root = self._rects['root']
+
+        try:
+            if len(value) != 4:
+                raise GUIThemeError('Region area incorrect length')
+
+        except TypeError:
+            print('Region area not iterable')
+            raise
+
+        value = list(value)
+
+        print(f"{child} <- {parent}")
+        print(f"    {value} x {root}")
+        for i, p in enumerate(value):
+            if not isinstance(p, (int, float)):
+                raise GUIThemeError(f'point {i}{p} is not a number')
+
+            if isinstance(p, float) and (0 <= p <= 1):
+                value[i] = root.topleft[i % 2] + int(p * root.size[i % 2])
+
+            elif i > 1:
+                if p < 0:
+                    value[i] = root[i] + int(p)
+
+                else:
+                    value[i] = int(p)
+
+            else:
+                value[i] = root.topleft[i % 2] + int(p)
+
+        value = Rect.from_corners(*value)
+
+        print(f"  = {list(value)}")
+        if child is not None:
+            self._rects[child] = value.copy()
+
+        return value
 
 
 class Texture:
@@ -1727,7 +1807,7 @@ class Region:
 
     DATA = {}
 
-    def __init__(self, data, gui):
+    def __init__(self, gui, data, name=None, number=0, rects=None):
         'Create a new Region for future drawing.'
         self._dict = deep_merge(self.DATA, data)
 
@@ -1738,9 +1818,17 @@ class Region:
         self.texts = gui.text
         self.pallet = gui.pallet
 
+        if rects is None:
+            self._rects = gui.default_rects
+        else:
+            self._rects = rects
+
+        self.z_position = number
         self.z_index = self._verify_int('z-index', default=None, optional=True)
         self.visible = self._verify_bool('visible', default=True, optional=True)
 
+        self.name = name
+        self.parent = self._verify_text('parent', default='root', optional=True)
         self.area = self._verify_rect('area')
         self.fill = self._verify_color('fill', optional=True)
         self.progress_fill = self._verify_color('progress-fill', optional=True)
@@ -2396,16 +2484,7 @@ class Region:
             print('Region area not iterable')
             raise
 
-        for i, p in enumerate(val):
-            if not isinstance(p, (int, float)):
-                raise GUIThemeError(f'point {i}{p} is not a number')
-
-            if type(p)==float and 0 < p <= 1:
-                val[i] = p * self.renderer.logical_size[i % 2]
-
-        val = Rect.from_corners(*val)
-        #print(f'{name}: {val}')
-        return val
+        return self._rects.make_rect(self.parent, self.name, val)
 
     def _verify_color(self, name, default=None, optional=False):
         'verify that value of self._dict[name] is valid RGB 3-tuple color'

@@ -110,8 +110,8 @@ This is the main menu scene, it requires the `option_list` element. It is the fi
 ```json
     "option_list": {
         "list": [
-            "Install All Ports",
-            "Install Ready to Run Ports",
+            "All Ports",
+            "Ready to Run Ports",
             "Uninstall Ports",
             "Option Menu",
             "Exit"
@@ -178,11 +178,13 @@ Currently the supported options for the main menu are as listed, more will be ad
 
 ### The basics
 
-Elements are always rectangles, they must always have an `area` parameter. This can be pixels specifically, or a percentage of the screen.
+Elements are always rectangles, they must always have an `area` parameter. This can be pixels specifically, or a percentage of the parent area.
+
+If you specify negative pixels for the width/height it subtracts it from the width/height of the parent area.
 
 If you specify the coordinates in pixels it is in thef format: `x, y, width, height`
 
-If you specify it as a percentage of the screen it is as: `top-left-x, top-left-y, bottom-right-x, bottom-right-y`
+If you specify it as a percentage of the parent area it is as: `top-left-x, top-left-y, bottom-right-x, bottom-right-y`
 
 ```json
 
@@ -196,7 +198,54 @@ If you specify it as a percentage of the screen it is as: `top-left-x, top-left-
         "area": [160, 120, 320, 240]
     },
 
+    "get_rect_inset": {
+        // same as above on a 640x480 display
+        "area": [160, 120, -160, -120]
+    },
+
 ```
+
+As hinted to above, you can specify a parent element to use as the basis of the calculating element positions.
+
+
+```json
+        "left_pane": {
+            // [0, 0, 192, 480] on 640x480 display
+            "area": [ 0.0, 0.0, 0.3, 1.0 ]
+        },
+        "right_pane": {
+            // [192, 0, 448, 480] on 640x480 display
+            "area": [ 0.3, 0.0, 1.0, 1.0 ]
+        },
+        "port_info_image_area": {
+            // [202, 10, 236, 230] using the above right_pane as the basis
+            "parent": "right_pane",
+            "area": [ 10, 10, -10, 0.5 ]
+        },
+        "port_info_text_area": {
+            // [10, 0.5, -10, -10] using the above right_pane as the basis
+            "parent": "right_pane",
+            "area": [ 10, 0.5, -10, -10 ]
+        },
+```
+
+By mixing and matching these you can build very powerful layouts.
+
+You can also use the element overrides to further customise for different screen sizes.
+
+```json
+        "left_pane": {
+            // [0, 0, 192, 480] on 640x480 display
+            "area": [ 0.0, 0.0, 0.3, 1.0 ],
+            "area[wide]": [ 0.0, 0.0, 0.4, 1.0 ]
+        },
+        "right_pane": {
+            // [0, 0, 192, 480] on 640x480 display
+            "area": [ 0.3, 0.0, 1.0, 1.0 ],
+            "area[wide]": [ 0.4, 0.0, 1.0, 1.0 ]
+        },
+```
+
 
 Elements can be themed by setting a `fill`, `outline`, `thickness`, and `roundness`:
 
@@ -205,6 +254,8 @@ Elements can be themed by setting a `fill`, `outline`, `thickness`, and `roundne
 - `thickness`: how thick the stroke of the outline is
 - `roundess`: if sdlGFX is available, it will make a roundrect with x pixels of roundness in the corners.
 - `progress-fill`: this is a special fill colour, used for the progress bar.
+
+
 
 ### Displaying Text
 
