@@ -459,7 +459,7 @@ class Callback:
     def __init__(self):
         self.was_cancelled = False
 
-    def progress(self, message, amount, total=None):
+    def progress(self, message, amount, total=None, fmt=None):
         pass
 
     def messages_begin(self):
