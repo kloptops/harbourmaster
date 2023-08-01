@@ -223,7 +223,7 @@ As hinted to above, you can specify a parent element to use as the basis of the 
             "area": [ 10, 10, -10, 0.5 ]
         },
         "port_info_text_area": {
-            // [10, 0.5, -10, -10] using the above right_pane as the basis
+            // [202, 240, 236, 230] using the above right_pane as the basis
             "parent": "right_pane",
             "area": [ 10, 0.5, -10, -10 ]
         },
@@ -235,12 +235,10 @@ You can also use the element overrides to further customise for different screen
 
 ```json
         "left_pane": {
-            // [0, 0, 192, 480] on 640x480 display
             "area": [ 0.0, 0.0, 0.3, 1.0 ],
             "area[wide]": [ 0.0, 0.0, 0.4, 1.0 ]
         },
         "right_pane": {
-            // [0, 0, 192, 480] on 640x480 display
             "area": [ 0.3, 0.0, 1.0, 1.0 ],
             "area[wide]": [ 0.4, 0.0, 1.0, 1.0 ]
         },
