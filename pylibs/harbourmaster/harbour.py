@@ -33,7 +33,6 @@ class HarbourMaster():
     CONFIG_VERSION = 1
     DEFAULT_CONFIG = {
         'version': CONFIG_VERSION,
-        'theme': 'default_theme'
         'first_run': True,
         }
 
