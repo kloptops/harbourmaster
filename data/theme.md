@@ -319,6 +319,59 @@ It also supports text auto-scrolling if it doesnt fit within the area it is disp
 
 ## Text Template System
 
+Portmaster has a simple text templating engine, it supports tags and if/then/else statements.
+
+You can use the tags in text areas and they will automatically update as their value changes.
+
+An example of using the system.time_24hr tag:
+```json
+    {
+        // Element options
+        "text": "{system.time_24hr}"
+    }
+```
+
+If no data is found for a tag the tag name is returned.
+
+```json
+    {
+        // This will display "{system.unknown_tag}"
+        "text": "{system.unknown_tag}"
+    }
+```
+
+Obviously multiple tags can be used at once:
+
+```json
+    {
+        // This might display "ArkOS (07232023)" on ArkOS for example"
+        "text": "OS: {system.cfw_name} ({system.cfw_version})"
+    }
+```
+
+As mentioned above you can use if/then/else statements in the text:
+
+```json
+    {
+        // If port_info.runtime is not false it will display "\nRuntime: {}"
+        "text": "{if:port_info.runtime}\nRuntime: {port_info.runtime} ({port_info.runtime_status}){else}No Runtime Required{endif}"
+    }
+```
+
+The format is:
+
+`{if:[!]<KEYNAME>[:<EQUALS TEXT>]}<TRUTH TEXT>[{else}<ELSE TEXT>]{endif}`
+
+### Hopefully this helps, if not... oh well i will write it better later on.
+
+|  Tag                                          |   Result                                          |
+|-----------------------------------------------|---------------------------------------------------|
+| `{if:!port_info.runtime}`                     | `port_info.runtime` is False                      |
+| `{if:port_info.runtime}`                      | `port_info.runtime` is True                       |
+| `{if:port_info.runtime:Mono 6.12.0.122}`      | `port_info.runtime` == "Mono 6.12.0.122"          |
+| `{if:!port_info.runtime:Mono 6.12.0.122}`     | `port_info.runtime` != "Mono 6.12.0.122"          |
+
+
 ### System tags
 
 - system.time_24hr

@@ -167,7 +167,7 @@
         },
 
         "port_general": {
-            "text": "Genres: {port_info.genres}\nDownload Size: {port_info.download_size}\nRuntime: {port_info.runtime} ({port_info.runtime_status})",
+            "text": "Genres: {port_info.genres}\nDownload Size: {port_info.download_size}{if:port_info.runtime}\nRuntime: {port_info.runtime} ({port_info.runtime_status}){endif}",
             "area": [ 0.5, 0.52, 0.95, 0.9 ],
             "font-size": 13,
             "font-color": [ 0, 0, 0 ],
@@ -222,7 +222,7 @@
         "port_info": {
             "area": [ 0.0, 0.68, 1.0, 1.0 ],
             "fill": [ 230, 230, 230 ],
-            "text": "{port_info.description}\n\nPorter: {port_info.porter}\nGenres: {port_info.genres}\nDownload Size: {port_info.download_size}\nRuntime: {port_info.runtime} ({port_info.runtime_status})",
+            "text": "{port_info.description}\n\nPorter: {port_info.porter}\nGenres: {port_info.genres}\nDownload Size: {port_info.download_size}{if:port_info.runtime}\nRuntime: {port_info.runtime} ({port_info.runtime_status}){endif}",
             "thickness": 6,
             "border": 8,
             "font-size": 11,
@@ -265,6 +265,8 @@
 
         "#element:option_list": {
             "align": "center",
+            "image": "box",
+            "patch": [32,32,32,32],
             "list": [
                 "All Ports",
                 "Ready to Run Ports",
@@ -296,7 +298,7 @@
             "align": "topright"
         },
         "system_time_low": {
-            "text": "Space: {system.free_space} free / {system.total_space} total\nPM: {system.portmaster_version}\nHM: {system.harbourmaster_version}",
+            "text": "PM: {system.portmaster_version}\nHM: {system.harbourmaster_version}\nSpace: {system.free_space} free / {system.total_space} total",
             "font-size": 11,
             "font-color": [ 0, 0, 0 ],
             "area": [ 0.02, 0.05, 0.95, 0.95 ],

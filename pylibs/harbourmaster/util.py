@@ -234,9 +234,10 @@ def download(file_name, file_url, md5_source=None, md5_result=None, callback=Non
 
     md5 = hashlib.md5()
 
-    cprint(f"Downloading <b>{file_url!r}</b> - <b>{total_length_mb}</b>")
     if callback is not None:
         callback.message(f"Downloading {file_url!r} - ({total_length_mb})")
+    else:
+        cprint(f"Downloading <b>{file_url!r}</b> - <b>{total_length_mb}</b>")
 
     length = 0
     with file_name.open('wb') as fh:
@@ -247,15 +248,17 @@ def download(file_name, file_url, md5_source=None, md5_result=None, callback=Non
 
             if callback is not None:
                 callback.progress("Downloading file.", length, total_length, 'data')
-
-            if total_length is None:
-                sys.stdout.write(f"\r[{'?' * 40}] - {nice_size(length)} / {total_length_mb} ")
             else:
-                amount = int(length / total_length * 40)
-                sys.stdout.write(f"\r[{'|' * amount}{' ' * (40 - amount)}] - {nice_size(length)} / {total_length_mb} ")
-            sys.stdout.flush()
+                if total_length is None:
+                    sys.stdout.write(f"\r[{'?' * 40}] - {nice_size(length)} / {total_length_mb} ")
+                else:
+                    amount = int(length / total_length * 40)
+                    sys.stdout.write(f"\r[{'|' * amount}{' ' * (40 - amount)}] - {nice_size(length)} / {total_length_mb} ")
 
-        cprint("\n")
+                sys.stdout.flush()
+
+        if callback is None:
+            cprint("\n")
 
         if callback is not None:
             callback.progress("Downloading file.", length, total_length, 'data')
@@ -274,8 +277,8 @@ def download(file_name, file_url, md5_source=None, md5_result=None, callback=Non
 
             if callback is not None:
                 callback.message("Passed file validation.")
-
-            cprint(f"<b,g,>Passed md5 check.</b,g,>")
+            else:
+                cprint(f"<b,g,>Passed md5 check.</b,g,>")
     else:
         if callback is not None:
             callback.message("Unable to validate download.")

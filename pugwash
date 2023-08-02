@@ -4,6 +4,7 @@ PORTMASTER_VERSION = '8.1.0a'
 
 import contextlib
 import datetime
+import functools
 import hashlib
 import os
 import re
@@ -137,8 +138,34 @@ Current Template Tags:
     system.cfw_version
     system.device_name
     system.battery_level
+    system.ip_address
 
 """
+
+__IP_ADDRESS=None
+def get_ip_address():
+    global __IP_ADDRESS
+
+    if __IP_ADDRESS is not None:
+        return __IP_ADDRESS
+
+    import socket
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.settimeout(0)
+    try:
+        # doesn't even have to be reachable
+        s.connect(('1.1.1.1', 1))
+        __IP_ADDRESS = s.getsockname()[0]
+
+    except Exception:
+        __IP_ADDRESS = 'Unknown'
+
+    finally:
+        s.close()
+
+    return __IP_ADDRESS
+
 
 def format_progress(amount, total, fmt=None):
     if fmt == 'data':
@@ -329,26 +356,98 @@ class StringFormatter:
     def __init__(self, data_dict):
         self.data_dict = data_dict
 
-    def _get_value(self, key):
-        try:
-            return self.data_dict[key]
+    @functools.lru_cache(1024)
+    def parse_text(self, text):
+        result = []
+        current = ''
+        while len(text) > 0:
+            before, bracket, text = text.partition('{')
+            current += before
 
-        except (KeyError, TypeError):
-            return None
+            if bracket == '' or text == '':
+                break
 
-    def format_string(self, input_string, used_keys=None):
-        def replace_key(match):
-            key = match.group(1)
-            if used_keys is not None and key not in used_keys:
-                used_keys.append(key)
+            elif text.startswith('{'):
+                current += '{'
+                text = text[1:]
+                continue
 
-            value = self._get_value(key)
-            return str(value) if value is not None else f'{{{key}}}'
+            else:
+                token, bracket, text = text.partition('}')
+                if bracket == '':
+                    current += token
+                    break
 
-        pattern = r'\{(.*?)}'
-        formatted_string = re.sub(pattern, replace_key, input_string)
+                if token == '':
+                    current += '{}'
+                    continue
 
-        return formatted_string
+                result.append((current, token))
+                current = ''
+
+        if current != '':
+            result.append((current, None))
+
+        return tuple(result)
+
+    def execute_if(self, text, keys_used=None):
+        do_not = False
+
+        if text.startswith('!'):
+            do_not = True
+            text = text[1:]
+
+        if ':' in text:
+            key, value = text.split(':', 1)
+
+            if keys_used is not None and key not in keys_used:
+                keys_used.append(key)
+
+            result = self.data_dict.get(key, '') == value
+        else:
+            if keys_used is not None and text not in keys_used:
+                keys_used.append(text)
+
+            result = self.data_dict.get(text, '') not in ('', 'None')
+
+        if do_not:
+            result = not result
+
+        return result
+
+    def format_string(self, text, keys_used=None):
+        output = []
+        stack = [True]
+
+        for before, key in self.parse_text(text):
+            if stack[-1] and before != '':
+                output.append(before)
+
+            if key is not None:
+                if key == 'else':
+                    stack[-1] = not stack[-1]
+
+                elif key == 'endif':
+                    if len(stack) > 1:
+                        stack.pop(-1)
+
+                elif key.startswith('if:'):
+                    if_key = key[3:]
+
+                    if self.execute_if(if_key, keys_used):
+                        stack.append(True)
+                    else:
+                        stack.append(False)
+
+                else:
+                    if keys_used is not None and key not in keys_used:
+                        keys_used.append(key)
+
+                    value = self.data_dict.get(key, f'{{{key}}}')
+                    if stack[-1]:
+                        output.append(value)
+
+        return ''.join(output)
 
 
 class BaseScene:
@@ -876,6 +975,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.set_data('system.cfw_name', device_info['name'])
         self.set_data('system.cfw_version', device_info['version'])
         self.set_data('system.device_name', device_info['device'])
+        self.set_data('system.ip_address', get_ip_address())
         self.set_data('system.progress_text', "")
         self.set_data('system.progress_amount', "")
 
@@ -1007,7 +1107,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
         self.text_data[key] = value
         self.changed_keys.add(key)
-        # logger.debug(f"{key}: {value}")
+        logger.debug(f"{key}: {value}")
 
     def format_data(self, input_string, used_keys=None):
         return self.formatter.format_string(input_string, used_keys)

@@ -33,6 +33,7 @@ class HarbourMaster():
     CONFIG_VERSION = 1
     DEFAULT_CONFIG = {
         'version': CONFIG_VERSION,
+        'theme': 'default_theme'
         'first_run': True,
         }
 
@@ -709,10 +710,6 @@ class HarbourMaster():
         We collect a list of top level scripts/directories, this is added to the port.json file.
         """
 
-        items = []
-        dirs = []
-        scripts = []
-
         undo_data = []
         is_successs = False
 
@@ -727,7 +724,6 @@ class HarbourMaster():
                 # At this point the port will be installed
                 # Extract all the files to the specified directory
                 # zf.extractall(self.ports_dir)
-                cprint("<b>Extracting port.</b>")
                 self.callback.message(f"Installing {download_info['name']}.")
 
                 total_files = len(zf.infolist())
@@ -737,8 +733,8 @@ class HarbourMaster():
                     else:
                         compress_saving = file_info.compress_size / file_info.file_size * 100
 
-                    self.callback.message(f"- {file_info.filename}")
                     self.callback.progress("Installing", file_number+1, total_files, '%')
+                    self.callback.message(f"- {file_info.filename}")
 
                     dest_file = path=self.ports_dir / file_info.filename
 
@@ -749,7 +745,7 @@ class HarbourMaster():
                     if not dest_file.exists():
                         add_list_unique(undo_data, dest_file)
 
-                    cprint(f"- <b>{file_info.filename!r}</b> <d>[{nice_size(file_info.file_size)} ({compress_saving:.0f}%)]</d>")
+                    # cprint(f"- <b>{file_info.filename!r}</b> <d>[{nice_size(file_info.file_size)} ({compress_saving:.0f}%)]</d>")
                     zf.extract(file_info, path=self.ports_dir)
 
             # print(f"Port Info: {port_info}")
@@ -759,7 +755,6 @@ class HarbourMaster():
 
             ## These two are always overriden.
             port_info['name'] = name_cleaner(download_info['zip_file'].name)
-            port_info['items'] = items
             port_info['status'] = download_info['status'].copy()
             port_info['status']['status'] = 'Installed'
 
@@ -847,7 +842,7 @@ class HarbourMaster():
                     if runtime not in source.utils:
                         continue
 
-                    cprint(f"Downloading required runtime <b>{runtime}</b>.")
+                    # cprint(f"Downloading required runtime <b>{runtime}</b>.")
 
                     self.callback.message(f"Downloading runtime {runtime}.")
 

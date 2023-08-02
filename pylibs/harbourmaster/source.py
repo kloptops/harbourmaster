@@ -65,7 +65,7 @@ class GitHubRawReleaseV1(BaseSource):
 
     def auto_update(self):
         if self._wants_update is not None:
-            cprint(f"<b>{self._config['name']}</b>: {self._wants_update}")
+            # cprint(f"<b>{self._config['name']}</b>: {self._wants_update}")
             if self.hm.callback is not None:
                 self.hm.callback.message(f"{self._config['name']}: {self._wants_update}")
 
@@ -125,9 +125,9 @@ class GitHubRawReleaseV1(BaseSource):
         ...
 
     def update(self):
-        cprint(f"<b>{self._config['name']}</b>: updating")
+        # cprint(f"<b>{self._config['name']}</b>: updating")
         if self.hm.callback is not None:
-            self.hm.callback.message(f"{self._config['name']}: updating")
+            self.hm.callback.message(f"  - Updating")
 
         # Scrap the rest
         self._clear()
@@ -137,14 +137,13 @@ class GitHubRawReleaseV1(BaseSource):
         self.images = {}
 
         if self._did_update:
-            cprint(f"- <b>{self._config['name']}</b>: up to date already.")
-            self.hm.callback.message(f"- {self._config['name']}: up to date already")
-
+            # cprint(f"- <b>{self._config['name']}</b>: up to date already.")
+            self.hm.callback.message(f"  - Up to date already")
             return
 
-        cprint(f"- <b>{self._config['name']}</b>: Fetching latest ports")
+        # cprint(f"- <b>{self._config['name']}</b>: Fetching latest ports")
         if self.hm.callback is not None:
-            self.hm.callback.message(f"- {self._config['name']}: Fetching latest ports")
+            self.hm.callback.message(f"  - Fetching latest ports")
         data = fetch_json(self._config['url'])
         if data is None:
             return
@@ -187,8 +186,8 @@ class GitHubRawReleaseV1(BaseSource):
 
         self.save()
         self._did_update = True
-        cprint(f"- <b>{self._config['name']}:</b> Done.")
-        self.hm.callback.message(f"- {self._config['name']}: Done.")
+        # cprint(f"- <b>{self._config['name']}:</b> Done.")
+        self.hm.callback.message(f"  - Done.")
 
     def download(self, port_name, temp_dir=None, md5_result=None):
         if md5_result is None:
@@ -222,9 +221,9 @@ class GitHubRawReleaseV1(BaseSource):
         zip_file = download(temp_dir / port_name, self._data[port_name]['url'], md5_source, callback=self.hm.callback)
 
         if zip_file is not None:
-            cprint("<b,g,>Success!</b,g,>")
+            # cprint("<b,g,>Success!</b,g,>")
 
-            self.hm.callback.message(f"- Success!")
+            self.hm.callback.message(f"  - Success!")
 
         md5_result[0] = md5_source
 
@@ -278,8 +277,8 @@ class PortMasterV1(GitHubRawReleaseV1):
 
     def _update(self):
 
-        cprint(f"- <b>{self._config['name']}</b>: Fetching info")
-        self.hm.callback.message(f"- {self._config['name']}: Fetching info")
+        # cprint(f"- <b>{self._config['name']}</b>: Fetching info")
+        self.hm.callback.message(f"  - Fetching info")
 
         # portsmd_url = "https://raw.githubusercontent.com/kloptops/PortMaster/main/ports.md"
         portsmd_url = self._data['ports.md']['url']
@@ -298,8 +297,8 @@ class PortMasterV1(GitHubRawReleaseV1):
 
         ## Download latest images.zip if needed.
         ## Uncomment after images has been added to PortMaster.
-        # if 'images.zip' not in self._data:
-        #     return
+        if 'images.zip' not in self._data:
+            return
         images_url_md5 = self._data['images.zip.md5']['url']
         images_url_zip = self._data['images.zip']['url']
         # images_url_md5 = "https://raw.githubusercontent.com/kloptops/pugwash/main/pugwash/data/images.zip.md5"
@@ -324,7 +323,9 @@ class PortMasterV1(GitHubRawReleaseV1):
                         continue
 
                     file_name = self._images_dir / self.clean_name(zip_name.rsplit('/', 1)[-1])
-                    logger.debug(f"adding {file_name}")
+                    if file_name not in images_to_delete:
+                        logger.debug(f"adding {file_name}")
+
                     with open(file_name, 'wb') as fh:
                         fh.write(zf.read(zip_name))
 
@@ -438,9 +439,9 @@ class GitHubRepoV1(GitHubRawReleaseV1):
         self._info = self._config.setdefault('data', {}).setdefault('info', {})
 
     def update(self):
-        cprint(f"<b>{self._config['name']}</b>: updating")
+        # cprint(f"<b>{self._config['name']}</b>: updating")
         if self._did_update:
-            cprint(f"- <b>{self._config['name']}</b>: up to date already.")
+            # cprint(f"- <b>{self._config['name']}</b>: up to date already.")
             return
 
         self._clear()
@@ -456,7 +457,7 @@ class GitHubRepoV1(GitHubRawReleaseV1):
 
         git_url = f"https://api.github.com/repos/{user_name}/{repo_name}/git/trees/{branch_name}?recursive=true"
 
-        cprint(f"- <b>{self._config['name']}</b>: Fetching latest ports")
+        # cprint(f"- <b>{self._config['name']}</b>: Fetching latest ports")
         self.hm.callback.message(f"- {self._config['name']}: Fetching latest ports")
 
         git_info = fetch_json(git_url)
@@ -495,7 +496,8 @@ class GitHubRepoV1(GitHubRawReleaseV1):
                 ports_json_file = name
 
         if ports_json_file is not None:
-            cprint(f"- <b>{self._config['name']}:</b> Fetching info.")
+            # cprint(f"- <b>{self._config['name']}:</b> Fetching info.")
+            self.hm.callback.message(f"  - Fetching info.")
             ports_json = fetch_json(self._data[ports_json_file]['url'])
 
             for port_info in ports_json['ports']:
@@ -519,7 +521,9 @@ class GitHubRepoV1(GitHubRawReleaseV1):
 
         self.save()
         self._did_update = True
-        cprint(f"- <b>{self._config['name']}:</b> Done.")
+        # cprint(f"- <b>{self._config['name']}:</b> Done.")
+        self.hm.callback.message(f"  - Done.")
+
 
     def download(self, port_name, temp_dir=None):
         md5_result = [None]
@@ -604,7 +608,7 @@ def raw_download(save_path, file_url, callback=None):
 
     # print(f"-- {zip_info} --")
 
-    cprint("<b,g,>Success!</b,g,>")
+    # cprint("<b,g,>Success!</b,g,>")
     return zip_info
 
 

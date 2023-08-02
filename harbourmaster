@@ -189,6 +189,62 @@ def runtime_nicename(runtime):
 
 
 ################################################################################
+## Utils
+class ConsoleCallback(harbourmaster.Callback):
+    def __init__(self):
+        self.last_message = None
+
+    def format_progress(self, amount, total, fmt=None):
+        if fmt == 'data':
+            if total is None:
+                return f"{harbourmaster.nice_size(amount)}"
+
+            else:
+                return f"{harbourmaster.nice_size(amount)} / {harbourmaster.nice_size(total)}"
+
+        elif fmt == '%':
+            if total is None:
+                return f"{min(amount, 100):.02f} %"
+
+            else:
+                return f"{min(amount / total * 100, 100):.02f} %"
+
+        else:
+            if total is None:
+                return f"{amount}"
+
+            else:
+                return f"{amount} / {total}"
+
+
+    def progress(self, message, amount, total=None, fmt=None):
+        if message is None:
+            self.last_message = None
+            return
+
+        if fmt != 'data':
+            return
+
+        if message != self.last_message:
+            cprint(f" - {message}")
+            self.last_message = message
+
+        if total is None:
+            sys.stdout.write(f"\r[{'?' * 40}] - {self.format_progress(amount, total, fmt)}")
+        else:
+            width = int(amount / total * 40)
+            sys.stdout.write(f"\r[{'|' * width}{' ' * (40 - width)}] - {self.format_progress(amount, total, fmt)}")
+
+        sys.stdout.flush()
+
+    def message(self, message):
+        cprint(f"{message}")
+
+    def message_box(self, message):
+        ...
+
+
+################################################################################
 ## Commands
 
 
@@ -638,6 +694,7 @@ def main(argv):
     global LOG_FILE_HANDLE
 
     with make_temp_directory() as temp_dir:
+        ccb = ConsoleCallback()
         argv = argv[:]
 
         config = {
@@ -688,7 +745,7 @@ def main(argv):
         elif config['force-colour']:
             utility.do_color(True)
 
-        hm = HarbourMaster(config, temp_dir=temp_dir)
+        hm = HarbourMaster(config, temp_dir=temp_dir, callback=ccb)
 
         if config['help']:
             all_commands['help'](hm, argv[1:])
