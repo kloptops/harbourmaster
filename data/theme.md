@@ -317,6 +317,36 @@ It also supports text auto-scrolling if it doesnt fit within the area it is disp
 
 ```
 
+### Lists
+
+The list system is quite adequate
+
+## Basic presentation options
+
+```json
+    "element_name": {
+        "select-color":    [255, 128, 128],  // color to draw the selected item as
+        "select-inactive": [128,  64,  64],  // color to draw the selected item if the element is inactive
+        "select-fill":     [128, 128, 128],  // color to fill behind the selected item
+        "alt-fill":        [210, 210, 210],  // color to fill alternating rows
+
+    }
+```
+
+## Pointer
+
+```json
+    "element_name": {
+        "pointer": "pointer.png",                 // pointer image
+        "pointer-align": ["midright", "midleft"], // poisition of (1) list/text to attach the position (2) of the pointer to
+        "pointer-size": [128, 64],                // scale it to this size, otherwise use the size of the image provided
+        "pointer-attach": "text",                 // attach to the rendered "text" rect, or the "list" item rect.
+        "pointer-offset": [0, 0],                 // offset it by x,y pixels after the position is calculated.
+        "pointer-flip-x": false,                  // flip the image horizontally
+        "pointer-flip-y": false                   // flip it vertically
+    }
+```
+
 ## Text Template System
 
 Portmaster has a simple text templating engine, it supports tags and if/then/else statements.
@@ -382,6 +412,7 @@ The format is:
 - system.cfw_version
 - system.device_name
 - system.battery_level
+- system.ip_address
 
 - system.progress_text
 - system.progress_amount

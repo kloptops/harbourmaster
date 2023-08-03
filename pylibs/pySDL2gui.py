@@ -704,6 +704,8 @@ class Texture:
             dest = self.size.fitted(dest)
             self.renderer.copy(self.texture, self.srcrect, dstrect=dest.sdl())
 
+            return Rect(*dest)
+
         elif clip:
             destrect = Rect(*dest)
 
@@ -736,8 +738,12 @@ class Texture:
             self.renderer.copy(self.texture, (srcrect_x, srcrect_y, srcrect_width, srcrect_height),
                                dstrect=(destrect_x, destrect_y, destrect_width, destrect_height))
 
+            return Rect(destrect_x, destrect_y, destrect_width, destrect_height)
+
         else:
             self.renderer.copy(self.texture, self.srcrect, dstrect=dest.sdl())
+
+            return Rect(*dest)
 
 
 class Image:
@@ -832,7 +838,7 @@ class Image:
         angle = angle or self.angle
 
         if fit:
-            dest = self.srcrect.fitted(dest)
+            dest = Rect.from_sdl(self.srcrect).fitted(dest).sdl()
         if flip_x is None and flip_y is None:
             flip = 1 * bool(self.flip_x) | 2 * bool(self.flip_y)
         else:
@@ -1831,6 +1837,7 @@ class Region:
         self.parent = self._verify_text('parent', default='root', optional=True)
         self.area = self._verify_rect('area')
         self.fill = self._verify_color('fill', optional=True)
+        self.alt_fill = self._verify_color('alt-fill', optional=True)
         self.progress_fill = self._verify_color('progress-fill', optional=True)
         self.outline = self._verify_color('outline', optional=True)
         self.thickness = self._verify_int('thickness', 0)
@@ -1852,6 +1859,14 @@ class Region:
 
         self.pattern = False
 
+        self.pointer = self.images.load(self._dict.get('pointer'))
+        self.pointer_align = self._verify_option('pointer-align', Rect.POINTS, default=['midright', 'midleft'], length=2)
+        self.pointer_size = self._verify_ints('pointer-size', 2, optional=True)
+        self.pointer_attach = self._verify_option('pointer-attach', ['text', 'list'], default='text')
+        self.pointer_offset = self._verify_ints('pointer-offset', 2, default=[0, 0])
+        self.pointer_flip_x = self._verify_bool('pointer-flip-x', False)
+        self.pointer_flip_y = self._verify_bool('pointer-flip-y', False)
+
         # TODO figure out how to use default/system fonts
         self.font = self._verify_file('font', optional=True)
         self.fontsize = self._verify_int('font-size', 30)
@@ -1870,6 +1885,7 @@ class Region:
         self.ilistalign = 0 ## TODO
         self.itemsize = self._verify_int('item-size', None, optional=True)
         self.select = self._verify_color('select-color', optional=True)
+        self.select_fill = self._verify_color('select-fill', optional=True)
 
         self.click_sound = self._verify_text('click_sound', optional=True)
         self.cancel_sound = self._verify_text('cancel_sound', optional=True)
@@ -2120,7 +2136,13 @@ class Region:
             irect = text_area.copy()
             irect.height = itemsize
             i = start
-            for t in self.list[start: start + self.page_size]:
+            for zz, t in enumerate(self.list[start: start + self.page_size], i):
+                if self.select_fill is not None and self.selected == i:
+                    self.renderer.fill(irect, self.select_fill)
+
+                elif self.alt_fill is not None and (zz & 1):
+                    self.renderer.fill(irect, self.alt_fill)
+
                 if isinstance(t, (list, tuple)):
                     bar = self._verify_bar(None, t, irect)
 
@@ -2163,9 +2185,28 @@ class Region:
                                 self.scroll_last_update = sdl2.SDL_GetTicks64()
 
                     if self.textclip:
-                        texture.draw_in(irect, clip=True)
+                        drawn_rect = texture.draw_in(irect, clip=True)
                     else:
-                        texture.draw_in(irect, fit=True)
+                        drawn_rect = texture.draw_in(irect, fit=True)
+
+                    if self.pointer is not None:
+                        if self.pointer_size is not None:
+                            pointer_rect = Rect(*(0, 0, self.pointer_size[0], self.pointer_size[1]))
+
+                        else:
+                            pointer_rect = Rect(*(0, 0, self.pointer.srcrect.w, self.pointer.srcrect.h))
+
+                        if self.pointer_attach == 'list':
+                            drawn_rect = irect
+
+                        (x, y) = getattr(drawn_rect, self.pointer_align[0])
+                        setattr(pointer_rect, self.pointer_align[1], (x, y))
+
+                        pointer_rect.x += self.pointer_offset[0]
+                        pointer_rect.y += self.pointer_offset[1]
+
+                        self.pointer.draw_in(
+                            pointer_rect, fit=True, flip_x=self.pointer_flip_x, flip_y=self.pointer_flip_y)
 
                 else:
                     texture = self.texts.render_text(
@@ -2573,14 +2614,25 @@ class Region:
         else:
             raise GUIThemeError(f'{name} is not BOOL')
 
-    def _verify_option(self, name, options, default=None, optional=False):
+    def _verify_option(self, name, options, default=None, optional=False, length=None):
         'verify that value of self._dict[name] is in given options list'
 
         val = self._dict.get(name, default)
         if val is None and optional: return None
 
-        if val not in options:
-            val = default
+        if isinstance(val, (list, tuple)):
+            if length is not None and len(val) != length:
+                val = default
+
+            for k in val:
+                if k not in options:
+                    val = default
+                    break
+
+        else:
+            if val not in options:
+                val = default
+
         return val
 
     def _verify_text(self, name, default=None, optional=False):
