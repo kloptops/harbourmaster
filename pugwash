@@ -624,8 +624,14 @@ class PortsListScene(BaseScene):
             self.tags['ports_list'].selected = 0
             return
 
+        if not self.ready:
+            self.gui.set_data('ports_list.total_ports', str(len(self.gui.hm.list_ports(filters=(self.options['base_filters'])))))
+
         self.all_ports = self.gui.hm.list_ports(filters=(self.options['base_filters'] + self.options['filters']))
         self.port_list = list(self.all_ports.keys())
+
+        self.gui.set_data('ports_list.filters', ', '.join(sorted(self.options['filters'])))
+        self.gui.set_data('ports_list.filter_ports', str(len(self.port_list)))
 
         if len(self.port_list) == 0:
             self.tags['ports_list'].list = [
@@ -978,6 +984,10 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.set_data('system.ip_address', get_ip_address())
         self.set_data('system.progress_text', "")
         self.set_data('system.progress_amount', "")
+
+        self.set_data('ports_list.filters', "")
+        self.set_data('ports_list.total_ports', "")
+        self.set_data('ports_list.filter_ports', "")
 
     ## Loop stuff.
     def run(self):

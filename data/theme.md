@@ -430,6 +430,12 @@ The format is:
 - port_info.runtime_status
 
 
+## Ports List tags
+
+- ports_list.total_ports
+- ports_list.filter_ports
+- ports_list.filters
+
 
 ### Control flow of PortMaster
 

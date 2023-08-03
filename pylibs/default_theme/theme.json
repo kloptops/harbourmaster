@@ -155,6 +155,7 @@
             "border-x": 16,
             "font-size": 14,
             "alt-fill": [210, 210, 210],
+            "select-fill": [255, 255, 255],
             "font-color": "list_text",
             "select-color": "list_selected",
             "text-clip": true,
