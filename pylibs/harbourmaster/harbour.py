@@ -813,16 +813,23 @@ class HarbourMaster():
 
         logger.debug(port_info)
         if port_info['attr'].get('runtime', None) is not None:
-            return self.check_runtime(port_info['attr']['runtime'])
+            result = self.check_runtime(port_info['attr']['runtime'], in_install=True)
+            if result == 0:
+                self.callback.message_box(f"Port {download_info['name']} and {port_info['attr']['runtime']} installed successfully.")
 
-        self.callback.message_box(f"Port {download_info['name']} installed successfully.")
+            else:
+                self.callback.message_box(f"Port {download_info['name']} but {port_info['attr']['runtime']} failed to install!!\n\nEither reinstall to try again to check the wiki for help.")
+
+        else:
+            self.callback.message_box(f"Port {download_info['name']} installed successfully.")
 
         return 0
 
-    def check_runtime(self, runtime, port_name=None):
+    def check_runtime(self, runtime, port_name=None, in_install=False):
         if isinstance(runtime, str):
             if '/' in runtime:
-                self.callback.message_box(f"Port {runtime} contains a bad runtime, game may not run correctly.")
+                if not in_install:
+                    self.callback.message_box(f"Port {runtime} contains a bad runtime, game may not run correctly.")
 
                 logger.error(f"Bad runtime {runtime}")
                 return 255
@@ -853,7 +860,10 @@ class HarbourMaster():
                             if runtime_file.is_file():
                                 runtime_file.unlink()
 
-                            self.callback.message_box(f"Unable to download {runtime}, game may not run correctly.")
+                            if not in_install:
+                                self.callback.message_box(f"Unable to download {runtime}, game may not run correctly.")
+
+                            return 255
 
                     except Exception as err:
                         ## We need to catch any errors and delete the file if it fails,
@@ -863,13 +873,17 @@ class HarbourMaster():
 
                         logger.error(err)
 
-                        self.callback.message_box(f"Unable to download {runtime}, game may not run correctly.")
+                        if not in_install:
+                            self.callback.message_box(f"Unable to download {runtime}, game may not run correctly.")
+
                         return 255
 
-                    self.callback.message_box(f"Successfully downloaded {runtime}.")
+                    if not in_install:
+                        self.callback.message_box(f"Successfully downloaded {runtime}.")
                     return 0
                 else:
-                    self.callback.message(f"Unable to find a download for {runtime}.")
+                    if not in_install:
+                        self.callback.message_box(f"Unable to find a download for {runtime}.")
 
                     logger.error(f"Unable to find suitable source for {runtime}.")
                     return 255

@@ -13,7 +13,7 @@
 
     "#pallet": {
         "background": [200, 200, 200, 255],
-        "background_fade": [200, 200, 200, 32],
+        "background_fade": [0, 0, 0, 128],
         "list_text": [0, 0, 0, 255],
         "list_selected": [255, 0, 0, 255],
         "button": [200, 200, 200, 255]
@@ -52,20 +52,41 @@
 
     "#elements": {
         "left_pane": {
+            "comment": "Left side of the screen.",
             "area": [ 0.0, 0.0, 0.3, 1.0 ],
             "area[wide]": [ 0.0, 0.0, 0.4, 1.0 ]
         },
         "right_pane": {
+            "comment": "Right side of the screen.",
             "area": [ 0.3, 0.0, 1.0, 1.0 ],
             "area[wide]": [ 0.4, 0.0, 1.0, 1.0 ]
         },
-        "port_info_image_area": {
+        "port_info_list_area": {
+            "comment": "List area",
+            "parent": "left_pane",
+            "area": [ 0.0, 0.0, 1.0, 1.0 ]
+        },
+        "port_info_area": {
+            "comment": "The area used for the info text/image",
             "parent": "right_pane",
-            "area": [ 10, 10, -10, 0.5 ]
+            "area": [ 0.0, 0.0, 1.0, 0.95 ]
+        },
+        "port_info_title_area": {
+            "comment": "Port Title",
+            "parent": "port_info_area",
+            "area": [ 0.0, 0.0, 1.0, 0.1 ]
+        },
+        "port_info_image_area": {
+            "comment": "Port image",
+            "parent": "port_info_area",
+            "area": [ 0.0, 0.1, 1.0, 0.4 ],
+            "area[hires]": [ 0.0, 0.1, 1.0, 0.5 ]
         },
         "port_info_text_area": {
-            "parent": "right_pane",
-            "area": [ 10, 0.5, -10, -10 ]
+            "comment": "Port Info",
+            "parent": "port_info_area",
+            "area": [ 0.0, 0.4, 1.0, 0.95 ],
+            "area[hires]": [ 0.0, 0.5, 1.0, 1.0]
         },
         "background": {
             "area": [ 0.0, 0.0, 1.0, 1.0 ],
@@ -141,21 +162,24 @@
         "#element:background": {},
 
         "port_info": {
-            "area": [ 0.0, 0.0, 0.40, 1.0 ],
+            "parent": "port_info_area",
+            "area": [ 0.0, 0.0, 1.0, 1.0 ],
             "fill": [ 230, 230, 230 ],
             "thickness": 10,
             "border": 8,
+            "text": "",
             "font-size": 24,
             "font-color": [ 0, 0, 0 ],
             "text-wrap": true
         },
 
         "ports_list": {
-            "area": [ 0.0, 0.1, 0.4, 0.95 ],
+            "parent": "port_info_list_area",
+            "area": [ 0.0, 0.0, 1.0, 1.0 ],
             "border-x": 16,
             "font-size": 14,
-            "alt-fill": [210, 210, 210],
-            "select-fill": [255, 255, 255],
+            "alt-fill": [ 210, 210, 210 ],
+            "select-fill": [ 153, 204, 255 ],
             "font-color": "list_text",
             "select-color": "list_selected",
             "text-clip": true,
@@ -165,33 +189,38 @@
             "scroll-delay-start": 500,
             "scroll-delay-end": 500
         },
-        "ports_list[hires]": {
-            "area": [ 0.0, 0.1, 0.3, 0.95 ]
-        },
 
-        "port_general": {
-            "text": "Genres: {port_info.genres}\nDownload Size: {port_info.download_size}{if:port_info.runtime}\nRuntime: {port_info.runtime} ({port_info.runtime_status}){endif}",
-            "area": [ 0.5, 0.52, 0.95, 0.9 ],
-            "font-size": 13,
-            "font-color": [ 0, 0, 0 ],
-            "text-wrap": true
+        "port_filters": {
+            "text": "{if:ports_list.filters}Filters: {ports_list.filters}{endif}",
+            "area": [ 0.0, 0.0, 0.4, 0.1 ],
+            "font-size": 12,
+            "parent": "background",
+            "align": "topleft",
+            "font-color": [ 255, 0, 0 ],
+            "text-wrap": true,
+            "autoscroll": "marquee",
+            "scroll-speed": 40,
+            "scroll-delay-start": 500,
+            "scroll-delay-end": 500
         },
 
         "port_desc": {
-            "text": "{port_info.description}",
-            "area": [ 0.5, 0.65, 0.95, 0.9 ],
+            "parent": "port_info_text_area",
+            "area": [ 5, 5, -5, -5 ],
             "font-size": 17,
             "font-color": [ 0, 0, 0 ],
             "text-wrap": true,
             "autoscroll": "marquee",
             "scroll-speed": 60,
             "scroll-delay-start": 1500,
-            "scroll-delay-end": 1500
+            "scroll-delay-end": 1500,
+            "text": "{port_info.description}\n\nGenres: {port_info.genres}\nDownload Size: {port_info.download_size}{if:port_info.runtime}\nRuntime: {port_info.runtime} ({port_info.runtime_status}){endif}"
         },
 
         "port_title": {
+            "parent": "port_info_title_area",
+            "area": [ 0.0, 0.0, 1.0, 1.0 ],
             "text": "{port_info.title}",
-            "area": [ 0.5, 0.02, 0.90, 0.10 ],
             "font-size": 32,
             "font-color": [ 255, 0, 0 ],
             "autoscroll": null,
@@ -201,119 +230,125 @@
         },
 
         "port_image": {
-            "area": [ 0.4, 0.1, 1.0, 0.5 ],
+            "parent": "port_info_image_area",
+            "area": [ 0.0, 0.0, 1.0, 1.0 ],
             "image": "no-image.jpg"
         },
 
         "#element:button_bar_filters": {}
     },
 
-    "port_info": {
-        "#element:background": {},
-       
-        "free_space": {
-            "area": [ 0.0, 0.1, 0.2, 0.2 ],
-            "fill": [ 230, 230, 230 ],
-            "text": "Free Space: {system.free_space}",
-            "thickness": 6,
-            "border": 8,
-            "font-size": 13,
-            "font-color": [ 0, 0, 0 ],
-            "text-wrap": true
-        },
-
         "port_info": {
-            "area": [ 0.0, 0.68, 1.0, 1.0 ],
-            "fill": [ 230, 230, 230 ],
-            "text": "{port_info.description}\n\nPorter: {port_info.porter}\nGenres: {port_info.genres}\nDownload Size: {port_info.download_size}{if:port_info.runtime}\nRuntime: {port_info.runtime} ({port_info.runtime_status}){endif}",
-            "thickness": 6,
-            "border": 8,
-            "font-size": 11,
-            "font-color": [ 0, 0, 0 ],
-            "text-wrap": true
+            "#element:background": {},
+
+            "free_space": {
+                "area": [ 0.0, 0.1, 0.2, 0.2 ],
+                "fill": [ 230, 230, 230 ],
+                "text": "Free Space: {system.free_space}",
+                "thickness": 6,
+                "border": 8,
+                "font-size": 13,
+                "font-color": [ 0, 0, 0 ],
+                "text-wrap": true
+            },
+
+            "port_info": {
+                "area": [ 0.0, 0.68, 1.0, 1.0 ],
+                "fill": [ 230, 230, 230 ],
+                "text": "{port_info.description}\n\nPorter: {port_info.porter}\nGenres: {port_info.genres}\nDownload Size: {port_info.download_size}{if:port_info.runtime}\nRuntime: {port_info.runtime} ({port_info.runtime_status}){endif}",
+                "thickness": 6,
+                "border": 8,
+                "font-size": 11,
+                "font-color": [ 0, 0, 0 ],
+                "text-wrap": true
+            },
+
+
+            "port_title": {
+                "text": "{port_info.title}",
+                "area": [ 0.00, 0.00, 1.00, 0.1 ],
+                "font-size": 24,
+                "font-color": [ 255, 0, 0 ],
+                "autoscroll": null,
+                "text-wrap": false,
+                "align": "center"
+            },
+
+            "port_image": {
+                "area": [ 0.51, 0.1, 0.5, 0.65 ],
+                "image": "no-image.jpg",
+                "align": "center"
+            },
+
+            "#element:small_button:ok_button": {
+                "area": [ 0.0, 0.0, 0.0, 0.0 ],
+                "text": "Okay"
+            },
+
+            "#element:small_button:back_button": {
+                "area": [ 0.0, 0.0, 0.0, 0.0 ],
+                "text": "Back"
+            },
+
+            "#element:button_bar2": {}
         },
 
+        "main_menu": {
+            "#element:background": {},
 
-        "port_title": {
-            "text": "{port_info.title}",
-            "area": [ 0.00, 0.00, 1.00, 0.1 ],
-            "font-size": 24,
-            "font-color": [ 255, 0, 0 ],
-            "autoscroll": null,
-            "text-wrap": false,
-            "align": "center"
+            "#element:option_list": {
+                "align": "center",
+                "list": [
+                    "All Ports",
+                    "Ready to Run Ports",
+                    "Uninstall Ports",
+                    " ",
+                    "Option Menu",
+                    "Exit"
+                ],
+                "options": [
+                    "install",
+                    "install-rtr",
+                    "uninstall",
+                    null,
+                    "option",
+                    "exit"
+
+                ],
+                "info": [
+                    "Install a new port onto your device.",
+                    "Remove a port that has been installed onto your device",
+                    "PortMaster options",
+                    "Exit Portmaster and return to your game list."
+                ],
+                "pointer": "pointenfedde.png",
+                "pointer-align": [ "midleft", "midright" ],
+                "pointer-size": [ 51, 26 ],
+                "pointer-attach": "text",
+                "pointer-offset": [ 0, 0 ],
+                "pointer-flip-x": false,
+                "pointer-flip-y": false,
+                "pointer-mirror": true,
+                "pointer-mirror-x": true
+            },
+            "#element:button_bar": {},
+
+            "system_time": {
+                "text": "Time: {system.time_24hr}\nCFW: {system.cfw_name} ({system.cfw_version})\nDevice: {system.device_name}\nBattery: {system.battery_level}",
+                "font-size": 13,
+                "font-color": [ 0, 0, 0 ],
+                "area": [ 0.02, 0.05, 0.95, 0.95 ],
+                "align": "topright"
+            },
+            "system_time_low": {
+                "text": "PM: {system.portmaster_version}\nHM: {system.harbourmaster_version}\nSpace: {system.free_space} free / {system.total_space} total",
+                "font-size": 11,
+                "font-color": [ 0, 0, 0 ],
+                "area": [ 0.02, 0.05, 0.95, 0.95 ],
+                "align": "bottomleft"
+            }
+
         },
-
-        "port_image": {
-            "area": [ 0.51, 0.1, 0.5, 0.65 ],
-            "image": "no-image.jpg",
-            "align": "center"
-        },
-
-        "#element:small_button:ok_button": {
-            "area": [ 0.0, 0.0, 0.0, 0.0 ],
-            "text": "Okay"
-        },
-
-        "#element:small_button:back_button": {
-            "area": [ 0.0, 0.0, 0.0, 0.0 ],
-            "text": "Back"
-        },
-
-        "#element:button_bar2": {}
-    },
-
-    "main_menu": {
-        "#element:background": {},
-
-        "#element:option_list": {
-            "align": "center",
-            "list": [
-                "All Ports",
-                "Ready to Run Ports",
-                "Uninstall Ports",
-                "Option Menu",
-                "Exit"
-            ],
-            "option": [
-                "install",
-                "install-rtr",
-                "uninstall",
-                "option",
-                "exit"
-            ],
-            "info": [
-                "Install a new port onto your device.",
-                "Remove a port that has been installed onto your device",
-                "PortMaster options",
-                "Exit Portmaster and return to your game list."
-            ],
-            "pointer": "pointenfedde.png",
-            "pointer-align": ["midright", "midleft"],
-            "pointer-size": [64, 32],
-            "pointer-attach": "text",
-            "pointer-offset": [32, 0],
-            "pointer-flip-x": false,
-            "pointer-flip-y": false
-        },
-        "#element:button_bar": {},
-
-        "system_time": {
-            "text": "Time: {system.time_24hr}\nCFW: {system.cfw_name} ({system.cfw_version})\nDevice: {system.device_name}\nBattery: {system.battery_level}",
-            "font-size": 13,
-            "font-color": [ 0, 0, 0 ],
-            "area": [ 0.02, 0.05, 0.95, 0.95 ],
-            "align": "topright"
-        },
-        "system_time_low": {
-            "text": "PM: {system.portmaster_version}\nHM: {system.harbourmaster_version}\nSpace: {system.free_space} free / {system.total_space} total",
-            "font-size": 11,
-            "font-color": [ 0, 0, 0 ],
-            "area": [ 0.02, 0.05, 0.95, 0.95 ],
-            "align": "bottomleft"
-        }
-
-    },
 
     "option_menu": {
         "#element:background": {},
@@ -325,7 +360,7 @@
                 "- * -",
                 "Back"
             ],
-            "option": [
+            "options": [
                 "update-ports",
                 "option-2",
                 "option-3",
@@ -333,87 +368,98 @@
             ]
         },
 
-        "#element:button_bar": {}
-    },
+        "#element:button_bar": {},
 
-    "filter_list": {
-        "filter_list": {
-            "area": [0.5, 0.02, 0.95, 0.92],
-            "fill": [200, 200, 200],
-            "border": 30,
-            "font-size": 18,
-            "font-color": "list_text",
-            "select-color": "list_selected",
-            "list": [],
-            "align": "topleft"
+        "ip": {
+            "text": "IP: {system.ip_address}",
+            "font-size": 11,
+            "font-color": [ 0, 0, 0 ],
+            "area": [ 0.02, 0.05, 0.95, 0.95 ],
+            "align": "bottomleft"
         }
     },
 
-    "message_window": {
-        "#element:background": {},
-
-        "message_text": {
-            "area": [0.05, 0.05, 0.95, 0.8],
-            "fill": [230, 230, 230],
-            "thickness": 6,
-            "text-wrap": true,
-            "border": 10,
-            "font-size": 24,
-            "font-color": [0, 0, 0],
-            "align": "bottomleft",
-            "text": ""
+        "filter_list": {
+            "#element:background": {
+                "blend-mode": "blend",
+                "fill": "background_fade"
+            },
+            "filter_list": {
+                "area": [ 0.5, 0.02, 0.95, 0.92 ],
+                "fill": [ 200, 200, 200 ],
+                "font-size": 18,
+                "font-color": "list_text",
+                "select-color": "list_selected",
+                "list": [],
+                "align": "topleft"
+            }
         },
 
-        "progress_bar": {
-            "area": [ 0.05, 0.83, 0.95, 0.90 ],
-            "fill": [ 230, 230, 230 ],
-            "progress-fill": [ 120, 120, 240 ],
-            "text": "{system.progress_text}",
-            "align": "midleft",
-            "font-size": 14,
-            "font-color": [ 0, 0, 0 ],
-            "border": 2,
-            "thickness": 1
+        "message_window": {
+            "#element:background": {},
+
+            "message_text": {
+                "area": [ 0.05, 0.05, 0.95, 0.8 ],
+                "fill": [ 230, 230, 230 ],
+                "thickness": 6,
+                "text-wrap": true,
+                "border": 10,
+                "font-size": 24,
+                "font-color": [ 0, 0, 0 ],
+                "align": "bottomleft",
+                "text": ""
+            },
+
+            "progress_bar": {
+                "area": [ 0.05, 0.83, 0.95, 0.90 ],
+                "fill": [ 230, 230, 230 ],
+                "progress-fill": [ 153, 204, 255 ],
+                "text": "{system.progress_text}",
+                "align": "midleft",
+                "font-size": 14,
+                "font-color": [ 0, 0, 0 ],
+                "border": 2,
+                "thickness": 1
+            },
+
+            "progress_bar_amount": {
+                "area": [ 0.05, 0.83, 0.95, 0.90 ],
+                "text": "{system.progress_amount}",
+                "align": "midright",
+                "font-size": 14,
+                "font-color": [ 0, 0, 0 ],
+                "thickness": 1,
+                "border": 2
+            },
+
+            "#element:button_bar": {}
         },
 
-        "progress_bar_amount": {
-            "area": [0.05, 0.83, 0.95, 0.90],
-            "text": "{system.progress_amount}",
-            "align": "midright",
-            "font-size": 14,
-            "font-color": [0, 0, 0],
-            "thickness": 1,
-            "border": 2
-        },
+        "message_box": {
+            "#element:background": {},
 
-        "#element:button_bar": {}
-    },
+            "message_text": {
+                "area": [ 0.05, 0.5, 0.95, 0.8 ],
+                "fill": [ 230, 230, 230 ],
+                "thickness": 6,
+                "border": 8,
+                "font-size": 24,
+                "font-color": [ 0, 0, 0 ],
+                "align": "center",
+                "text": "",
+                "text-wrap": true
+            },
 
-    "message_box": {
-        "#element:background": {},
+            "#element:small_button:ok_button": {
+                "area": [ 0.35, 0.95, 0.45, 0.98 ],
+                "text": "Okay"
+            },
 
-        "message_text": {
-            "area": [0.05, 0.5, 0.95, 0.8],
-            "fill": [230, 230, 230],
-            "thickness": 6,
-            "border": 8,
-            "font-size": 24,
-            "font-color": [0, 0, 0],
-            "align": "center",
-            "text": "",
-            "text-wrap": true
-        },
+            "#element:small_button:cancel_button": {
+                "area": [ 0.55, 0.95, 0.65, 0.98 ],
+                "text": "Back"
+            },
 
-        "#element:small_button:ok_button": {
-            "area": [0.0, 0.0, 0.0, 0.0],
-            "text": "Okay"
-        },
-
-        "#element:small_button:back_button": {
-            "area": [0.0, 0.0, 0.0, 0.0],
-            "text": "Back"
-        },
-
-        "#element:button_bar3": {}
+            "#element:button_bar3": {}
+        }
     }
-}

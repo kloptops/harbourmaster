@@ -343,7 +343,10 @@ The list system is quite adequate
         "pointer-attach": "text",                 // attach to the rendered "text" rect, or the "list" item rect.
         "pointer-offset": [0, 0],                 // offset it by x,y pixels after the position is calculated.
         "pointer-flip-x": false,                  // flip the image horizontally
-        "pointer-flip-y": false                   // flip it vertically
+        "pointer-flip-y": false,                  // flip it vertically
+        "pointer-mirror": false,                  // mirror the pointer and display on the other side of the list item
+        "pointer-mirror-x": false,                // flip the mirrored pointer horizontally
+        "pointer-mirror-y": false,                // flip the mirrored pointer vertically
     }
 ```
 

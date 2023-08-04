@@ -527,16 +527,16 @@ class MainMenuScene(BaseScene):
 
         self.load_regions("main_menu", ['option_list', ])
 
-        if len(self.tags['option_list'].list) != len(self.tags['option_list'].option):
-            raise RuntimeError("The main_menu -> option_list.list doesnt match the option_list.option")
+        if len(self.tags['option_list'].list) != len(self.tags['option_list'].options):
+            raise RuntimeError("The main_menu -> option_list.list doesnt match the option_list.options")
 
-        self.option = self.tags['option_list'].option
+        self.options = self.tags['option_list'].options
 
     def do_update(self, events):
         super().do_update(events)
 
         if events.was_pressed('START') or events.was_pressed('A'):
-            selected_option = self.option[self.tags['option_list'].selected]
+            selected_option = self.options[self.tags['option_list'].selected]
 
             if selected_option == 'install':
                 self.gui.push_scene('ports', PortsListScene(self.gui, {'mode': 'install', 'filters': []}))
@@ -569,16 +569,16 @@ class OptionScene(BaseScene):
 
         self.load_regions("option_menu", ['option_list', ])
 
-        if len(self.tags['option_list'].list) != len(self.tags['option_list'].option):
-            raise RuntimeError("The main_menu -> option_list.list doesnt match the option_list.option")
+        if len(self.tags['option_list'].list) != len(self.tags['option_list'].options):
+            raise RuntimeError("The main_menu -> option_list.list doesnt match the option_list.options")
 
-        self.option = self.tags['option_list'].option
+        self.options = self.tags['option_list'].options
 
     def do_update(self, events):
         super().do_update(events)
 
         if events.was_pressed('START') or events.was_pressed('A'):
-            selected_option = self.option[self.tags['option_list'].selected]
+            selected_option = self.options[self.tags['option_list'].selected]
 
             print(f"Selected {selected_option}")
 
@@ -799,22 +799,47 @@ class FiltersScene(BaseScene):
         total_ports = len(self.gui.hm.list_ports(genres))
 
         new_list = []
-        self.port_list = []
+        options = []
+        new_list.append("Genres:")
+        options.append(None)
+
         for hm_genre in harbourmaster.HM_GENRES:
             if hm_genre in self.locked_genres:
                 continue
 
             if hm_genre in genres:
                 ports = total_ports
-                text = f"[x]  {hm_genre}   ({ports})"
+                text = f"- [x]  {hm_genre}   ({ports})"
             else:
                 ports = len(self.gui.hm.list_ports(genres + [hm_genre]))
-                text = f"[ ]  {hm_genre}   ({ports})"
+                text = f"- [ ]  {hm_genre}   ({ports})"
 
             new_list.append(text)
-            self.port_list.append(hm_genre)
+            options.append(hm_genre)
+
+        new_list.append("")
+        options.append(None)
+
+        new_list.append("Extra:")
+        options.append(None)
+
+        for hm_genre in ['rtr', 'mono', 'kloptops']:
+            if hm_genre in self.locked_genres:
+                continue
+
+            if hm_genre in genres:
+                ports = total_ports
+                text = f"- [x]  {hm_genre}   ({ports})"
+            else:
+                ports = len(self.gui.hm.list_ports(genres + [hm_genre]))
+                text = f"- [ ]  {hm_genre}   ({ports})"
+
+            new_list.append(text)
+            options.append(hm_genre)
 
         self.tags['filter_list'].list = new_list
+        self.tags['filter_list'].options = options
+        self.tags['filter_list'].list_select(self.tags['filter_list'].selected, direction=1)
 
         self.ready = True
 
@@ -826,7 +851,9 @@ class FiltersScene(BaseScene):
                 return True
 
         if events.was_pressed('A'):
-            selected_filter = self.port_list[self.tags['filter_list'].selected]
+            selected_filter = self.tags['filter_list'].options[self.tags['filter_list'].selected]
+            if selected_filter is None:
+                return True
 
             if selected_filter in self.selected_genres:
                 self.selected_genres.remove(selected_filter)
@@ -870,7 +897,12 @@ class MessageWindowScene(BaseScene):
             self.tags['progress_bar'].progress_amount = 0
 
         if events.was_pressed('B'):
-            self.gui.do_cancel()
+            if self.gui.cancellable:
+                if self.gui.message_box(
+                        'Are you sure you want to cancel?',
+                        want_ok=True,
+                        want_cancel=True):
+                    self.gui.do_cancel()
 
 
 class MessageBoxScene(BaseScene):
@@ -917,7 +949,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
             ## Uncomment one of these to pretend to be a different device. more devices in pylibs/harbourmaster/hardware.py
             pretend_device = (
-                # 'rg351p'
+                'rg351p'
                 # 'rg552'
                 # 'rg503'
                 # 'rg351v'
@@ -1159,6 +1191,9 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         """
         Display a message box
         """
+
+        ## This fixes a bug :D
+        self.events.handle_events()
 
         with self.enable_cancellable(True):
             self.push_scene('message_box', MessageBoxScene(self, message, want_cancel=want_cancel, want_ok=want_ok))

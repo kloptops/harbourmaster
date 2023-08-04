@@ -53,6 +53,7 @@ If not, see <http://www.gnu.org/licenses/>.
 """
 
 import collections
+import fnmatch
 import functools
 import json
 import os
@@ -598,7 +599,7 @@ class NamedRects:
 
             elif i > 1:
                 if p < 0:
-                    value[i] = root[i] + int(p)
+                    value[i] = root.bottomright[i % 2] + int(p)
 
                 else:
                     value[i] = int(p)
@@ -1082,6 +1083,9 @@ class TextManager:
             self.add_font(font_name, font_file)
 
         font = self.fonts[font_name]
+
+        if text == "":
+            text = " "
 
         key = f"{font.family_name}:{size!r}:{color!r}:{width}:{align}:{text}"
         if key not in self._textures:
@@ -1811,6 +1815,15 @@ class Region:
             },
         }
 
+    BLEND_MODES = {
+        None:    sdl2.SDL_BLENDMODE_NONE,
+        "none":  sdl2.SDL_BLENDMODE_NONE,  # No blending
+        "blend": sdl2.SDL_BLENDMODE_BLEND, # Alpha channel blending
+        "add":   sdl2.SDL_BLENDMODE_ADD,   # Additive blending
+        "mod":   sdl2.SDL_BLENDMODE_MOD,   # Color modulation
+        "mul":   sdl2.SDL_BLENDMODE_MUL,   # Color multiplication (SDL >= 2.0.12)
+        }
+
     DATA = {}
 
     def __init__(self, gui, data, name=None, number=0, rects=None):
@@ -1832,6 +1845,8 @@ class Region:
         self.z_position = number
         self.z_index = self._verify_int('z-index', default=None, optional=True)
         self.visible = self._verify_bool('visible', default=True, optional=True)
+
+        self.blendmode = self._verify_option('blend-mode', list(self.BLEND_MODES), optional=True)
 
         self.name = name
         self.parent = self._verify_text('parent', default='root', optional=True)
@@ -1867,6 +1882,10 @@ class Region:
         self.pointer_flip_x = self._verify_bool('pointer-flip-x', False)
         self.pointer_flip_y = self._verify_bool('pointer-flip-y', False)
 
+        self.pointer_mirror = self._verify_bool('pointer-mirror', False)
+        self.pointer_mirror_x = self._verify_bool('pointer-mirror-x', self.pointer_mirror)
+        self.pointer_mirror_y = self._verify_bool('pointer-mirror-y', False)
+
         # TODO figure out how to use default/system fonts
         self.font = self._verify_file('font', optional=True)
         self.fontsize = self._verify_int('font-size', 30)
@@ -1880,7 +1899,6 @@ class Region:
         self.align = self._verify_option('align', Rect.POINTS, 'topleft')
 
         self.list = self._verify_list('list', optional=True)
-        self.selectable = None
         self.imagelist = 0 ## TODO
         self.ilistalign = 0 ## TODO
         self.itemsize = self._verify_int('item-size', None, optional=True)
@@ -1920,11 +1938,12 @@ class Region:
         self.selectedx = -1
 
         self.info = self._verify_list('info', optional=True)
-        self.option = self._verify_list('option', optional=True)
+        self.options = self._verify_list('options', optional=True, allow_null=True)
 
         if self._text is not None:
             # Trigger text setting code
             self.text = self._text
+
 
     def draw(self, area=None, text=None, image=None):
         '''
@@ -1937,7 +1956,11 @@ class Region:
 
         area = area or self.area.copy()
         image = image or self.image
-        # screen.blendmode = sdl2.SDL_BLENDMODE_BLEND
+
+        if self.blendmode not in self.BLEND_MODES:
+            self.blendmode = None
+
+        self.gui.renderer.blendmode = self.BLEND_MODES[self.blendmode]
 
         # FILL AND OUTLINE
         if self.patch:
@@ -2052,11 +2075,21 @@ class Region:
             'midleft': 'left',
             'bottomleft': 'left',
             'topcenter': 'center',
-            'topcenter': 'center',
             'bottomcenter': 'center',
             'topright': 'right',
             'midright': 'right',
             'bottomright': 'right',
+            }
+
+        align_opposite = {
+            'center': 'center',
+            'topleft': 'bottomright',
+            'midleft': 'midright',
+            'bottomleft': 'topright',
+            'bottomcenter': 'topcenter',
+            'topright': 'bottomleft',
+            'midright': 'midleft',
+            'bottomright': 'topleft',
             }
 
         if self._bar:
@@ -2208,6 +2241,33 @@ class Region:
                         self.pointer.draw_in(
                             pointer_rect, fit=True, flip_x=self.pointer_flip_x, flip_y=self.pointer_flip_y)
 
+                        if self.pointer_mirror:
+                            if self.pointer_size is not None:
+                                pointer_rect = Rect(*(0, 0, self.pointer_size[0], self.pointer_size[1]))
+
+                            else:
+                                pointer_rect = Rect(*(0, 0, self.pointer.srcrect.w, self.pointer.srcrect.h))
+
+                            if self.pointer_attach == 'list':
+                                drawn_rect = irect
+
+                            (x, y) = getattr(drawn_rect, align_opposite[self.pointer_align[0]])
+                            setattr(pointer_rect, align_opposite[self.pointer_align[1]], (x, y))
+
+                            pointer_rect.x -= self.pointer_offset[0]
+                            pointer_rect.y -= self.pointer_offset[1]
+
+                            pointer_flip_x = self.pointer_flip_x
+                            if self.pointer_mirror_x:
+                                pointer_flip_x = not pointer_flip_x
+
+                            pointer_flip_y = self.pointer_flip_y
+                            if self.pointer_mirror_y:
+                                pointer_flip_y = not pointer_flip_y
+
+                            self.pointer.draw_in(
+                                pointer_rect, fit=True, flip_x=pointer_flip_x, flip_y=pointer_flip_y)                            
+
                 else:
                     texture = self.texts.render_text(
                         t,
@@ -2223,6 +2283,49 @@ class Region:
 
                 irect.y += itemsize
                 i += 1
+
+    def list_select(self, index, direction=1, allow_wrap=False):
+        if self.list is None:
+            return
+
+        length = len(self.list)
+        options = self.options
+
+        if options and len(options) < length:
+            options = None
+
+        if options and not any(options):
+            options = None
+
+        while True:
+            if index < 0:
+                if allow_wrap:
+                    new_index = index % length
+                else:
+                    new_index = 0
+                    direction = 1
+
+            elif index >= length:
+                if allow_wrap:
+                    new_index = index % length
+                else:
+                    new_index = length - 1
+                    direction = -1
+
+            else:
+                new_index = index
+
+            if options is None:
+                self.selected = new_index
+                return new_index
+
+            if options[new_index]:
+                self.selected = new_index
+                return new_index
+
+            index += direction
+
+        return None
 
     def update(self):
         '''
@@ -2276,42 +2379,38 @@ class Region:
                 updated = True
             self.scroll_pos = min(max(0, self.scroll_pos), len(self.text) - 1)
 
-        elif self.list:
-            l = len(self.list)
-            selectable = self.selectable or range(l)
+        elif self.list is not None:
+            length= len(self.list)
             selected = self.selected
+            options = self.options
+            if options is not None and len(options) != length:
+                options = None
 
             if self.gui.events.was_pressed('L1'):
-                selected = max(selected - self.page_size, 0)
-                while (selected) % l not in selectable:
-                    selected = (selected + 1) % l
+                self.list_select(self.selected - self.page_size, direction=-1, allow_wrap=False)
+
                 self.gui.sounds.play(self.click_sound)
                 updated = True
 
             if self.gui.events.was_pressed('R1'):
-                selected = min(selected + self.page_size, l-1)
-                while (selected) % l not in selectable:
-                    selected = (selected - 1) % l
+                self.list_select(self.selected + self.page_size, direction=1, allow_wrap=False)
+
                 self.gui.sounds.play(self.click_sound)
                 updated = True
 
             if self.gui.events.was_pressed('UP'):
-                selected = (selected - 1) % l
-                while (selected) % l not in selectable:
-                    selected = (selected - 1) % l
+                self.list_select(self.selected - 1, direction=-1, allow_wrap=True)
+
                 self.gui.sounds.play(self.click_sound)
                 updated = True
 
             elif self.gui.events.was_pressed('DOWN'):
-                selected = (selected + 1) % l
-                while (selected) % l not in selectable:
-                    selected = (selected + 1) % l
+                self.list_select(self.selected + 1, direction=1, allow_wrap=True)
 
                 self.gui.sounds.play(self.click_sound)
                 updated = True
 
             if updated:
-                self.selected = selected
                 if self.autoscroll:
                     self.scroll_state = self.SCROLL_START_PAUSE
                     self.scroll_last_update = current_time
@@ -2647,7 +2746,7 @@ class Region:
         else:
             raise(f'{name} is not text')
 
-    def _verify_list(self, name, default=None, optional=False):
+    def _verify_list(self, name, default=None, optional=False, allow_null=False):
         'verify that value of self._dict[name] is valid list'
 
         val = self._dict.get(name, default)
@@ -2659,6 +2758,9 @@ class Region:
         for i, v in enumerate(val):
             if isinstance(v, (list, tuple)):
                 self._verify_bar(None, v, Rect(0, 0, 100, 100))
+
+            elif allow_null and v is None:
+                continue
 
             elif not isinstance(v, str):
                 raise GUIThemeError(f'{name}[{i}] == {v}, not a string')
