@@ -708,7 +708,7 @@ class PortsListScene(BaseScene):
             if len(self.port_list) == 0:
                 self.tags['ports_list'].selected = 0
             else:
-                self.tags['ports_list'].list_select = len(self.port_list) - 1
+                self.tags['ports_list'].selected = len(self.port_list) - 1
 
         self.last_port = self.tags['ports_list'].selected + 1
         self.ready = True

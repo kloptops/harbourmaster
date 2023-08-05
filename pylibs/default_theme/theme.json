@@ -278,96 +278,95 @@
         "#element:button_bar_filters": {}
     },
 
+    "port_info": {
+        "#element:background": {},
+
+        "free_space": {
+            "area": [ 0.0, 0.1, 0.2, 0.2 ],
+            "fill": [ 230, 230, 230 ],
+            "text": "Free Space: {system.free_space}",
+            "thickness": 6,
+            "border": 8,
+            "font-size": 13,
+            "font-color": [ 0, 0, 0 ],
+            "text-wrap": true
+        },
+
         "port_info": {
-            "#element:background": {},
-
-            "free_space": {
-                "area": [ 0.0, 0.1, 0.2, 0.2 ],
-                "fill": [ 230, 230, 230 ],
-                "text": "Free Space: {system.free_space}",
-                "thickness": 6,
-                "border": 8,
-                "font-size": 13,
-                "font-color": [ 0, 0, 0 ],
-                "text-wrap": true
-            },
-
-            "port_info": {
-                "area": [ 0.0, 0.68, 1.0, 1.0 ],
-                "fill": [ 230, 230, 230 ],
-                "text": "{port_info.description}\n\nPorter: {port_info.porter}\nGenres: {port_info.genres}\nDownload Size: {port_info.download_size}{if:port_info.runtime}\nRuntime: {port_info.runtime} ({port_info.runtime_status}){endif}",
-                "thickness": 6,
-                "border": 8,
-                "font-size": 11,
-                "font-color": [ 0, 0, 0 ],
-                "text-wrap": true
-            },
-
-
-            "port_title": {
-                "text": "{port_info.title}",
-                "area": [ 0.00, 0.00, 1.00, 0.1 ],
-                "font-size": 24,
-                "font-color": [ 255, 0, 0 ],
-                "autoscroll": null,
-                "text-wrap": false,
-                "align": "center"
-            },
-
-            "port_image": {
-                "area": [ 0.51, 0.1, 0.5, 0.65 ],
-                "image": "no-image.jpg",
-                "align": "center"
-            },
-
-            "#element:small_button:ok_button": {
-                "area": [ 0.0, 0.0, 0.0, 0.0 ],
-                "text": "Okay"
-            },
-
-            "#element:small_button:back_button": {
-                "area": [ 0.0, 0.0, 0.0, 0.0 ],
-                "text": "Back"
-            },
-
-            "#element:button_bar2": {}
+            "area": [ 0.0, 0.68, 1.0, 1.0 ],
+            "fill": [ 230, 230, 230 ],
+            "text": "{port_info.description}\n\nPorter: {port_info.porter}\nGenres: {port_info.genres}\nDownload Size: {port_info.download_size}{if:port_info.runtime}\nRuntime: {port_info.runtime} ({port_info.runtime_status}){endif}",
+            "thickness": 6,
+            "border": 8,
+            "font-size": 11,
+            "font-color": [ 0, 0, 0 ],
+            "text-wrap": true
         },
 
-        "main_menu": {
-            "#element:background": {},
-
-            "#element:option_list": {
-                "align": "center",
-                "list": [],
-                "options": [],
-                "pointer": "pointenfedde.png",
-                "pointer-align": [ "midleft", "midright" ],
-                "pointer-size": [ 51, 26 ],
-                "pointer-attach": "text",
-                "pointer-offset": [ 0, 0 ],
-                "pointer-flip-x": false,
-                "pointer-flip-y": false,
-                "pointer-mirror": true,
-                "pointer-mirror-x": true
-            },
-            "#element:button_bar": {},
-
-            "system_time": {
-                "text": "Time: {system.time_24hr}\nCFW: {system.cfw_name} ({system.cfw_version})\nDevice: {system.device_name}\nBattery: {system.battery_level}",
-                "font-size": 13,
-                "font-color": [ 0, 0, 0 ],
-                "area": [ 0.02, 0.05, 0.95, 0.95 ],
-                "align": "topright"
-            },
-            "system_time_low": {
-                "text": "PM: {system.portmaster_version}\nHM: {system.harbourmaster_version}\nSpace: {system.free_space} free / {system.total_space} total",
-                "font-size": 11,
-                "font-color": [ 0, 0, 0 ],
-                "area": [ 0.02, 0.05, 0.95, 0.95 ],
-                "align": "bottomleft"
-            }
-
+        "port_title": {
+            "text": "{port_info.title}",
+            "area": [ 0.00, 0.00, 1.00, 0.1 ],
+            "font-size": 24,
+            "font-color": [ 255, 0, 0 ],
+            "autoscroll": null,
+            "text-wrap": false,
+            "align": "center"
         },
+
+        "port_image": {
+            "area": [ 0.51, 0.1, 0.5, 0.65 ],
+            "image": "no-image.jpg",
+            "align": "center"
+        },
+
+        "#element:small_button:ok_button": {
+            "area": [ 0.0, 0.0, 0.0, 0.0 ],
+            "text": "Okay"
+        },
+
+        "#element:small_button:back_button": {
+            "area": [ 0.0, 0.0, 0.0, 0.0 ],
+            "text": "Back"
+        },
+
+        "#element:button_bar2": {}
+    },
+
+    "main_menu": {
+        "#element:background": {},
+
+        "#element:option_list": {
+            "align": "center",
+            "list": [],
+            "options": [],
+            "pointer": "pointenfedde.png",
+            "pointer-align": [ "midleft", "midright" ],
+            "pointer-size": [ 51, 26 ],
+            "pointer-attach": "text",
+            "pointer-offset": [ 0, 0 ],
+            "pointer-flip-x": false,
+            "pointer-flip-y": false,
+            "pointer-mirror": true,
+            "pointer-mirror-x": true
+        },
+        "#element:button_bar": {},
+
+        "system_time": {
+            "text": "Time: {system.time_24hr}\nCFW: {system.cfw_name} ({system.cfw_version})\nDevice: {system.device_name}\nBattery: {system.battery_level}",
+            "font-size": 13,
+            "font-color": [ 0, 0, 0 ],
+            "area": [ 0.02, 0.05, 0.95, 0.95 ],
+            "align": "topright"
+        },
+        "system_time_low": {
+            "text": "PM: {system.portmaster_version}\nHM: {system.harbourmaster_version}\nSpace: {system.free_space} free / {system.total_space} total",
+            "font-size": 11,
+            "font-color": [ 0, 0, 0 ],
+            "area": [ 0.02, 0.05, 0.95, 0.95 ],
+            "align": "bottomleft"
+        }
+
+    },
 
     "option_menu": {
         "#element:background": {},
@@ -413,73 +412,73 @@
 
     },
 
-        "message_window": {
-            "#element:background": {},
+    "message_window": {
+        "#element:background": {},
 
-            "message_text": {
-                "area": [ 0.05, 0.05, 0.95, 0.8 ],
-                "fill": [ 230, 230, 230 ],
-                "thickness": 6,
-                "text-wrap": true,
-                "border": 10,
-                "font-size": 24,
-                "font-color": [ 0, 0, 0 ],
-                "align": "bottomleft",
-                "text": ""
-            },
-
-            "progress_bar": {
-                "area": [ 0.05, 0.83, 0.95, 0.90 ],
-                "fill": [ 230, 230, 230 ],
-                "progress-fill": [ 153, 204, 255 ],
-                "text": "{system.progress_text}",
-                "align": "midleft",
-                "font-size": 14,
-                "font-color": [ 0, 0, 0 ],
-                "border": 2,
-                "thickness": 1
-            },
-
-            "progress_bar_amount": {
-                "area": [ 0.05, 0.83, 0.95, 0.90 ],
-                "text": "{system.progress_amount}",
-                "align": "midright",
-                "font-size": 14,
-                "font-color": [ 0, 0, 0 ],
-                "thickness": 1,
-                "border": 2
-            },
-
-            "#element:button_bar": {}
+        "message_text": {
+            "area": [ 0.05, 0.05, 0.95, 0.8 ],
+            "fill": [ 230, 230, 230 ],
+            "thickness": 6,
+            "text-wrap": true,
+            "border": 10,
+            "font-size": 24,
+            "font-color": [ 0, 0, 0 ],
+            "align": "bottomleft",
+            "text": ""
         },
 
-        "message_box": {
-            "#element:background": {},
+        "progress_bar": {
+            "area": [ 0.05, 0.83, 0.95, 0.90 ],
+            "fill": [ 230, 230, 230 ],
+            "progress-fill": [ 153, 204, 255 ],
+            "text": "{system.progress_text}",
+            "align": "midleft",
+            "font-size": 14,
+            "font-color": [ 0, 0, 0 ],
+            "border": 2,
+            "thickness": 1
+        },
 
-            "message_text": {
-                "area": [ 0.05, 0.5, 0.95, 0.8 ],
-                "fill": [ 230, 230, 230 ],
-                "thickness": 6,
-                "border": 8,
-                "font-size": 24,
-                "font-color": [ 0, 0, 0 ],
-                "align": "center",
-                "text": "",
-                "text-wrap": true
-            },
+        "progress_bar_amount": {
+            "area": [ 0.05, 0.83, 0.95, 0.90 ],
+            "text": "{system.progress_amount}",
+            "align": "midright",
+            "font-size": 14,
+            "font-color": [ 0, 0, 0 ],
+            "thickness": 1,
+            "border": 2
+        },
 
-            "#element:small_button:ok_button": {
-                "area": [ 0.0, 0.0, 0.0, 0.0 ],
-                "#area": [ 0.35, 0.95, 0.45, 0.98 ],
-                "text": "Okay"
-            },
+        "#element:button_bar": {}
+    },
 
-            "#element:small_button:cancel_button": {
-                "area": [ 0.0, 0.0, 0.0, 0.0 ],
-                "#area": [ 0.55, 0.95, 0.65, 0.98 ],
-                "text": "Back"
-            },
+    "message_box": {
+        "#element:background": {},
 
-            "#element:button_bar3": {}
-        }
+        "message_text": {
+            "area": [ 0.05, 0.5, 0.95, 0.8 ],
+            "fill": [ 230, 230, 230 ],
+            "thickness": 6,
+            "border": 8,
+            "font-size": 24,
+            "font-color": [ 0, 0, 0 ],
+            "align": "center",
+            "text": "",
+            "text-wrap": true
+        },
+
+        "#element:small_button:ok_button": {
+            "area": [ 0.0, 0.0, 0.0, 0.0 ],
+            "#area": [ 0.35, 0.95, 0.45, 0.98 ],
+            "text": "Okay"
+        },
+
+        "#element:small_button:cancel_button": {
+            "area": [ 0.0, 0.0, 0.0, 0.0 ],
+            "#area": [ 0.55, 0.95, 0.65, 0.98 ],
+            "text": "Back"
+        },
+
+        "#element:button_bar3": {}
     }
+}
