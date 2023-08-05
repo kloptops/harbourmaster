@@ -7,13 +7,16 @@
 
     "#base": {
         "font": "DejaVuSans.ttf",
-        "font-scale[hires]": 2.0,
-        "font-scale[5:3,hires]": 3.0
+        "font-scale[30:17]": 1.0,
+        "font-scale[5:3]": 3.0,
+        "font-scale[16:9]": 2.0,
+        "font-scale[3:2]": 0.85,
+        "font-scale[427:240]": 0.9
     },
 
     "#pallet": {
         "background": [200, 200, 200, 255],
-        "background_fade": [0, 0, 0, 128],
+        "background_fade": [50, 50, 50, 85],
         "list_text": [0, 0, 0, 255],
         "list_selected": [255, 0, 0, 255],
         "button": [200, 200, 200, 255]
@@ -31,21 +34,21 @@
             "bar":     [373, 225, 222,  18]
         },
         "buttons.png": {
-            "_A":        [  0,   0, 180, 180],
-            "_B":        [180,   0, 180, 180],
-            "_X":        [360,   0, 180, 180],
-            "_Y":        [540,   0, 180, 180],
-            "start":     [  0, 180, 360, 180],
-            "select":    [360, 180, 360, 180],
-            "_L":        [  0, 360, 270, 180],
-            "_R":        [270, 360, 270, 180],
-            "unchecked": [720,   0, 180, 180],
-            "checked":   [900,   0, 180, 180],
-            "more":      [720, 180, 180, 180],
-            "left":      [900, 180,  90, 180],
-            "right":     [990, 180,  90, 180],
-            "up":        [900, 360, 180,  90],
-            "down":      [900, 450, 180,  90]
+            "_A":         [  0,   0, 180, 180],
+            "_B":         [180,   0, 180, 180],
+            "_X":         [360,   0, 180, 180],
+            "_Y":         [540,   0, 180, 180],
+            "_START":     [  0, 180, 360, 180],
+            "_SELECT":    [360, 180, 360, 180],
+            "_L":         [  0, 360, 270, 180],
+            "_R":         [270, 360, 270, 180],
+            "_UNCHECKED": [720,   0, 180, 180],
+            "_CHECKED":   [900,   0, 180, 180],
+            "_MORE":      [720, 180, 180, 180],
+            "_LEFT":      [900, 180,  90, 180],
+            "_RIGHT":     [990, 180,  90, 180],
+            "_UP":        [900, 360, 180,  90],
+            "_DOWN":      [900, 450, 180,  90]
         },
         "pointenfedde.png": {}
     },
@@ -69,7 +72,7 @@
         "port_info_area": {
             "comment": "The area used for the info text/image",
             "parent": "right_pane",
-            "area": [ 0.0, 0.0, 1.0, 0.95 ]
+            "area": [ 0.0, 0.0, 1.0, 1.0 ]
         },
         "port_info_title_area": {
             "comment": "Port Title",
@@ -80,13 +83,14 @@
             "comment": "Port image",
             "parent": "port_info_area",
             "area": [ 0.0, 0.1, 1.0, 0.4 ],
-            "area[hires]": [ 0.0, 0.1, 1.0, 0.5 ]
+            "area[hires]": [ 0.0, 0.1, 1.0, 0.5 ],
+            "area[4:3]": [ 0.0, 0.1, 1.0, 0.5 ]
         },
         "port_info_text_area": {
             "comment": "Port Info",
             "parent": "port_info_area",
-            "area": [ 0.0, 0.4, 1.0, 0.95 ],
-            "area[hires]": [ 0.0, 0.5, 1.0, 1.0]
+            "area": [ 0.0, 0.4, 1.0, 1.0 ],
+            "area[5:3, hires]": [ 0.0, 0.5, 1.0, 1.0 ]
         },
         "background": {
             "area": [ 0.0, 0.0, 1.0, 1.0 ],
@@ -113,6 +117,17 @@
                 "Back",
                 "_X",
                 "Filter"
+            ]
+        },
+        "button_bar_filters_on": {
+            "area": [ 0.65, 0.93, 0.95, 1.0 ],
+            "font-size": 16,
+            "font-color": [ 0, 0, 0 ],
+            "bar": [
+                "_A",
+                "Accept",
+                "_B",
+                "Back"
             ]
         },
         "button_bar": {
@@ -175,7 +190,7 @@
 
         "ports_list": {
             "parent": "port_info_list_area",
-            "area": [ 0.0, 0.0, 1.0, 1.0 ],
+            "area": [ 0.0, 0.1, 1.0, 1.0 ],
             "border-x": 16,
             "font-size": 14,
             "alt-fill": [ 210, 210, 210 ],
@@ -191,8 +206,9 @@
         },
 
         "port_filters": {
-            "text": "{if:ports_list.filters}Filters: {ports_list.filters}{endif}",
+            "text": "{if:ports_list.filters}Filters: {ports_list.filters}\n{endif}Available Ports: {if:!ports_list.total_ports::ports_list.filter_ports}{ports_list.filter_ports} / {ports_list.total_ports}{else}{ports_list.total_ports}{endif}",
             "area": [ 0.0, 0.0, 0.4, 0.1 ],
+            "area[4:3|30:17|3:2]": [ 0.0, 0.0, 0.3, 0.1 ],
             "font-size": 12,
             "parent": "background",
             "align": "topleft",
@@ -204,18 +220,43 @@
             "scroll-delay-end": 500
         },
 
-        "port_desc": {
+        "port_general_info": {
             "parent": "port_info_text_area",
             "area": [ 5, 5, -5, -5 ],
+            "area[4:3]": [ 5, 60, -5, -5 ],
+            "area[16:9]": [ 5, 80, -5, -5 ],
+            "area[427:240]": [ 5, 80, -5, -5 ],
+            "area[30:17]": [ 5, 80, -5, -5 ],
+            "font-size": 16,
+            "font-size[5:3]": 11,
+            "font-size[16:9]": 11,
+            "font-color": [ 0, 0, 0 ],
+            "text-wrap": true,
+            "text": "Genres: {port_info.genres}\nDownload Size: {port_info.download_size}{if:port_info.runtime}\nRuntime: {port_info.runtime} ({port_info.runtime_status}){endif}"
+        },
+
+        "port_desc": {
+            "parent": "port_info_text_area",
+            "area": [ 5, 65, -5, -45 ],
+            "area[4:3]": [ 5, 118, -5, -50 ],
+            "area[3:2]": [ 5, 65, -5, -13 ],
+            "area[16:9]": [ 5, 165, -5, -100 ],
+            "area[5:3]": [ 5, 165, -5, -125 ],
+            "area[427:240]": [ 5, 145, -5, -50 ],
+            "area[30:17]": [ 5, 145, -5, -65 ],
+            "parent[5:3]": "port_general_info",
             "font-size": 17,
+            "font-size[5:3]": 13,
+            "font-size[16:9]": 13,
             "font-color": [ 0, 0, 0 ],
             "text-wrap": true,
             "autoscroll": "marquee",
             "scroll-speed": 60,
             "scroll-delay-start": 1500,
             "scroll-delay-end": 1500,
-            "text": "{port_info.description}\n\nGenres: {port_info.genres}\nDownload Size: {port_info.download_size}{if:port_info.runtime}\nRuntime: {port_info.runtime} ({port_info.runtime_status}){endif}"
+            "text": "{port_info.description}"
         },
+
 
         "port_title": {
             "parent": "port_info_title_area",
@@ -234,7 +275,6 @@
             "area": [ 0.0, 0.0, 1.0, 1.0 ],
             "image": "no-image.jpg"
         },
-
         "#element:button_bar_filters": {}
     },
 
@@ -298,29 +338,8 @@
 
             "#element:option_list": {
                 "align": "center",
-                "list": [
-                    "All Ports",
-                    "Ready to Run Ports",
-                    "Uninstall Ports",
-                    " ",
-                    "Option Menu",
-                    "Exit"
-                ],
-                "options": [
-                    "install",
-                    "install-rtr",
-                    "uninstall",
-                    null,
-                    "option",
-                    "exit"
-
-                ],
-                "info": [
-                    "Install a new port onto your device.",
-                    "Remove a port that has been installed onto your device",
-                    "PortMaster options",
-                    "Exit Portmaster and return to your game list."
-                ],
+                "list": [],
+                "options": [],
                 "pointer": "pointenfedde.png",
                 "pointer-align": [ "midleft", "midright" ],
                 "pointer-size": [ 51, 26 ],
@@ -354,18 +373,8 @@
         "#element:background": {},
 
         "#element:option_list": {
-            "list": [
-                "Update ports",
-                "- * -",
-                "- * -",
-                "Back"
-            ],
-            "options": [
-                "update-ports",
-                "option-2",
-                "option-3",
-                "back"
-            ]
+            "list": [],
+            "options": []
         },
 
         "#element:button_bar": {},
@@ -379,21 +388,30 @@
         }
     },
 
-        "filter_list": {
-            "#element:background": {
-                "blend-mode": "blend",
-                "fill": "background_fade"
-            },
-            "filter_list": {
-                "area": [ 0.5, 0.02, 0.95, 0.92 ],
-                "fill": [ 200, 200, 200 ],
-                "font-size": 18,
-                "font-color": "list_text",
-                "select-color": "list_selected",
-                "list": [],
-                "align": "topleft"
-            }
+    "filter_list": {
+        "#element:background": {
+            "blend-mode": "blend",
+            "fill": "background_fade"
         },
+        "filter_list": {
+            "area": [ 0.3, 0.00, 1.0, 1.0 ],
+            "area[3:2]": [ 0.3, 0.02, 0.99, 1.0 ],
+            "area[5:3]": [ 0.4, 0.00, 1.0, 1.0 ],
+            "area[16:9]": [ 0.4, 0.00, 1.0, 1.0 ],
+            "area[427:240]": [ 0.4, 0.00, 1.0, 1.0 ],
+            "area[30:17]": [ 0.4, 0.00, 1.0, 1.0 ],
+            "fill": [ 230, 230, 230 ],
+            "font-size": 16,
+            "font-size[5:3]": 15,
+            "font-size[30:17]": 15,
+            "font-color": "list_text",
+            "select-color": "list_selected",
+            "list": [],
+            "align": "midleft"
+        },
+        "#element:button_bar_filters_on": {}
+
+    },
 
         "message_window": {
             "#element:background": {},
@@ -451,12 +469,14 @@
             },
 
             "#element:small_button:ok_button": {
-                "area": [ 0.35, 0.95, 0.45, 0.98 ],
+                "area": [ 0.0, 0.0, 0.0, 0.0 ],
+                "#area": [ 0.35, 0.95, 0.45, 0.98 ],
                 "text": "Okay"
             },
 
             "#element:small_button:cancel_button": {
-                "area": [ 0.55, 0.95, 0.65, 0.98 ],
+                "area": [ 0.0, 0.0, 0.0, 0.0 ],
+                "#area": [ 0.55, 0.95, 0.65, 0.98 ],
                 "text": "Back"
             },
 

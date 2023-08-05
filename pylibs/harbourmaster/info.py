@@ -28,7 +28,7 @@ PORT_INFO_ATTR_ATTRS = {
     'desc': "",
     'inst': "",
     'genres': [],
-    'porter': "",
+    'porter': [],
     'image': {},
     'rtr': False,
     'runtime': None,
@@ -113,6 +113,9 @@ def port_info_load(raw_info, source_name=None, do_default=False):
         # WHOOPS! :O
         if info.get('attr', {}).get('runtime', None) == "blank":
             info['attr']['runtime'] = None
+
+    if isinstance(info.get('attr', {}).get('porter'), str):
+        info['attr']['porter'] = [info['attr']['porter']]
 
     if isinstance(info.get('attr', {}).get('reqs', None), dict):
         info['attr']['reqs'] = [

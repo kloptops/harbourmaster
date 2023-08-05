@@ -136,6 +136,7 @@ class ResourceManager:
         else:
             raise GUIValueError(f"Invalid {path!r}")
 
+        print(path)
         if not path.is_dir():
             return
 
@@ -588,8 +589,8 @@ class NamedRects:
 
         value = list(value)
 
-        print(f"{child} <- {parent}")
-        print(f"    {value} x {root}")
+        # print(f"{child} <- {parent}")
+        # print(f"    {value} x {root}")
         for i, p in enumerate(value):
             if not isinstance(p, (int, float)):
                 raise GUIThemeError(f'point {i}{p} is not a number')
@@ -609,7 +610,7 @@ class NamedRects:
 
         value = Rect.from_corners(*value)
 
-        print(f"  = {list(value)}")
+        # print(f"  = {list(value)}")
         if child is not None:
             self._rects[child] = value.copy()
 
@@ -1898,7 +1899,6 @@ class Region:
         self.linespace = self._verify_int('linespace', 0, optional=True)
         self.align = self._verify_option('align', Rect.POINTS, 'topleft')
 
-        self.list = self._verify_list('list', optional=True)
         self.imagelist = 0 ## TODO
         self.ilistalign = 0 ## TODO
         self.itemsize = self._verify_int('item-size', None, optional=True)
@@ -1924,6 +1924,7 @@ class Region:
         self.barspace = self._verify_int('barspace', 4)
         self.barwidth = self._verify_int('barwidth', 0, optional=True)
         self._bar = self._verify_bar('bar', optional=True)
+        self.list = self._verify_list('list', optional=True)
 
         if self._text and self.list:
             raise GUIThemeError('Cannot define text and a list')
@@ -2283,6 +2284,21 @@ class Region:
 
                 irect.y += itemsize
                 i += 1
+
+    def add_option(self, option, text):
+        if self.options is None:
+            self.list = []
+
+        self.options.append(option)
+        self.list.append(text)
+
+    def selected_option(self):
+        if self.options is None:
+            return None
+        if self.list is None:
+            return None
+
+        return self.options[self.selected]
 
     def list_select(self, index, direction=1, allow_wrap=False):
         if self.list is None:

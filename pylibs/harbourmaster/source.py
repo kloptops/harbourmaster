@@ -382,12 +382,12 @@ class PortMasterV1(GitHubRawReleaseV1):
         port_info = port_info_load({})
 
         port_info['name'] = self.clean_name(raw_info['locat'])
-        ## SUPER JANK --
-        from ports_info import ports_info
+
+        ports_info = self.hm.ports_info()
 
         port_info['items'] = ports_info['ports'].get(port_info['name'], {'items': []})['items']
         port_info['attr']['title']   = raw_info['title']
-        port_info['attr']['porter']  = raw_info['porter']
+        port_info['attr']['porter']  = ports_info['portsmd_fix'].get(raw_info['porter'].lower(), [raw_info['porter']])
         port_info['attr']['desc']    = raw_info['desc']
         port_info['attr']['rtr']     = raw_info['rtr']
         port_info['attr']['reqs']    = raw_info['reqs']

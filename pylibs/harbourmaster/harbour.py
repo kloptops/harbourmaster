@@ -2,6 +2,7 @@
 # System imports
 import fnmatch
 import functools
+import datetime
 import json
 import pathlib
 import shutil
@@ -29,12 +30,18 @@ from .captain import *
 ## Config loading
 class HarbourMaster():
     __PORTS_INFO = None
+    __PORTERS = None
 
     CONFIG_VERSION = 1
     DEFAULT_CONFIG = {
         'version': CONFIG_VERSION,
-        'first_run': True,
+        'ports_info_checked': None,
+        'porters_checked': None,
         }
+
+    INFO_CHECK_INTERVAL = (60 * 60 * 1)
+    PORTS_INFO_URL = "https://github.com/PortsMaster/PortMaster-Info/raw/main/ports_info.json"
+    PORTERS_URL = "https://raw.githubusercontent.com/PortsMaster/PortMaster-Info/main/porters.json"
 
     def __init__(self, config, *, tools_dir=None, ports_dir=None, temp_dir=None, callback=None):
         """
@@ -65,6 +72,8 @@ class HarbourMaster():
         self.cfg_dir   = tools_dir / "PortMaster" / "config"
         self.libs_dir  = tools_dir / "PortMaster" / "libs"
         self.ports_dir = ports_dir
+        self.cfg_file = self.cfg_dir / "config.json"
+
         self.sources = {}
         self.config = {
             'no-check': config.get('no-check', False),
@@ -89,19 +98,85 @@ class HarbourMaster():
                     with (self.cfg_dir / source_name).open('w') as fh:
                         fh.write(HM_SOURCE_DEFAULTS[source_name])
 
+            if not self.cfg_file.is_file():
+                self.cfg_data = self.DEFAULT_CONFIG.copy()
+            else:
+                with open(self.cfg_file, 'r') as fh:
+                    self.cfg_data = json.load(fh)
+
+            if 'theme' not in self.cfg_data:
+                self.cfg_data['theme'] = 'default_theme'
+
+            self.load_info()
+
             self.load_sources()
 
             self.load_ports()
 
-    @timeit
-    def __ports_info(self):
+            self.save_config()
+
+    def save_config(self):
+        with open(self.cfg_file, 'w') as fh:
+            json.dump(self.cfg_data, fh, indent=4)
+
+    def ports_info(self):
         if self.__PORTS_INFO is None:
-            from ports_info import ports_info
-            self.__PORTS_INFO = ports_info
+            with open(self.cfg_dir / "ports_info.json", 'r') as fh:
+                self.__PORTS_INFO = json.load(fh)
 
         return self.__PORTS_INFO
 
-    @timeit
+    def porters(self):
+        if self.__PORTERS is None:
+            with open(self.cfg_dir / "porters.json", 'r') as fh:
+                self.__PORTERS = json.load(fh)
+
+        return self.__PORTERS
+
+    def load_info(self):
+        self.callback.message("- Loading Info.")
+        info_file = self.cfg_dir / "ports_info.json"
+        info_file_md5 = self.cfg_dir / "ports_info.md5"
+
+        porters_file = self.cfg_dir / "porters.json"
+
+        if not info_file.is_file():
+            self.callback.message("  - Fetching latest info.")
+            info_md5 = fetch_text(self.PORTS_INFO_URL + '.md5')
+            info_data = fetch_text(self.PORTS_INFO_URL)
+
+            with open(info_file, 'w') as fh:
+                fh.write(info_data)
+
+            with open(info_file_md5, 'w') as fh:
+                fh.write(info_md5)
+
+            self.cfg_data['ports_info_checked'] = datetime.datetime.now().isoformat()
+
+        elif self.cfg_data.get('ports_info_checked') is None or datetime_compare(self.cfg_data['ports_info_checked']) >= self.INFO_CHECK_INTERVAL:
+
+            info_md5 = fetch_text(self.PORTS_INFO_URL + '.md5')
+            if info_md5 != info_file_md5.read_text().strip():
+                self.callback.message("  - Fetching latest info.")
+                info_data = fetch_text(self.PORTS_INFO_URL)
+
+                with open(info_file, 'w') as fh:
+                    fh.write(info_data)
+
+                with open(info_file_md5, 'w') as fh:
+                    fh.write(info_md5)
+
+            self.cfg_data['ports_info_checked'] = datetime.datetime.now().isoformat()
+
+        if not porters_file.is_file() or datetime_compare(self.cfg_data['porters_checked']) >= self.INFO_CHECK_INTERVAL:
+            self.callback.message("  - Fetching latest porters.")
+            porters_data = fetch_text(self.PORTERS_URL)
+
+            with open(porters_file, 'w') as fh:
+                fh.write(porters_data)
+
+            self.cfg_data['porters_checked'] = datetime.datetime.now().isoformat()
+
     def load_sources(self):
         source_files = list(self.cfg_dir.glob('*.source.json'))
         source_files.sort()
@@ -149,7 +224,7 @@ class HarbourMaster():
         pm_signature = load_pm_signature(file_name)
 
         if pm_signature is None:
-            ports_info = self.__ports_info()
+            ports_info = self.ports_info()
 
             # If not look it up by name
             port_owners = get_dict_list(ports_info['items'], file_name.name)
@@ -182,7 +257,7 @@ class HarbourMaster():
         """
         port_info = port_info_load(port_file, do_default=True)
 
-        ports_info = self.__ports_info()
+        ports_info = self.ports_info()
         changed = False
 
         # Its possible for the port_info to be in a bad way, lets try and fix it.
@@ -260,7 +335,7 @@ class HarbourMaster():
         ports_files = {}
         file_renames = {}
 
-        ports_info = self.__ports_info()
+        ports_info = self.ports_info()
 
         self.callback.message("- Loading Ports.")
 
@@ -553,8 +628,11 @@ class HarbourMaster():
                 if runtime_key in runtime:
                     add_list_unique(attrs, runtime_attr)
 
-        for genre in port_info.get('attr', {}).get('genres', None):
+        for genre in port_info.get('attr', {}).get('genres', []):
             add_list_unique(attrs, genre.casefold())
+
+        for porter in port_info.get('attr', {}).get('porter', []):
+            add_list_unique(attrs, porter.casefold())
 
         rtr = port_info.get('attr', {}).get('rtr', False)
         if rtr:
@@ -651,6 +729,9 @@ class HarbourMaster():
                     for image_type, image_file in source.images[name_cleaner(port_name)].items()}
 
         return None
+
+    def porters_list(self):
+        return list(self.porters().keys())
 
     def port_info(self, port_name, installed=False):
         if installed:
@@ -852,11 +933,13 @@ class HarbourMaster():
 
                     self.callback.message(f"Downloading runtime {runtime}.")
 
+                    download_successfull = False
                     try:
                         with self.callback.enable_cancellable(True):
                             runtime_download = source.download(runtime, temp_dir=self.libs_dir)
+                            download_successfull = True
 
-                        if self.callback.was_cancelled:
+                        if self.callback.was_cancelled or not download_successfull:
                             if runtime_file.is_file():
                                 runtime_file.unlink()
 
@@ -868,9 +951,6 @@ class HarbourMaster():
                     except Exception as err:
                         ## We need to catch any errors and delete the file if it fails,
                         ## here we are not using the temp file auto deletion.
-                        if runtime_file.is_file():
-                            runtime_file.unlink()
-
                         logger.error(err)
 
                         if not in_install:
@@ -878,9 +958,15 @@ class HarbourMaster():
 
                         return 255
 
+                    finally:
+                        if not download_successfull and runtime_file.is_file():
+                            runtime_file.unlink()
+
                     if not in_install:
                         self.callback.message_box(f"Successfully downloaded {runtime}.")
+
                     return 0
+
                 else:
                     if not in_install:
                         self.callback.message_box(f"Unable to find a download for {runtime}.")
@@ -1047,7 +1133,7 @@ class HarbourMaster():
             output.append(f'<r>Title</r>="<y>{port_info["attr"]["title"].replace(" ", "_")} .</y>"')
 
         output.append(f'<r>Desc</r>="<y>{nice_value(port_info["attr"]["desc"])}</y>"')
-        output.append(f'<r>porter</r>="<y>{nice_value(port_info["attr"]["porter"])}</y>"')
+        output.append(f'<r>porter</r>="<y>{oc_join(port_info["attr"]["porter"])}</y>"')
         output.append(f'<r>locat</r>="<y>{nice_value(port_info["name"])}</y>"')
         if port_info["attr"]['rtr']:
             output.append(f'<r>runtype</r>="<e>rtr</e>"')

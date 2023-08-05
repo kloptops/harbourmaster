@@ -83,6 +83,10 @@ def fetch_text(url):
 
 
 def nice_size(size):
+    """
+    Make nicer data sizes.
+    """
+
     suffixes = ('B', 'KB', 'MB', 'GB')
     for suffix in suffixes:
         if size < 768:
@@ -96,9 +100,28 @@ def nice_size(size):
     return f"{size:.02f} {suffix}"
 
 
+def oc_join(strings):
+    """
+    Oxford comma join
+    """
+
+    if len(strings) == 0:
+        return ""
+
+    elif len(strings) == 1:
+        return strings[0]
+
+    elif len(strings) == 2:
+        return f"{strings[0]} and {strings[1]}"
+
+    else:
+        oxford_comma_list = ", ".join(strings[:-1]) + ", and " + strings[-1]
+        return oxford_comma_list
+
+
 @functools.lru_cache(maxsize=512)
 def name_cleaner(text):
-    temp = re.sub(r'[^a-zA-Z0-9 _\-\.]+', '', text.strip().casefold())
+    temp = re.sub(r'[^a-zA-Z0-9 _\-\.]+', '', text.strip().lower())
     return re.sub(r'[ \.]+', '.', temp)
 
 
@@ -520,6 +543,7 @@ __all__ = (
     'match_requirements',
     'name_cleaner',
     'nice_size',
+    'oc_join',
     'remove_dict_list',
     'remove_pm_signature',
     'timeit',

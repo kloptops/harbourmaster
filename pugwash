@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-PORTMASTER_VERSION = '8.1.0a'
+PORTMASTER_VERSION = '8.2.1a'
 
 import contextlib
 import datetime
 import functools
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -277,7 +278,7 @@ def theme_load(gui, theme_file):
     print(f"Loading theme {theme_file}")
 
     with open(theme_file, 'r') as fh:
-        theme_data = harbourmaster.json_safe_load(fh)
+        theme_data = json.load(fh)
 
     if theme_data is None:
         raise ValueError(f"Unable to load theme {theme_file}")
@@ -403,6 +404,13 @@ class StringFormatter:
             if keys_used is not None and key not in keys_used:
                 keys_used.append(key)
 
+            if value.startswith(':'):
+                value = value[1:]
+                if keys_used is not None and value not in keys_used:
+                    keys_used.append(value)
+
+                value = self.data_dict.get(value, '')
+
             result = self.data_dict.get(key, '') == value
         else:
             if keys_used is not None and text not in keys_used:
@@ -527,30 +535,27 @@ class MainMenuScene(BaseScene):
 
         self.load_regions("main_menu", ['option_list', ])
 
-        if len(self.tags['option_list'].list) != len(self.tags['option_list'].options):
-            raise RuntimeError("The main_menu -> option_list.list doesnt match the option_list.options")
+        self.tags['option_list'].list = []
+        self.tags['option_list'].options = []
 
-        self.options = self.tags['option_list'].options
+        self.tags['option_list'].add_option(('install', []), "All Ports")
+        self.tags['option_list'].add_option(('install', ['rtr']), "Ready to Run Ports")
+        self.tags['option_list'].add_option(('uninstall', ['installed']), "Uninstall Ports")
+        self.tags['option_list'].add_option(None, "")
+        self.tags['option_list'].add_option(('options', None), "Options")
+        self.tags['option_list'].add_option(('exit', None), "Exit")
 
     def do_update(self, events):
         super().do_update(events)
 
         if events.was_pressed('START') or events.was_pressed('A'):
-            selected_option = self.options[self.tags['option_list'].selected]
+            selected_option, selected_parameter = self.tags['option_list'].selected_option()
 
-            if selected_option == 'install':
-                self.gui.push_scene('ports', PortsListScene(self.gui, {'mode': 'install', 'filters': []}))
+            if selected_option in ('install', 'uninstall'):
+                self.gui.push_scene('ports', PortsListScene(self.gui, {'mode': selected_option, 'filters': selected_parameter}))
                 return True
 
-            elif selected_option == 'install-rtr':
-                self.gui.push_scene('ports', PortsListScene(self.gui, {'mode': 'install', 'filters': ['rtr', ]}))
-                return True
-
-            elif selected_option == 'uninstall':
-                self.gui.push_scene('ports', PortsListScene(self.gui, {'mode': 'uninstall', 'filters': ['installed', ]}))
-                return True
-
-            elif selected_option == 'option':
+            elif selected_option == 'options':
                 self.gui.push_scene('option', OptionScene(self.gui))
                 return True
 
@@ -569,16 +574,19 @@ class OptionScene(BaseScene):
 
         self.load_regions("option_menu", ['option_list', ])
 
-        if len(self.tags['option_list'].list) != len(self.tags['option_list'].options):
-            raise RuntimeError("The main_menu -> option_list.list doesnt match the option_list.options")
+        self.tags['option_list'].list = []
+        self.tags['option_list'].options = self.options = []
 
-        self.options = self.tags['option_list'].options
+        self.tags['option_list'].add_option('update-ports', "Update Ports")
+        self.tags['option_list'].add_option('select-theme', "Select Theme")
+        self.tags['option_list'].add_option(None, "")
+        self.tags['option_list'].add_option('back', "Back")
 
     def do_update(self, events):
         super().do_update(events)
 
         if events.was_pressed('START') or events.was_pressed('A'):
-            selected_option = self.options[self.tags['option_list'].selected]
+            selected_option = self.tags['option_list'].selected_option()
 
             print(f"Selected {selected_option}")
 
@@ -586,9 +594,57 @@ class OptionScene(BaseScene):
                 self.gui.do_update_ports()
                 return True
 
+            elif selected_option == 'select-theme':
+                self.gui.push_scene('select-theme', ThemesScene(self.gui))
+
             elif selected_option == 'back':
                 self.gui.pop_scene()
                 return True
+
+        elif events.was_pressed('B'):
+            self.gui.pop_scene()
+            return True
+
+
+class ThemesScene(BaseScene):
+    def __init__(self, gui):
+        super().__init__(gui)
+
+        self.load_regions("option_menu", ['option_list', ])
+
+        themes = self.gui.list_themes()
+        selected_theme = self.gui.hm.cfg_data['theme']
+
+        self.tags['option_list'].list = []
+        self.tags['option_list'].options = self.options = []
+
+        for theme_name, theme_data in themes.items():
+            if theme_name == selected_theme:
+                self.tags['option_list'].add_option((None, ''), f"{theme_data['name']} (Selected)")
+            else:
+                self.tags['option_list'].add_option(('select-theme', theme_name), theme_data['name'])
+
+        self.tags['option_list'].add_option(None, "")
+        self.tags['option_list'].add_option('back', "Back")
+
+    def do_update(self, events):
+        super().do_update(events)
+
+        if events.was_pressed('START') or events.was_pressed('A'):
+            selected_option, selected_parameter = self.tags['option_list'].selected_option()
+
+            print(f"Selected {selected_option} -> {selected_parameter}")
+
+            if selected_option == 'back':
+                self.gui.pop_scene()
+                return True
+
+            elif selected_option == 'select-theme':
+                if self.gui.message_box(f"Do you want to change theme?\n\nYou will have to restart for it to take affect.", want_ok=True, want_cancel=True):
+                    self.gui.hm.cfg_data['theme'] = selected_parameter
+                    self.gui.hm.save_config()
+                    self.gui.events.running = False
+                    return True
 
         elif events.was_pressed('B'):
             self.gui.pop_scene()
@@ -652,7 +708,7 @@ class PortsListScene(BaseScene):
             if len(self.port_list) == 0:
                 self.tags['ports_list'].selected = 0
             else:
-                self.tags['ports_list'].selected = len(self.port_list) - 1
+                self.tags['ports_list'].list_select = len(self.port_list) - 1
 
         self.last_port = self.tags['ports_list'].selected + 1
         self.ready = True
@@ -713,13 +769,16 @@ class PortsListScene(BaseScene):
 
             logger.debug(f"{self.options['mode']}: {port_name}")
             if self.options['mode'] == 'install':
+                self.gui.set_data('port_info.mode', 'Install')
                 self.ready = False
                 self.gui.push_scene('port_info', PortInfoScene(self.gui, port_name, 'install'))
 
             elif self.options['mode'] == 'uninstall':
+                self.gui.set_data('port_info.mode', 'Uninstall')
                 self.ready = False
                 self.gui.push_scene('port_info', PortInfoScene(self.gui, port_name, 'uninstall'))
 
+            self.gui.set_data('port_info.mode', 'View')
             return True
 
 
@@ -823,10 +882,27 @@ class FiltersScene(BaseScene):
         new_list.append("Extra:")
         options.append(None)
 
-        for hm_genre in ['rtr', 'mono', 'kloptops']:
+        for hm_genre in ['rtr', 'mono']:   # 'godot'
             if hm_genre in self.locked_genres:
                 continue
 
+            if hm_genre in genres:
+                ports = total_ports
+                text = f"- [x]  {hm_genre}   ({ports})"
+            else:
+                ports = len(self.gui.hm.list_ports(genres + [hm_genre]))
+                text = f"- [ ]  {hm_genre}   ({ports})"
+
+            new_list.append(text)
+            options.append(hm_genre)
+
+        new_list.append("")
+        options.append(None)
+
+        new_list.append("Porters:")
+        options.append(None)
+
+        for hm_genre in self.gui.hm.porters_list():
             if hm_genre in genres:
                 ports = total_ports
                 text = f"- [x]  {hm_genre}   ({ports})"
@@ -923,6 +999,7 @@ class MessageBoxScene(BaseScene):
 class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
     TICK_INTERVAL = 1000 // 5
     TEXT_DATA_FREQ = 5000
+    MIN_THEME_VERSION = 1
 
     def __init__(self):
         # Initialize SDL
@@ -935,9 +1012,12 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
         # Get the current display mode
         display_mode = sdl2.video.SDL_DisplayMode()
+        capabilities = harbourmaster.device_info()
 
         if sdl2.video.SDL_GetCurrentDisplayMode(0, display_mode) != 0:
             print("Failed to get display mode:", sdl2.SDL_GetError())
+            self.display_width, self.display_height = capabilities['resolution']
+
         else:
             self.display_width = display_mode.w
             self.display_height = display_mode.h
@@ -949,12 +1029,13 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
             ## Uncomment one of these to pretend to be a different device. more devices in pylibs/harbourmaster/hardware.py
             pretend_device = (
-                'rg351p'
+                # 'rg351p'
                 # 'rg552'
                 # 'rg503'
                 # 'rg351v'
                 # 'rg353v'
                 # 'ogs'
+                # 'ogu'
                 # 'x55'
                 )
 
@@ -980,11 +1061,12 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
         self.cancellable = True
 
-        self.resources.add_path(PYLIB_PATH / "default_theme")
+        self.init_theme()
         # self.gui.resources.add_path(harbourmaster.HM_TOOLS_DIR / "PortMaster" / "pylibs")
 
         theme_file = self.resources.find("theme.json")
         if theme_file is None:
+            print(self.resources._paths)
             raise RuntimeError("FUCK IT ALL!")
 
         self.text_data = {}
@@ -1020,6 +1102,62 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.set_data('ports_list.filters', "")
         self.set_data('ports_list.total_ports', "")
         self.set_data('ports_list.filter_ports', "")
+
+    def init_theme(self):
+        ## This has to run before harbourmaster is initialised, so we gotta work it out ourself.
+        cfg_dir = harbourmaster.HM_TOOLS_DIR / "PortMaster"
+        cfg_file = cfg_dir / "config" / "config.json"
+        cfg_data = {}
+
+        theme_dir = cfg_dir / "themes"
+
+        if cfg_file.is_file():
+            with open(cfg_file, 'r') as fh:
+                cfg_data = json.load(fh)
+
+        cfg_data.setdefault("theme", "default_theme")
+
+        print(f"Trying to load {cfg_data['theme']} -> {self.get_theme_info(cfg_data['theme'])}")
+
+        if not self.get_theme_dir(cfg_data["theme"]).is_dir():
+            cfg_data["theme"] = "default_theme"
+
+        elif not (self.get_theme_dir(cfg_data["theme"]) / "theme.json").is_file():
+            cfg_data["theme"] = "default_theme"
+
+        self.resources.add_path(self.get_theme_dir(cfg_data["theme"]))
+
+    def get_theme_dir(self, theme_name):
+        cfg_dir = harbourmaster.HM_TOOLS_DIR / "PortMaster"
+
+        if theme_name == "default_theme":
+            return PYLIB_PATH / theme_name
+
+        else:
+            return cfg_dir / "themes" / theme_name
+
+    def get_theme_info(self, theme_name):
+        theme_data = harbourmaster.json_safe_loads((self.get_theme_dir(theme_name) / "theme.json").read_text())
+
+        if theme_data is None:
+            return None
+
+        return theme_data.get("#info", None)
+
+    def list_themes(self):
+        cfg_dir = harbourmaster.HM_TOOLS_DIR / "PortMaster"
+
+        themes = {
+            "default_theme": self.get_theme_info("default_theme"),
+            }
+
+        for theme_file in (cfg_dir / "themes").glob("*/theme.json"):
+            theme_name = theme_file.parent.name
+            theme_data = self.get_theme_info(theme_name)
+
+            themes[theme_name] = theme_data
+
+        return themes
 
     ## Loop stuff.
     def run(self):
@@ -1126,7 +1264,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.set_data("port_info.description", port_info['attr']['desc'])
         self.set_data("port_info.instructions", port_info['attr']['inst'])
         self.set_data("port_info.genres", ', '.join(port_info['attr']['genres']))
-        self.set_data("port_info.porter", port_info['attr']['porter'])
+        self.set_data("port_info.porter", harbourmaster.oc_join(port_info['attr']['porter']))
         self.set_data("port_info.ready_to_run", port_info['attr']['rtr'] and "Ready to Run" or "Files Required")
 
         runtime = port_info['attr']['runtime']
