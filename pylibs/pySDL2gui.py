@@ -106,7 +106,6 @@ class GUI:
         self.renderer = renderer
 
         self.resources = ResourceManager(self)
-        self.fonts = FontManager(self)
         self.text = TextManager(self)
         self.images = ImageManager(self)
         self.sounds = SoundManager(self)
@@ -1103,255 +1102,6 @@ class TextManager:
         return self._textures[key]
 
 
-char_map = ''' ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,?!-:'"_=+&<^>~@/\\|(%)*'''
-class FontManager():
-    '''
-    The FontManager class loads ttf TODO (otf?) fonts, caches them, and draws text
-    into a sdl2.ext.Renderer context.
-    '''
-    def __init__(self, gui):
-        '''
-        Initialize FontManager for use with pySDL2.ext.Renderer context
-
-        :param gui.renderer: pySDL2.ext.Renderer to draw on
-        '''
-        self.gui = gui
-        self.renderer = gui.renderer
-        self.fonts = {}
-        self.cmaps = {}
-        self.cache = {}
-
-    def __del__(self):
-        for t, h in self.fonts.values():
-            t.destroy()
-
-    def load(self, filename, size=None):
-        '''
-        Load a font for later rendering
-
-        :param filename: path to a ttf or otf format font file
-        :param size: int point size for font or 'XXpx' for pixel height
-        :rvalue tuple: a (filename, size) 2-tuple representing the font in
-            future draw() calls
-        '''
-        if not size:
-            filename, cache = filename
-
-        if (filename, size) in self.fonts:
-            self.texture, self.height = self.fonts[(filename, size)]
-            self.cmap = self.cmaps[(filename, size)]
-            self.blank = self.cmap[' ']
-            return filename, size
-
-        res_filename = self.gui.resources.find(filename)
-
-        if res_filename is None:
-            return None
-
-        font = sdl2.ext.FontTTF(str(res_filename), size, (255, 255, 255))
-        self.cmap = {}
-        tot = 0
-
-        for c in char_map:
-            tot += get_text_size(font, c)[0]
-
-        if tot > 1024: # prevent overly wide textures
-            width = 1024
-            rows = int(tot // 1024) + 1
-        else:
-            width = tot
-            rows = 1
-        self.height = get_text_size(font)
-
-        y = 0
-        surface = sdl2.SDL_CreateRGBSurface(sdl2.SDL_SWSURFACE, width, self.height *rows,
-                32, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000)
-        tot = x = 0
-
-        for c in char_map:
-            rend = font.render_text(c)
-            wi, hi = rend.w, rend.h
-            if x + wi > 1024: # limit texture width
-                x = 0
-                y += self.height +1
-            sdl2.SDL_BlitSurface(rend, None, surface,
-                    sdl2.SDL_Rect(x, y, wi, hi))
-
-            self.cmap[c] = Rect(x, y, wi, self.height)
-            tot += wi
-            x += wi
-        self.blank = self.cmap[' ']
-        self.texture = sdl2.ext.renderer.Texture(self.renderer, surface)
-        self.fonts[(filename, size)] = self.texture, self.height
-        self.cmaps[(filename, size)] = self.cmap
-        sdl2.SDL_FreeSurface(surface)
-        return filename, size
-
-    def draw(self, text, x, y, color=None, alpha=None,
-            align='topleft', clip=None, wrap=None, linespace=0, font=None, outline=None):
-        '''
-        Draw text string onto pySDL2.ext.Renderer context
-
-        :param text: string to draw
-        :param x: x coordinate to draw at
-        :param y: y coordinate to draw at
-        :param color: (r, g, b) color tuple
-        :param alpha: alpha transparency value
-        :param align: choose one of: topleft, midtop, topright, midleft, center, midright,
-                bottomleft, midbottom, or bottomright
-        :param clip: clip text to Rect
-        :param wrap: #TODO wrap text over multiple lines, using clip Rect
-        :param font: (filename, size) tuple for font, defaults to last_loaded
-        :param outline: (color, thickness) or None
-        :rvalue rect: actual area drawn into
-        '''
-
-
-        if font in self.fonts: # load texture if argument is in cache
-            texture, height = self.fonts[font]
-            cmap = self.cmaps[font]
-        else:
-            texture, height = self.texture, self.height
-            cmap = self.cmap
-
-        if wrap and not clip: # must have a clip if wrapping
-            w = self.renderer.logical_size[0] - x
-            h = self.renderer.logical_size[1] - y
-            clip = Rect(x, y, w, h)
-        if isinstance(clip, int): # convert clip width into clip rect
-            clip = Rect(x, y, clip, self.height)
-
-        if wrap:
-            wrapped_text = self._split_lines(text, clip)
-            lines = len(wrapped_text)
-            if lines > 1:
-                if align in ('midleft', 'center', 'midright'):
-                    y -= (self.height * lines) // 2 + (linespace * (lines / 2))
-                elif align in ('bottomleft', 'midbottom', 'bottomright'):
-                    y -= (self.height) * lines + linespace * lines
-
-                for line in wrapped_text:
-                    self.draw(line, x, y, color, alpha, align, clip)
-                    y += self.height + linespace
-                    if y + self.height + linespace > clip.bottom:
-                        break
-            return clip
-
-        out_rect = Rect(0, 0, self.width(text), self.height)
-        dx, dy = getattr(out_rect, align, (0, 0))
-        dest = Rect(x - dx, y - dy, 1, self.height)
-        out_rect.topleft = dest.topleft
-
-        sdl2.SDL_SetTextureAlphaMod(texture.tx, alpha or 255)
-        color = color or (255, 255, 255)
-        sdl2.SDL_SetTextureColorMod(texture.tx, *color[:3])
-
-        for c in text:
-            src = cmap.get(c, self.blank)
-            dest.width = src.width
-            if clip and dest.right > clip.right:
-                break
-
-            if outline:
-                sdl2.SDL_SetTextureColorMod(texture.tx, *outline[0])
-                self.renderer.copy(texture, src.sdl(), dest.inflated(outline[1]).sdl())
-                sdl2.SDL_SetTextureColorMod(texture.tx, *color[:3])
-                self.renderer.copy(texture, src.sdl(), dest.inflated(-outline[1]).sdl())
-            else:
-                self.renderer.copy(texture, src.sdl(), dest.sdl())
-            #self.renderer.draw_rect(dest.tuple(), (255, 255, 255, 255))
-            dest.x += src.width
-        return out_rect
-
-    def width(self, text, scale=1):
-        '''
-        Calculate width of given text not including motion or scaling effects
-        Uses currently loaded font
-
-        :param text: text string to calculate width of
-        :rvalue int: width of string in pixels
-        '''
-        w = 0
-        for c in text:
-            w += self.cmap.get(c, self.blank).width * scale
-        return w
-
-    def find_max_letters(self, text, max_width, scale=1):
-        '''
-        return a string of letters that will fit within max_width
-
-        :param text: text string to calculate width of
-        :param max_width: maximum width of the word
-        :rvalue int: width of string in pixels
-        '''
-        ## TODO: make it split words on non word characters
-        current_width = 0
-        current_word = []
-
-        for letter in text:
-            width = self.cmap.get(letter, self.blank).width * scale
-
-            if (width + current_width) > max_width:
-                return ''.join(current_word)
-
-            current_word.append(letter)
-            current_width += width
-
-        return ''.join(current_word)
-
-    def _split_lines(self, text, dest, scale=1):
-        '''
-        Create a series of lines that will fit in the provided rectangle.
-
-        :param text: a text string
-        :param dest: a Rect object to wrap the text into
-        :param scale: scalar to multiply font size by, unused so far
-        :rvalue []: list of strings that fit within given area
-        '''
-        final_lines = []
-
-        max_height = dest.height
-        width = dest.width
-        requested_lines = text.splitlines()
-
-        for requested_line in requested_lines:
-            if self.width(requested_line, scale) > width:
-                line_words = collections.deque(requested_line.split(' '))
-                words = []
-
-                # if any of our words are too long to fit, return.
-                while len(line_words) > 0:
-                    word = line_words.popleft()
-
-                    if self.width(word, scale) >= width:
-                        # TODO force wrap long words
-                        new_word = self.find_max_letters(word, width, scale)
-                        line_words.appendleft(word[len(new_word):])
-                        words.append(new_word)
-                        continue
-
-                    words.append(word)
-
-                # Start a new line
-                accumulated_line = ""
-                for word in words:
-                    test_line = accumulated_line + word + " "
-                    # Build the line while the words fit.
-                    if self.width(test_line, scale) < width:
-                        accumulated_line = test_line
-                    else:
-                        final_lines.append(accumulated_line)
-                        accumulated_line = word + " "
-                final_lines.append(accumulated_line)
-            else:
-                final_lines.append(requested_line)
-
-        #line_count = len(final_lines)
-        #line_height = self.height()
-        #total_height = line_height * line_count
-        return final_lines
-
-
 class EventManager:
     ## TODO: add deadzone code
 
@@ -1834,7 +1584,6 @@ class Region:
         self.gui = gui
         self.renderer = gui.renderer
         self.images = gui.images
-        self.fonts = gui.fonts
         self.texts = gui.text
         self.pallet = gui.pallet
 
@@ -2064,10 +1813,10 @@ class Region:
 
         text_area = area.inflated(-self.borderx * 2, -self.bordery * 2)
 
-        if self.font and self.fontsize:
-            self.fonts.load(self.font, self.fontsize)
-        else:
-            return
+        # if self.font and self.fontsize:
+        #     self.fonts.load(self.font, self.fontsize)
+        # else:
+        #     return
 
         # RENDER BAR (toolbarish)
         align_to_textalign = {
@@ -2098,9 +1847,10 @@ class Region:
 
         # RENDER TEXT
         elif text:
-            x, y = getattr(text_area, self.align, text_area.topleft)
-            self.fonts.draw(text, x, y, self.fontcolor, 255, self.align,
-                    text_area, outline=self.fontoutline).height + self.linespace
+            # x, y = getattr(text_area, self.align, text_area.topleft)
+            # self.fonts.draw(text, x, y, self.fontcolor, 255, self.align,
+            #         text_area, outline=self.fontoutline).height + self.linespace
+            ...
 
         elif self._text:
             if text_area.width > 0 and text_area.height > 0:
@@ -2481,7 +2231,6 @@ class Region:
             else:
                 area = area.inflated(-self.borderx * 2, -self.bordery * 2)
 
-        self.fonts.load(self.font, self.fontsize)
         x = area.x
         y = area.centery
 
@@ -2494,16 +2243,23 @@ class Region:
                 dest.width = max(dest.w, self.barwidth)
                 x = dest.right + self.barspace
                 items.append((dest, im))
+
             elif isinstance(v, str):
-                w = self.fonts.width(v)
-                dest = Rect(x, y, max(w, self.barwidth), self.fonts.height)
+                texture = self.texts.render_text(
+                    v,
+                    self.font, self.fontsize, self.fontcolor, align='left')
+
+                dest = Rect(x, y, max(texture.size.width, self.barwidth), texture.size.width)
                 dest.centery = area.centery
                 x = dest.right + self.barspace
                 items.append((dest, v))
+
             elif v is None:
                 items = right
+
             else:
                 raise GUIThemeError(f'bar item {i}({v}) not valid type')
+
         x = area.right
         for dest, item in right:
             dest.right = x
@@ -2519,34 +2275,40 @@ class Region:
         #self.fonts.load(self.font, self.fontsize)
 
         for i, (dest, item) in enumerate(bar):
-            if i == selected:
-                if isinstance(self.select, Region):
-                    if isinstance(item, Image):
-                        image = item; text = None
-                    else:
-                        color = None
-                        text = item; image = None
-                    r = dest.inflated(self.borderx * 2, self.bordery * 2)
-                    self.select.draw(dest, text, image)
-                    self.fonts.load(self.font, self.fontsize)
+            # if i == selected:
+                # if isinstance(self.select, Region):
+                #     if isinstance(item, Image):
+                #         image = item; text = None
+                #     else:
+                #         color = None
+                #         text = item; image = None
 
-                else:
-                    #self.renderer.fill(dest.tuple(), [0, 0, 255, 100])
+                #     r = dest.inflated(self.borderx * 2, self.bordery * 2)
+                #     self.select.draw(dest, text, image)
+                #     self.fonts.load(self.font, self.fontsize)
 
-                    if isinstance(item, Image):
-                        item.draw_in(Rect.from_sdl(item.srcrect).fitted(dest).tuple())
-                    else:
-                        x, y = dest.center
-                        self.fonts.draw(item, x, y,
-                                self.select, 255, 'center', area,
-                                outline=self.fontoutline)
+                # else:
+                #     #self.renderer.fill(dest.tuple(), [0, 0, 255, 100])
 
-            elif isinstance(item, Image):
+                #     if isinstance(item, Image):
+                #         item.draw_in(Rect.from_sdl(item.srcrect).fitted(dest).tuple())
+                #     else:
+                #         x, y = dest.center
+                #         self.fonts.draw(item, x, y,
+                #                 self.select, 255, 'center', area,
+                #                 outline=self.fontoutline)
+
+            if isinstance(item, Image):
                 item.draw_in(Rect.from_sdl(item.srcrect).fitted(dest).tuple())
+
             else:
-                x, y = dest.center
-                self.fonts.draw(item, x, y, self.fontcolor, 255, 'center',
-                        area, outline=self.fontoutline)
+                texture = self.texts.render_text(
+                    item,
+                    self.font, self.fontsize, self.fontcolor, align='left')
+
+                setattr(texture.size, 'center', dest.center)
+
+                texture.draw_in(dest, fit=True)
         #self.renderer.blendmode = mode
 
     def _verify_outline(self, name, default, optional):

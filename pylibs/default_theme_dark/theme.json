@@ -320,7 +320,6 @@
             "parent": "element:background"
         },
 
-
         "#element:small_button:ok_button": {
             "area": [ 0.0, 0.0, 0.0, 0.0 ],
             "text": "Okay"
