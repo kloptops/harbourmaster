@@ -942,7 +942,7 @@ class FiltersScene(BaseScene):
             self.list_scene.try_to_select(self.selected_port, self.selected_port_title)
             return True
 
-        if events.was_pressed('B'):
+        if events.was_pressed('B') or events.was_pressed('X'):
             self.gui.pop_scene()
             return True
 
@@ -1130,7 +1130,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
     def get_theme_dir(self, theme_name):
         cfg_dir = harbourmaster.HM_TOOLS_DIR / "PortMaster"
 
-        if theme_name == "default_theme":
+        if theme_name in ("default_theme", "default_theme_dark"):
             return PYLIB_PATH / theme_name
 
         else:
@@ -1149,11 +1149,19 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
         themes = {
             "default_theme": self.get_theme_info("default_theme"),
+            "default_theme_dark": self.get_theme_info("default_theme_dark"),
             }
 
         for theme_file in (cfg_dir / "themes").glob("*/theme.json"):
             theme_name = theme_file.parent.name
             theme_data = self.get_theme_info(theme_name)
+            if theme_data is None:
+                logger.error(f"THEME {theme_file} isn't a valid theme.")
+                continue
+
+            if theme_data.get("#info", {}).get("VERSION", 0) < self.MIN_THEME_VERSION:
+                logger.error(f"THEME {theme_file} does not meet the minimum version requirement.")
+                continue
 
             themes[theme_name] = theme_data
 

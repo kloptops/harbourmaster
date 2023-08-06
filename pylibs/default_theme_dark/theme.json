@@ -1,7 +1,7 @@
 {
     "#info": {
         "version": 1,
-        "name": "Default Theme",
+        "name": "Default Dark Theme",
         "creator": "Tekkenfede and Kloptops"
     },
 
@@ -15,9 +15,9 @@
     },
 
     "#pallet": {
-        "background": [200, 200, 200, 255],
+        "background": [ 85, 85, 85, 255 ],
         "background_fade": [50, 50, 50, 85],
-        "list_text": [0, 0, 0, 255],
+        "list_text": [255, 255, 255, 255],
         "list_selected": [255, 0, 0, 255],
         "button": [200, 200, 200, 255]
     },
@@ -109,7 +109,7 @@
         "button_bar_filters": {
             "area": [ 0.5, 0.93, 0.95, 1.0 ],
             "font-size": 16,
-            "font-color": [ 0, 0, 0 ],
+            "font-color": [ 255, 255, 255 ],
             "bar": [
                 "_A",
                 "Accept",
@@ -122,7 +122,7 @@
         "button_bar_filters_on": {
             "area": [ 0.65, 0.93, 0.95, 1.0 ],
             "font-size": 16,
-            "font-color": [ 0, 0, 0 ],
+            "font-color": [ 255, 255, 255 ],
             "bar": [
                 "_A",
                 "Accept",
@@ -133,7 +133,7 @@
         "button_bar": {
             "area": [ 0.60, 0.93, 0.95, 1.0 ],
             "font-size": 16,
-            "font-color": [ 0, 0, 0 ],
+            "font-color": [ 255, 255, 255 ],
             "bar": [
                 "_A",
                 "Accept",
@@ -145,7 +145,7 @@
         "button_bar2": {
             "area": [ 0.40, 0.93, 0.95, 1.0 ],
             "font-size": 16,
-            "font-color": [ 0, 0, 0 ],
+            "font-color": [ 255, 255, 255 ],
             "bar": [
                 "_A",
                 "Install",
@@ -156,7 +156,7 @@
         "button_bar3": {
             "area": [ 0.5, 0.93, 0.95, 1.0 ],
             "font-size": 16,
-            "font-color": [ 0, 0, 0 ],
+            "font-color": [ 255, 255, 255 ],
             "bar": [
                 "_B",
                 "Back"
@@ -179,12 +179,12 @@
         "port_info": {
             "parent": "port_info_area",
             "area": [ 0.0, 0.0, 1.0, 1.0 ],
-            "fill": [ 230, 230, 230 ],
+            "fill": [ 110, 110, 110 ],
             "thickness": 10,
             "border": 8,
             "text": "",
             "font-size": 24,
-            "font-color": [ 0, 0, 0 ],
+            "font-color": [ 255, 255, 255 ],
             "text-wrap": true
         },
 
@@ -193,7 +193,7 @@
             "area": [ 0.0, 0.1, 1.0, 1.0 ],
             "border-x": 16,
             "font-size": 14,
-            "alt-fill": [ 210, 210, 210 ],
+            "alt-fill": [ 53, 53, 53 ],
             "select-fill": [ 153, 204, 255 ],
             "font-color": "list_text",
             "select-color": "list_selected",
@@ -212,7 +212,7 @@
             "font-size": 12,
             "parent": "background",
             "align": "topleft",
-            "font-color": [ 255, 0, 0 ],
+            "font-color": [ 153, 204, 255 ],
             "text-wrap": true,
             "autoscroll": "marquee",
             "scroll-speed": 40,
@@ -230,7 +230,7 @@
             "font-size": 16,
             "font-size[5:3]": 11,
             "font-size[16:9]": 11,
-            "font-color": [ 0, 0, 0 ],
+            "font-color": [ 255, 255, 255 ],
             "text-wrap": true,
             "text": "Genres: {port_info.genres}\nDownload Size: {port_info.download_size}{if:port_info.runtime}\nRuntime: {port_info.runtime} ({port_info.runtime_status}){endif}"
         },
@@ -248,7 +248,7 @@
             "font-size": 17,
             "font-size[5:3]": 13,
             "font-size[16:9]": 13,
-            "font-color": [ 0, 0, 0 ],
+            "font-color": [ 255, 255, 255 ],
             "text-wrap": true,
             "autoscroll": "marquee",
             "scroll-speed": 60,
@@ -263,7 +263,7 @@
             "area": [ 0.0, 0.0, 1.0, 1.0 ],
             "text": "{port_info.title}",
             "font-size": 32,
-            "font-color": [ 255, 0, 0 ],
+            "font-color": [ 153, 204, 255 ],
             "autoscroll": null,
             "text-wrap": false,
             "text-clip": false,
@@ -283,12 +283,12 @@
 
         "port_info": {
             "area": [ 0.0, 0.68, 1.0, 1.0 ],
-            "fill": [ 230, 230, 230 ],
+            "fill": [ 110, 110, 110 ],
             "text": "{port_info.description}",
             "thickness": 6,
             "border": 8,
             "font-size": 11,
-            "font-color": [ 0, 0, 0 ],
+            "font-color": [ 255, 255, 255 ],
             "text-wrap": true
         },
 
@@ -296,7 +296,7 @@
             "text": "{port_info.title}",
             "area": [ 0.00, 0.00, 1.00, 0.1 ],
             "font-size": 24,
-            "font-color": [ 255, 0, 0 ],
+            "font-color": [ 153, 204, 255 ],
             "autoscroll": null,
             "text-wrap": false,
             "align": "center"
@@ -311,11 +311,11 @@
         "port_info_instruction": {
             "area": [ 0.67, 0.1, 0.95, 0.65 ],
             "text": "Free Space: {system.free_space}\n\nPorter: {port_info.porter}\nGenres: {port_info.genres}\nDownload Size: {port_info.download_size}{if:port_info.runtime}\nRuntime: {port_info.runtime} ({port_info.runtime_status}){endif}\n\nInstruction: \nPlace file x in folder y then dance until tomorrow",
-            "fill": [ 230, 230, 230 ],
+            "fill": [ 110, 110, 110 ],
             "thickness": 6,
             "border": 8,
             "font-size": 13,
-            "font-color": [ 0, 0, 0 ],
+            "font-color": [ 255, 255, 255 ],
             "text-wrap": true,
             "parent": "element:background"
         },
@@ -356,14 +356,14 @@
         "system_time": {
             "text": "Time: {system.time_24hr}\nCFW: {system.cfw_name} ({system.cfw_version})\nDevice: {system.device_name}\nBattery: {system.battery_level}",
             "font-size": 13,
-            "font-color": [ 0, 0, 0 ],
+            "font-color": [ 255, 255, 255 ],
             "area": [ 0.02, 0.05, 0.95, 0.95 ],
             "align": "topright"
         },
         "system_time_low": {
             "text": "PM: {system.portmaster_version}\nHM: {system.harbourmaster_version}\nSpace: {system.free_space} free / {system.total_space} total",
             "font-size": 11,
-            "font-color": [ 0, 0, 0 ],
+            "font-color": [ 255, 255, 255 ],
             "area": [ 0.02, 0.05, 0.95, 0.95 ],
             "align": "bottomleft"
         }
@@ -383,7 +383,7 @@
         "ip": {
             "text": "IP: {system.ip_address}",
             "font-size": 11,
-            "font-color": [ 0, 0, 0 ],
+            "font-color": [ 255, 255, 255 ],
             "area": [ 0.02, 0.05, 0.95, 0.95 ],
             "align": "bottomleft"
         }
@@ -401,7 +401,7 @@
             "area[16:9]": [ 0.4, 0.00, 1.0, 1.0 ],
             "area[427:240]": [ 0.4, 0.00, 1.0, 1.0 ],
             "area[30:17]": [ 0.4, 0.00, 1.0, 1.0 ],
-            "fill": [ 230, 230, 230 ],
+            "fill": [ 110, 110, 110 ],
             "font-size": 16,
             "font-size[5:3]": 15,
             "font-size[30:17]": 15,
@@ -419,24 +419,24 @@
 
         "message_text": {
             "area": [ 0.05, 0.05, 0.95, 0.8 ],
-            "fill": [ 230, 230, 230 ],
+            "fill": [ 110, 110, 110 ],
             "thickness": 6,
             "text-wrap": true,
             "border": 10,
             "font-size": 24,
-            "font-color": [ 0, 0, 0 ],
+            "font-color": [ 255, 255, 255 ],
             "align": "bottomleft",
             "text": ""
         },
 
         "progress_bar": {
             "area": [ 0.05, 0.83, 0.95, 0.90 ],
-            "fill": [ 230, 230, 230 ],
+            "fill": [ 110, 110, 110 ],
             "progress-fill": [ 153, 204, 255 ],
             "text": "{system.progress_text}",
             "align": "midleft",
             "font-size": 14,
-            "font-color": [ 0, 0, 0 ],
+            "font-color": [ 255, 255, 255 ],
             "border": 2,
             "thickness": 1
         },
@@ -446,7 +446,7 @@
             "text": "{system.progress_amount}",
             "align": "midright",
             "font-size": 14,
-            "font-color": [ 0, 0, 0 ],
+            "font-color": [ 255, 255, 255 ],
             "thickness": 1,
             "border": 2
         },
@@ -459,11 +459,11 @@
 
         "message_text": {
             "area": [ 0.05, 0.5, 0.95, 0.8 ],
-            "fill": [ 230, 230, 230 ],
+            "fill": [ 110, 110, 110 ],
             "thickness": 6,
             "border": 8,
             "font-size": 24,
-            "font-color": [ 0, 0, 0 ],
+            "font-color": [ 255, 255, 255 ],
             "align": "center",
             "text": "",
             "text-wrap": true
