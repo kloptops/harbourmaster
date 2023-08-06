@@ -326,10 +326,11 @@ The list system is quite adequate
 ```json
     "element_name": {
         "select-color":    [255, 128, 128],  // color to draw the selected item as
-        "select-inactive": [128,  64,  64],  // color to draw the selected item if the element is inactive
         "select-fill":     [128, 128, 128],  // color to fill behind the selected item
         "alt-fill":        [210, 210, 210],  // color to fill alternating rows
-
+        "no-select-color": [128, 128, 128],  // color to draw text on unselectable rows.
+        "no-select-fill":  [210, 210, 210],  // color to fill on unselectable rows.
+        "inactive-select-color": [128,  64,  64],  // color to draw the selected item if the element is inactive
     }
 ```
 
@@ -391,18 +392,29 @@ As mentioned above you can use if/then/else statements in the text:
     }
 ```
 
+You can even compare two tags text:
+
+```json
+    {
+        // if ports_list.total_ports doesnt equal ports_list.filter_ports
+        "text": "{if:!ports_list.total_ports::ports_list.filtered}{ports_list.filter_ports} / {ports_list.total_ports}{else}{ports_list.total_ports}{endif}"
+    }
+```
+
 The format is:
 
-`{if:[!]<KEYNAME>[:<EQUALS TEXT>]}<TRUTH TEXT>[{else}<ELSE TEXT>]{endif}`
+`{if:[!]<KEYNAME>[:<EQUALS TEXT>[:OTHER KEY]]}<TRUTH TEXT>[{else}<ELSE TEXT>]{endif}`
 
 ### Hopefully this helps, if not... oh well i will write it better later on.
 
-|  Tag                                          |   Result                                          |
-|-----------------------------------------------|---------------------------------------------------|
-| `{if:!port_info.runtime}`                     | `port_info.runtime` is False                      |
-| `{if:port_info.runtime}`                      | `port_info.runtime` is True                       |
-| `{if:port_info.runtime:Mono 6.12.0.122}`      | `port_info.runtime` == "Mono 6.12.0.122"          |
-| `{if:!port_info.runtime:Mono 6.12.0.122}`     | `port_info.runtime` != "Mono 6.12.0.122"          |
+|  Tag                                                    |   Result                                              |
+|---------------------------------------------------------|-------------------------------------------------------|
+| `{if:!port_info.runtime}`                               | `port_info.runtime` != ""                             |
+| `{if:port_info.runtime}`                                | `port_info.runtime` == ""                             |
+| `{if:port_info.runtime:Mono 6.12.0.122}`                | `port_info.runtime` == "Mono 6.12.0.122"              |
+| `{if:!port_info.runtime:Mono 6.12.0.122}`               | `port_info.runtime` != "Mono 6.12.0.122"              |
+| `{if:ports_list.total_ports::ports_list.filter_ports}`  | `ports_list.total_ports` == `ports_list.filter_ports` |
+| `{if:!ports_list.total_ports::ports_list.filter_ports}` | `ports_list.total_ports` != `ports_list.filter_ports` |
 
 
 ### System tags

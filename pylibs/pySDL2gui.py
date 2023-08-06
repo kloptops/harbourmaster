@@ -169,13 +169,16 @@ class ResourceManager:
         else:
             raise GUIValueError(f"Invalid {file_name!r}")
 
-        if file_name.exists():
+        if file_name.name in ('.', '..'):
+            return None
+
+        if file_name.is_file():
             return file_name
 
         for path in reversed(self._paths):
             full_file_name = path / file_name
 
-            if full_file_name.exists():
+            if full_file_name.is_file():
                 return full_file_name
 
         return None
@@ -1036,6 +1039,9 @@ class FontTTF(sdl2.ext.FontTTF):
         if style_key not in self._styles:
             self.add_style(style_key, size, color)
 
+        if text == "":
+            text = " "
+
         return self.render_text(text, style_key, width=width, align=align)
 
 
@@ -1640,7 +1646,7 @@ class Region:
         self.font = self._verify_file('font', optional=True)
         self.fontsize = self._verify_int('font-size', 30)
         self.fontsize *= self._verify_float('font-scale', 1.0, optional=True)
-        self.fontcolor = self._verify_color('font-color', (255, 255, 255))
+        self.font_color = self._verify_color('font-color', (255, 255, 255))
         self.fontoutline = self._verify_outline('font-outline', None, optional=True)
         self._text = self._verify_text('text', optional=True)
         self.textclip = self._verify_bool('text-clip', True, optional=True)
@@ -1650,9 +1656,15 @@ class Region:
 
         self.imagelist = 0 ## TODO
         self.ilistalign = 0 ## TODO
+
         self.itemsize = self._verify_int('item-size', None, optional=True)
-        self.select = self._verify_color('select-color', optional=True)
+
+        self.select_color = self._verify_color('select-color', optional=True)
         self.select_fill = self._verify_color('select-fill', optional=True)
+        self.noselect_color = self._verify_color('no-select-color', optional=True)
+        self.noselect_fill = self._verify_color('no-select-fill', optional=True)
+        self.inactive_select_color = self._verify_color('inactive-select-color', optional=True)
+        self.inactive_select_fill = self._verify_color('inactive-select-fill', optional=True)
 
         self.click_sound = self._verify_text('click_sound', optional=True)
         self.cancel_sound = self._verify_text('cancel_sound', optional=True)
@@ -1674,6 +1686,8 @@ class Region:
         self.barwidth = self._verify_int('barwidth', 0, optional=True)
         self._bar = self._verify_bar('bar', optional=True)
         self.list = self._verify_list('list', optional=True)
+        if self.list is not None:
+            self._list_selected = [0] * len(self.list)
 
         if self._text and self.list:
             raise GUIThemeError('Cannot define text and a list')
@@ -1685,7 +1699,7 @@ class Region:
         self.page_size = 1
 
         self.selected = 0
-        self.selectedx = -1
+        self.selectedx = 0
 
         self.info = self._verify_list('info', optional=True)
         self.options = self._verify_list('options', optional=True, allow_null=True)
@@ -1785,8 +1799,12 @@ class Region:
                         self.roundness, *self.outline)
                 else:
                     self.renderer.draw_rect(r, self.outline)
-                r.x += 1; r.w -= 2
-                r.y += 1; r.h -= 2
+
+                r.x += 1
+                r.y += 1
+                r.w -= 2
+                r.h -= 2
+
             area.size = area.w - self.thickness, area.h - self.thickness
 
         # RENDER IMAGE
@@ -1801,9 +1819,12 @@ class Region:
                 if self.imagealign:
                     w = getattr(area, self.imagealign)
                     setattr(dest, self.imagealign, w)
+
                 image.draw_in(dest.tuple())
+
             elif self.imagemode == 'stretch':
                 image.draw_in(area.tuple())
+
             elif self.imagemode == 'repeat':
                 pass # TODO
 
@@ -1848,7 +1869,7 @@ class Region:
         # RENDER TEXT
         elif text:
             # x, y = getattr(text_area, self.align, text_area.topleft)
-            # self.fonts.draw(text, x, y, self.fontcolor, 255, self.align,
+            # self.fonts.draw(text, x, y, self.font_color, 255, self.align,
             #         text_area, outline=self.fontoutline).height + self.linespace
             ...
 
@@ -1857,12 +1878,12 @@ class Region:
                 if self.textwrap:
                     texture = self.texts.render_text(
                         self._text,
-                        self.font, self.fontsize, self.fontcolor,
+                        self.font, self.fontsize, self.font_color,
                         width=text_area.width, align=align_to_textalign[self.align])
                 else:
                     texture = self.texts.render_text(
                         self._text,
-                        self.font, self.fontsize, self.fontcolor, align=align_to_textalign[self.align])
+                        self.font, self.fontsize, self.font_color, align=align_to_textalign[self.align])
 
                 # x, y = getattr(text_area, self.align, text_area.topleft)
                 x, y, self.scroll_max = autoscroll_text(
@@ -1897,7 +1918,7 @@ class Region:
             #     if y + self.fonts.height > text_area.bottom:
             #         break
 
-            #     y += self.fonts.draw(l, x, y, self.fontcolor, 255, self.align,
+            #     y += self.fonts.draw(l, x, y, self.font_color, 255, self.align,
             #             text_area, outline=self.fontoutline).height + self.linespace
 
         # RENDER LIST
@@ -1924,30 +1945,36 @@ class Region:
                 if self.select_fill is not None and self.selected == i:
                     self.renderer.fill(irect, self.select_fill)
 
+                elif self.noselect_fill is not None and not self.list_selectable(i):
+                    self.renderer.fill(irect, self.noselect_fill)
+
                 elif self.alt_fill is not None and (zz & 1):
                     self.renderer.fill(irect, self.alt_fill)
 
                 if isinstance(t, (list, tuple)):
-                    bar = self._verify_bar(None, t, irect)
+                    bar = self._verify_bar(None, t, irect, align=align_to_textalign[self.align])
 
-                    if i == self.selected and self.selectedx >= 0:
-                        x = self.selectedx
-                    else:
-                        x = None
+                    x = self.bar_selected(i)
+                    # if i == self.selected:
+                    # else:
+                    #     x = None
 
-                    self._draw_bar(irect, bar, x)
+                    self._draw_bar(irect, bar, x, active=(self.selected==i))
 
                 elif self.selected == i:
                     ## Not sure what this is used for.
                     #
-                    # if isinstance(self.select, Region):
+                    # if isinstance(self.select_color, Region):
                     #     r = irect.inflated(self.borderx * 2, self.bordery * 2)
-                    #     self.select.draw(irect, t)
+                    #     self.select_color.draw(irect, t)
                     #     self.fonts.load(self.font, self.fontsize)
                     # else:
+                    if self.select_color is None:
+                        self.select_color = self.font_color
+
                     texture = self.texts.render_text(
                         t,
-                        self.font, self.fontsize, self.select, align=align_to_textalign[self.align])
+                        self.font, self.fontsize, self.select_color, align=align_to_textalign[self.align])
 
                     x, y, self.scroll_max = autoscroll_text(
                         texture.size,
@@ -2020,9 +2047,14 @@ class Region:
                                 pointer_rect, fit=True, flip_x=pointer_flip_x, flip_y=pointer_flip_y)                            
 
                 else:
+                    if self.noselect_color and not self.list_selectable(i):
+                        fontcolor = self.noselect_color
+                    else:
+                        fontcolor = self.font_color
+
                     texture = self.texts.render_text(
                         t,
-                        self.font, self.fontsize, self.fontcolor, align=align_to_textalign[self.align])
+                        self.font, self.fontsize, fontcolor, align=align_to_textalign[self.align])
 
                     x, y = getattr(irect, self.align, irect.topleft)
                     setattr(texture.size, self.align, (x, y))
@@ -2035,12 +2067,32 @@ class Region:
                 irect.y += itemsize
                 i += 1
 
-    def add_option(self, option, text):
-        if self.options is None:
+    def reset_options(self):
+        self.list = []
+        self.options = []
+        self._list_selected = []
+
+    def add_option(self, option, text, index=0):
+        if self.list is None:
             self.list = []
+            self.options = []
+            self._list_selected = []
+
+        if self.options is None:
+            self.options = []
+
+        if self._list_selected is None:
+            self._list_selected = []
+
+        while len(self.options) < len(self.list):
+            self.options.append(None)
+
+        while len(self._list_selected) < len(self.list):
+            self._list_selected.append(0)
 
         self.options.append(option)
         self.list.append(text)
+        self._list_selected.append(index)
 
     def selected_option(self):
         if self.options is None:
@@ -2049,6 +2101,21 @@ class Region:
             return None
 
         return self.options[self.selected]
+
+    def list_selected(self):
+        return self.selected
+
+    def list_selectable(self, index):
+        if self.list is None:
+            return False
+
+        if self.options is None:
+            return True
+
+        if index >= len(self.options):
+            return True
+
+        return self.options[index] is not None
 
     def list_select(self, index, direction=1, allow_wrap=False):
         if self.list is None:
@@ -2085,13 +2152,70 @@ class Region:
                 self.selected = new_index
                 return new_index
 
-            if options[new_index]:
+            if options[new_index] is not None:
                 self.selected = new_index
                 return new_index
 
             index += direction
 
         return None
+
+    def bar_selected(self, selected=None):
+        if selected is None:
+            selected = self.selected
+
+        if self._bar is None:
+            if self.list is None:
+                return -1
+
+            if not isinstance(self.list[selected], list):
+                return -1
+
+            return self._list_selected[selected]
+
+        else:
+            return self.selectedx
+
+    def bar_select(self, index, selected=None, allow_wrap=False):
+        if selected is None:
+            selected = self.selected
+
+        if self._bar is None:
+            if self.list is None:
+                return -1
+
+            if not isinstance(self.list[selected], list):
+                return -1
+
+            bar = self.list[selected]
+
+        else:
+            bar = self._bar
+
+        length = len(bar)
+
+        if index < 0:
+            if allow_wrap:
+                new_index = index % length
+            else:
+                new_index = 0
+
+        elif index >= length:
+            if allow_wrap:
+                new_index = index % length
+            else:
+                new_index = length - 1
+
+        else:
+            new_index = index
+
+        if self._bar is None:
+            self._list_selected[selected] = new_index
+
+        else:
+            self.selectedx = self.new_index
+
+        return new_index
 
     def update(self):
         '''
@@ -2158,13 +2282,13 @@ class Region:
                 self.gui.sounds.play(self.click_sound)
                 updated = True
 
-            if self.gui.events.was_pressed('R1'):
+            elif self.gui.events.was_pressed('R1'):
                 self.list_select(self.selected + self.page_size, direction=1, allow_wrap=False)
 
                 self.gui.sounds.play(self.click_sound)
                 updated = True
 
-            if self.gui.events.was_pressed('UP'):
+            elif self.gui.events.was_pressed('UP'):
                 self.list_select(self.selected - 1, direction=-1, allow_wrap=True)
 
                 self.gui.sounds.play(self.click_sound)
@@ -2174,6 +2298,14 @@ class Region:
                 self.list_select(self.selected + 1, direction=1, allow_wrap=True)
 
                 self.gui.sounds.play(self.click_sound)
+                updated = True
+
+            elif self.gui.events.was_pressed('LEFT'):
+                self.bar_select(self.bar_selected() - 1, allow_wrap=False)
+                updated = True
+
+            elif self.gui.events.was_pressed('RIGHT'):
+                self.bar_select(self.bar_selected() + 1, allow_wrap=False)
                 updated = True
 
             if updated:
@@ -2205,7 +2337,7 @@ class Region:
     def bar(self, val):
         self._bar = self._verify_bar(None, val)
 
-    def _verify_bar(self, name, default=None, area=None, optional=True):
+    def _verify_bar(self, name, default=None, area=None, optional=True, align=None):
         '''
         Process bar list for future display and selection. Used internally.
 
@@ -2218,7 +2350,7 @@ class Region:
 
         if not isinstance(vals, (list, tuple)):
             raise GUIThemeError("bar is not a list")
-        vals = [None if v == '' else v for v in vals]
+
         if vals.count('None') > 1:
             raise GUIThemeError('bar has more than one null value separator')
 
@@ -2233,8 +2365,11 @@ class Region:
 
         x = area.x
         y = area.centery
+        max_width = 0
 
-        items = left = []; right = []
+        items = left = []
+        right = []
+
         for i, v in enumerate(vals):
             im = v if isinstance(v, Image) else self.images.load(v)
             if im:
@@ -2247,7 +2382,7 @@ class Region:
             elif isinstance(v, str):
                 texture = self.texts.render_text(
                     v,
-                    self.font, self.fontsize, self.fontcolor, align='left')
+                    self.font, self.fontsize, self.font_color, align='left')
 
                 dest = Rect(x, y, max(texture.size.width, self.barwidth), texture.size.width)
                 dest.centery = area.centery
@@ -2260,14 +2395,22 @@ class Region:
             else:
                 raise GUIThemeError(f'bar item {i}({v}) not valid type')
 
-        x = area.right
-        for dest, item in right:
-            dest.right = x
-            x -= dest.width + self.barspace
+            max_width = x - area.x
+
+        if len(right) == 0 and align is not None and align == 'center':
+            offset = (area.width - max_width) // 2
+            for dest, item in left:
+                dest.x += offset
+
+        elif len(right):
+            x = area.right
+            for dest, item in right:
+                dest.right = x
+                x -= dest.width + self.barspace
 
         return left + right
 
-    def _draw_bar(self, area, bar, selected=None):
+    def _draw_bar(self, area, bar, selected=None, active=False):
         '''
         Draw bar in given area. Used internally
         '''
@@ -2275,36 +2418,31 @@ class Region:
         #self.fonts.load(self.font, self.fontsize)
 
         for i, (dest, item) in enumerate(bar):
-            # if i == selected:
-                # if isinstance(self.select, Region):
-                #     if isinstance(item, Image):
-                #         image = item; text = None
-                #     else:
-                #         color = None
-                #         text = item; image = None
-
-                #     r = dest.inflated(self.borderx * 2, self.bordery * 2)
-                #     self.select.draw(dest, text, image)
-                #     self.fonts.load(self.font, self.fontsize)
-
-                # else:
-                #     #self.renderer.fill(dest.tuple(), [0, 0, 255, 100])
-
-                #     if isinstance(item, Image):
-                #         item.draw_in(Rect.from_sdl(item.srcrect).fitted(dest).tuple())
-                #     else:
-                #         x, y = dest.center
-                #         self.fonts.draw(item, x, y,
-                #                 self.select, 255, 'center', area,
-                #                 outline=self.fontoutline)
-
             if isinstance(item, Image):
                 item.draw_in(Rect.from_sdl(item.srcrect).fitted(dest).tuple())
+
+            elif i == selected:
+                if not active and self.inactive_select_color is not None:
+                    select = self.inactive_select_color
+
+                elif self.select_color is not None:
+                    select = self.select_color
+
+                else:
+                    select = self.font_color
+
+                texture = self.texts.render_text(
+                    item,
+                    self.font, self.fontsize, select, align='left')
+
+                setattr(texture.size, 'center', dest.center)
+
+                texture.draw_in(dest, fit=True)
 
             else:
                 texture = self.texts.render_text(
                     item,
-                    self.font, self.fontsize, self.fontcolor, align='left')
+                    self.font, self.fontsize, self.font_color, align='left')
 
                 setattr(texture.size, 'center', dest.center)
 

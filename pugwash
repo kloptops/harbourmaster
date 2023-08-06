@@ -564,9 +564,7 @@ class MainMenuScene(BaseScene):
 
         self.load_regions("main_menu", ['option_list', ])
 
-        self.tags['option_list'].list = []
-        self.tags['option_list'].options = []
-
+        self.tags['option_list'].reset_options()
         self.tags['option_list'].add_option(('install', []), "All Ports")
         self.tags['option_list'].add_option(('install', ['rtr']), "Ready to Run Ports")
         self.tags['option_list'].add_option(('uninstall', ['installed']), "Uninstall Ports")
@@ -603,11 +601,12 @@ class OptionScene(BaseScene):
 
         self.load_regions("option_menu", ['option_list', ])
 
-        self.tags['option_list'].list = []
-        self.tags['option_list'].options = self.options = []
-
+        self.tags['option_list'].reset_options()
         self.tags['option_list'].add_option('update-ports', "Update Ports")
         self.tags['option_list'].add_option('select-theme', "Select Theme")
+        self.tags['option_list'].add_option('keyboard', "Show Keyboard")
+        self.tags['option_list'].add_option(None, "Porters")
+        self.tags['option_list'].add_option('some-option', ["Option 1", "Option 2", "Option 3"], 0)
         self.tags['option_list'].add_option(None, "")
         self.tags['option_list'].add_option('back', "Back")
 
@@ -621,6 +620,10 @@ class OptionScene(BaseScene):
 
             if selected_option == 'update-ports':
                 self.gui.do_update_ports()
+                return True
+
+            if selected_option == 'keyboard':
+                self.gui.push_scene('osk', OnScreenKeyboard(self.gui))
                 return True
 
             elif selected_option == 'select-theme':
@@ -644,9 +647,7 @@ class ThemesScene(BaseScene):
         themes = self.gui.list_themes()
         selected_theme = self.gui.hm.cfg_data['theme']
 
-        self.tags['option_list'].list = []
-        self.tags['option_list'].options = self.options = []
-
+        self.tags['option_list'].reset_options()
         for theme_name, theme_data in themes.items():
             if theme_name == selected_theme:
                 self.tags['option_list'].add_option((None, ''), f"{theme_data['name']} (Selected)")
@@ -654,7 +655,7 @@ class ThemesScene(BaseScene):
                 self.tags['option_list'].add_option(('select-theme', theme_name), theme_data['name'])
 
         self.tags['option_list'].add_option(None, "")
-        self.tags['option_list'].add_option('back', "Back")
+        self.tags['option_list'].add_option(('back', None), "Back")
 
     def do_update(self, events):
         super().do_update(events)
@@ -673,11 +674,87 @@ class ThemesScene(BaseScene):
                     self.gui.hm.cfg_data['theme'] = selected_parameter
                     self.gui.hm.save_config()
                     self.gui.events.running = False
+
+                    if not harbourmaster.HM_TESTING:
+                        reboot_file = (harbourmaster.HM_TOOLS_DIR / "PortMaster" / ".pugwash-reboot")
+                        if not reboot_file.is_file():
+                            reboot_file.touch(0o644)
+
                     return True
 
         elif events.was_pressed('B'):
             self.gui.pop_scene()
             return True
+
+
+class OnScreenKeyboard(BaseScene):
+    def __init__(self, gui):
+        super().__init__(gui)
+
+        self.load_regions("on_screen_keyboard", ['keyboard'])
+
+        self.mode = 'lower'
+        self.build_keyboard()
+        self.tags['keyboard'].list_select(2)
+        self.tags['keyboard'].bar_select(4, 2)
+
+    def build_keyboard(self, keep=False):
+        if keep:
+            last_list_select = self.tags['keyboard'].list_selected()
+            last_bar_select = self.tags['keyboard'].bar_selected()
+
+        self.tags['keyboard'].reset_options()
+        if self.mode == 'lower':
+            self.tags['keyboard'].add_option('row-1', [' ` ', ' 1 ', ' 2 ', ' 3 ', ' 4 ', ' 5 ', ' 6 ', ' 7 ', ' 8 ', ' 9 ', ' 0 ', ' - ', ' = '], 0)
+            self.tags['keyboard'].add_option('row-2', [' q ', ' w ', ' e ', ' r ', ' t ', ' y ', ' u ','  i ', ' o ', ' p ', ' [ ', ' ] ', ' \\ '], 0)
+            self.tags['keyboard'].add_option('row-3', [' a ', ' s ', ' d ', ' f ', ' g ', ' h ', ' j ', ' k ', ' l ', ' ; ', ' \' '], 0)
+            self.tags['keyboard'].add_option('row-4', [' z ', ' x ', ' c ', ' v ', ' b ', ' n ', ' m ', ' , ', ' . ', ' / '], 0)
+            self.tags['keyboard'].add_option('row-5', [' UPPER ', '    [_____]    ', ' << '], 0)
+
+        else:
+            self.tags['keyboard'].add_option('row-1', [' ~ ', ' ! ', ' @ ', ' # ', ' $ ', ' % ', ' ^ ', ' & ', ' * ', ' ( ', ' ) ', ' _ ', ' + '], 0)
+            self.tags['keyboard'].add_option('row-2', [' Q ', ' W ', ' E ', ' R ', ' T ', ' Y ', ' U ','  I ', ' O ', ' P ', ' { ', ' } ', ' | '], 0)
+            self.tags['keyboard'].add_option('row-3', [' A ', ' S ', ' D ', ' F ', ' G ', ' H ', ' J ', ' K ', ' L ', ' : ', ' " '], 0)
+            self.tags['keyboard'].add_option('row-4', [' Z ', ' X ', ' C ', ' V ', ' B ', ' N ', ' M ', ' < ', ' > ', ' ? '], 0)
+            self.tags['keyboard'].add_option('row-5', [' LOWER ', '    [_____]    ', ' << '], 0)
+
+        if keep:
+            self.tags['keyboard'].list_select(last_list_select)
+            self.tags['keyboard'].bar_select(last_bar_select)
+
+        self.last_select = self.tags['keyboard'].list_selected()
+
+    def do_update(self, events):
+        super().do_update(events)
+
+        if self.last_select != self.tags['keyboard'].list_selected():
+            item = self.tags['keyboard'].bar_selected(self.last_select)
+            self.tags['keyboard'].bar_select(item)
+            self.last_select = self.tags['keyboard'].list_selected()
+
+        if events.was_pressed('START') or events.was_pressed('A'):
+            selected_option = self.tags['keyboard'].selected_option()
+            selected_key = self.tags['keyboard'].bar_selected()
+
+            print(f"Selected {selected_option}")
+
+            if selected_option == 'back':
+                self.gui.pop_scene()
+                return True
+
+            return True
+
+        elif events.was_pressed('B'):
+            self.gui.pop_scene()
+            return True
+
+        elif events.was_pressed('X'):
+            if self.mode == 'upper':
+                self.mode = 'lower'
+            else:
+                self.mode = 'upper'
+
+            self.build_keyboard(keep=True)
 
 
 class InstallMenuScene(BaseScene):

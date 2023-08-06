@@ -19,6 +19,7 @@
         "background_fade": [50, 50, 50, 85],
         "list_text": [0, 0, 0, 255],
         "list_selected": [255, 0, 0, 255],
+        "list_unselectable": [128, 0, 0, 255],
         "button": [200, 200, 200, 255]
     },
 
@@ -375,7 +376,10 @@
 
         "#element:option_list": {
             "list": [],
-            "options": []
+            "options": [],
+            "align": "center",
+            "no-select-color": "list_unselectable",
+            "inactive-select-color": "list_unselectable"
         },
 
         "#element:button_bar": {},
@@ -387,6 +391,24 @@
             "area": [ 0.02, 0.05, 0.95, 0.95 ],
             "align": "bottomleft"
         }
+    },
+
+    "on_screen_keyboard": {
+        "#element:background": {},
+
+        "keyboard": {
+            "font-size": 30,
+            "font-color": "list_text",
+            "select-color": "list_selected",
+            "inactive-select-color": "list_text",
+            "area": [ 0.1, 0.4, 0.9, 1.0 ],
+            "barwidth": 40,
+            "list": [],
+            "options": [],
+            "align": "center"
+        },
+
+        "#element:button_bar": {}
     },
 
     "filter_list": {
