@@ -193,7 +193,9 @@
             "parent": "port_info_list_area",
             "area": [ 0.0, 0.1, 1.0, 1.0 ],
             "border-x": 16,
-            "font-size": 14,
+            "font-size": 17,
+            "font-size[427:240]": 22,
+            "font-size[16:9]": 19,
             "alt-fill": [ 210, 210, 210 ],
             "select-fill": [ 153, 204, 255 ],
             "font-color": "list_text",
@@ -210,7 +212,7 @@
             "text": "{if:ports_list.filters}Filters: {ports_list.filters}\n{endif}Available Ports: {if:!ports_list.total_ports::ports_list.filter_ports}{ports_list.filter_ports} / {ports_list.total_ports}{else}{ports_list.total_ports}{endif}",
             "area": [ 0.0, 0.0, 0.4, 0.1 ],
             "area[4:3|30:17|3:2]": [ 0.0, 0.0, 0.3, 0.1 ],
-            "font-size": 12,
+            "font-size": 14,
             "parent": "background",
             "align": "topleft",
             "font-color": [ 255, 0, 0 ],
@@ -263,12 +265,9 @@
             "parent": "port_info_title_area",
             "area": [ 0.0, 0.0, 1.0, 1.0 ],
             "text": "{port_info.title}",
-            "font-size": 32,
+            "font-size": 22,
             "font-color": [ 255, 0, 0 ],
-            "autoscroll": null,
-            "text-wrap": false,
-            "text-clip": false,
-            "align": "topleft"
+            "align": "center"
         },
 
         "port_image": {
@@ -283,12 +282,17 @@
         "#element:background": {},
 
         "port_info": {
-            "area": [ 0.0, 0.68, 1.0, 1.0 ],
+            "area": [ 0.0, 0.68, 1.0, 0.9 ],
             "fill": [ 230, 230, 230 ],
             "text": "{port_info.description}",
             "thickness": 6,
             "border": 8,
-            "font-size": 11,
+            "autoscroll": "marquee",
+            "scroll-speed": 60,
+            "scroll-delay-start": 1500,
+            "scroll-delay-end": 1500,
+            "font-size": 15,
+            "font-size[427:240]": 22,
             "font-color": [ 0, 0, 0 ],
             "text-wrap": true
         },
@@ -357,13 +361,15 @@
         "system_time": {
             "text": "Time: {system.time_24hr}\nCFW: {system.cfw_name} ({system.cfw_version})\nDevice: {system.device_name}\nBattery: {system.battery_level}",
             "font-size": 13,
+            "font-size[427:240]": 17,
             "font-color": [ 0, 0, 0 ],
             "area": [ 0.02, 0.05, 0.95, 0.95 ],
             "align": "topright"
         },
         "system_time_low": {
             "text": "PM: {system.portmaster_version}\nHM: {system.harbourmaster_version}\nSpace: {system.free_space} free / {system.total_space} total",
-            "font-size": 11,
+            "font-size": 12,
+            "font-size[427:240]": 16,
             "font-color": [ 0, 0, 0 ],
             "area": [ 0.02, 0.05, 0.95, 0.95 ],
             "align": "bottomleft"
@@ -387,6 +393,7 @@
         "ip": {
             "text": "IP: {system.ip_address}",
             "font-size": 11,
+            "font-size[427:240]": 16,
             "font-color": [ 0, 0, 0 ],
             "area": [ 0.02, 0.05, 0.95, 0.95 ],
             "align": "bottomleft"

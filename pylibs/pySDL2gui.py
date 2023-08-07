@@ -2397,8 +2397,12 @@ class Region:
 
             max_width = x - area.x
 
-        if len(right) == 0 and align is not None and align == 'center':
-            offset = (area.width - max_width) // 2
+        if len(right) == 0 and align in ('center', 'right'):
+            if align == 'center':
+                offset = (area.width - max_width) // 2
+            elif align == 'right':
+                offset = (area.width - max_width)
+
             for dest, item in left:
                 dest.x += offset
 
