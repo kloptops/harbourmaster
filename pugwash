@@ -1680,7 +1680,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
     def do_install(self, port_name):
 
         with self.enable_messages():
-            self.message(_("Installing {port_name}").format(port_name))
+            self.message(_("Installing {port_name}").format(port_name=port_name))
             self.do_loop(no_delay=True)
 
             with self.enable_cancellable(True):
