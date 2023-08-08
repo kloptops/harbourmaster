@@ -58,11 +58,13 @@
         "left_pane": {
             "comment": "Left side of the screen.",
             "area": [ 0.0, 0.0, 0.3, 1.0 ],
+            "area[3:2]": [ 0.0, 0.0, 0.4, 1.0 ],
             "area[wide]": [ 0.0, 0.0, 0.4, 1.0 ]
         },
         "right_pane": {
             "comment": "Right side of the screen.",
             "area": [ 0.3, 0.0, 1.0, 1.0 ],
+            "area[3:2]": [ 0.4, 0.0, 1.0, 1.0 ],
             "area[wide]": [ 0.4, 0.0, 1.0, 1.0 ]
         },
         "port_info_list_area": {
@@ -100,41 +102,12 @@
             "font-size": 36,
             "font-color": [ 0, 0, 0 ]
         },
-        "small_button": {
-            "fill": "button",
-            "outline": [ 0, 0, 0, 255 ],
-            "thickness": 1,
-            "font-size": 16,
-            "font-color": [ 0, 0, 0 ]
-        },
-        "button_bar_filters": {
-            "area": [ 0.5, 0.93, 0.95, 1.0 ],
-            "font-size": 16,
-            "font-color": [ 255, 255, 255 ],
-            "bar": [
-                "_A",
-                "Accept",
-                "_B",
-                "Back",
-                "_X",
-                "Filter"
-            ]
-        },
-        "button_bar_filters_on": {
-            "area": [ 0.65, 0.93, 0.95, 1.0 ],
-            "font-size": 16,
-            "font-color": [ 255, 255, 255 ],
-            "bar": [
-                "_A",
-                "Accept",
-                "_B",
-                "Back"
-            ]
-        },
+
         "button_bar": {
             "area": [ 0.60, 0.93, 0.95, 1.0 ],
             "font-size": 16,
             "font-color": [ 255, 255, 255 ],
+            "align": "midright",
             "bar": [
                 "_A",
                 "Accept",
@@ -143,26 +116,6 @@
             ]
         },
 
-        "button_bar2": {
-            "area": [ 0.40, 0.93, 0.95, 1.0 ],
-            "font-size": 16,
-            "font-color": [ 255, 255, 255 ],
-            "bar": [
-                "_A",
-                "Install",
-                "_B",
-                "Back"
-            ]
-        },
-        "button_bar3": {
-            "area": [ 0.5, 0.93, 0.95, 1.0 ],
-            "font-size": 16,
-            "font-color": [ 255, 255, 255 ],
-            "bar": [
-                "_B",
-                "Back"
-            ]
-        },
         "option_list": {
             "area": [ 0.1, 0.25, 0.9, 0.9 ],
             "border": 8,
@@ -196,6 +149,7 @@
             "font-size": 17,
             "font-size[427:240]": 22,
             "font-size[16:9]": 19,
+            "font-size[5:3]": 27,
             "alt-fill": [ 53, 53, 53 ],
             "select-fill": [ 153, 180, 255 ],
             "font-color": "list_text",
@@ -230,6 +184,7 @@
             "area[16:9]": [ 5, 80, -5, -5 ],
             "area[427:240]": [ 5, 80, -5, -5 ],
             "area[30:17]": [ 5, 80, -5, -5 ],
+            "area[5:3]": [ 0.05, 0.0, 1.0, 0.8 ],
             "font-size": 16,
             "font-size[5:3]": 11,
             "font-size[16:9]": 11,
@@ -244,10 +199,9 @@
             "area[4:3]": [ 5, 118, -5, -50 ],
             "area[3:2]": [ 5, 65, -5, -13 ],
             "area[16:9]": [ 5, 165, -5, -100 ],
-            "area[5:3]": [ 5, 165, -5, -125 ],
+            "area[5:3]": [ 0.05, 0.2, 0.8, 0.7 ],
             "area[427:240]": [ 5, 145, -5, -50 ],
             "area[30:17]": [ 5, 145, -5, -65 ],
-            "parent[5:3]": "port_general_info",
             "font-size": 17,
             "font-size[5:3]": 13,
             "font-size[16:9]": 13,
@@ -268,7 +222,6 @@
             "font-size": 22,
             "font-color": [ 153, 204, 255 ],
             "align": "center"
-
         },
 
         "port_image": {
@@ -276,7 +229,8 @@
             "area": [ 0.0, 0.0, 1.0, 1.0 ],
             "image": "no-image.jpg"
         },
-        "#element:button_bar_filters": {}
+
+        "#element:button_bar": {}
     },
 
     "port_info": {
@@ -310,13 +264,13 @@
         },
 
         "port_image": {
-            "area": [ 0.1, 0.1, 0.65, 0.65 ],
+            "area": [ 0.0, 0.1, 0.65, 0.65 ],
             "image": "no-image.jpg",
             "align": "midcenter"
         },
 
         "port_info_instruction": {
-            "area": [ 0.67, 0.1, 0.95, 0.65 ],
+            "area": [ 0.5, 0.1, 0.95, 0.65 ],
             "text": "Free Space: {system.free_space}\n\nPorter: {port_info.porter}\nGenres: {port_info.genres}\nDownload Size: {port_info.download_size}{if:port_info.runtime}\nRuntime: {port_info.runtime} ({port_info.runtime_status}){endif}\n\nInstruction: \nPlace file x in folder y then dance until tomorrow",
             "fill": [ 110, 110, 110 ],
             "thickness": 6,
@@ -327,17 +281,7 @@
             "parent": "element:background"
         },
 
-        "#element:small_button:ok_button": {
-            "area": [ 0.0, 0.0, 0.0, 0.0 ],
-            "text": "Okay"
-        },
-
-        "#element:small_button:back_button": {
-            "area": [ 0.0, 0.0, 0.0, 0.0 ],
-            "text": "Back"
-        },
-
-        "#element:button_bar2": {}
+        "#element:button_bar": {}
     },
 
     "main_menu": {
@@ -357,7 +301,6 @@
             "pointer-mirror": true,
             "pointer-mirror-x": true
         },
-        "#element:button_bar": {},
 
         "system_time": {
             "text": "Time: {system.time_24hr}\nCFW: {system.cfw_name} ({system.cfw_version})\nDevice: {system.device_name}\nBattery: {system.battery_level}",
@@ -374,8 +317,9 @@
             "font-color": [ 255, 255, 255 ],
             "area": [ 0.02, 0.05, 0.95, 0.95 ],
             "align": "bottomleft"
-        }
+        },
 
+        "#element:button_bar": {}
     },
 
     "option_menu": {
@@ -422,7 +366,7 @@
             "list": [],
             "align": "midleft"
         },
-        "#element:button_bar_filters_on": {}
+        "#element:button_bar": {}
 
     },
 
@@ -499,18 +443,6 @@
             "text-wrap": true
         },
 
-        "#element:small_button:ok_button": {
-            "area": [ 0.0, 0.0, 0.0, 0.0 ],
-            "#area": [ 0.35, 0.95, 0.45, 0.98 ],
-            "text": "Okay"
-        },
-
-        "#element:small_button:cancel_button": {
-            "area": [ 0.0, 0.0, 0.0, 0.0 ],
-            "#area": [ 0.55, 0.95, 0.65, 0.98 ],
-            "text": "Back"
-        },
-
-        "#element:button_bar3": {}
+        "#element:button_bar": {}
     }
 }

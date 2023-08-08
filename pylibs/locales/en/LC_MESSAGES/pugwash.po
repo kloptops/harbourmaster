@@ -1,0 +1,191 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2023 PortMaster
+# Jacob Smith <kloptops@gmail.com>, 2023.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2023-08-08 20:14+0800\n"
+"PO-Revision-Date: 2023-08-08 20:14+0800\n"
+"Last-Translator: Jacob Smith <kloptops@gmail.com>\n"
+"Language-Team: English\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+
+
+#: pugwash:171
+msgid "Unknown"
+msgstr "Unknown"
+
+#: pugwash:614
+msgid "All Ports"
+msgstr "All Ports"
+
+#: pugwash:615
+msgid "Ready to Run Ports"
+msgstr "Ready to Run Ports"
+
+#: pugwash:616
+msgid "Uninstall Ports"
+msgstr "Uninstall Ports"
+
+#: pugwash:618
+msgid "Options"
+msgstr "Options"
+
+#: pugwash:619
+msgid "Exit"
+msgstr "Exit"
+
+#: pugwash:620
+msgid "Quit"
+msgstr "Quit"
+
+#: pugwash:620 pugwash:656 pugwash:760 pugwash:768
+msgid "Enter"
+msgstr "Enter"
+
+#: pugwash:652
+msgid "Update Ports"
+msgstr "Update Ports"
+
+#: pugwash:653
+msgid "Select Theme"
+msgstr "Select Theme"
+
+#: pugwash:655 pugwash:656 pugwash:703 pugwash:704 pugwash:831 pugwash:833
+msgid "Back"
+msgstr "Back"
+
+#: pugwash:698
+msgid "{theme_name} (Selected)"
+msgstr "{theme_name} (Selected)"
+
+#: pugwash:704 pugwash:760 pugwash:768
+msgid "Select"
+msgstr "Select"
+
+#: pugwash:719
+msgid ""
+"Do you want to change theme?\n"
+"\n"
+"You will have to restart for it to take affect."
+msgstr ""
+"Do you want to change theme?\n"
+"\n"
+"You will have to restart for it to take affect."
+
+#: pugwash:760
+msgid "Upper Case"
+msgstr "Upper Case"
+
+#: pugwash:760 pugwash:768
+msgid "Delete"
+msgstr "Delete"
+
+#: pugwash:760 pugwash:768
+msgid "Space"
+msgstr "Space"
+
+#: pugwash:760 pugwash:768 pugwash:1124 pugwash:1510
+msgid "Cancel"
+msgstr "Cancel"
+
+#: pugwash:768
+msgid "Lower Case"
+msgstr "Lower Case"
+
+#: pugwash:831
+msgid "Filters"
+msgstr "Filters"
+
+#: pugwash:831 pugwash:833
+msgid "Show Info"
+msgstr "Show Info"
+
+#: pugwash:854
+msgid "NO PORTS"
+msgstr "NO PORTS"
+
+#: pugwash:859
+msgid "** NO PORTS FOUND **"
+msgstr "** NO PORTS FOUND **"
+
+#: pugwash:860
+msgid "Download ports first."
+msgstr "Download ports first."
+
+#: pugwash:1020
+msgid "Genres:"
+msgstr "Genres:"
+
+#: pugwash:1037
+msgid "Attributes:"
+msgstr "Attributes:"
+
+#: pugwash:1053
+msgid "Porters:"
+msgstr "Porters:"
+
+#: pugwash:1142
+msgid "Are you sure you want to cancel?"
+msgstr "Are you sure you want to cancel?"
+
+#: pugwash:1379 pugwash:1453
+msgid "N/A"
+msgstr "N/A"
+
+#: pugwash:1426
+msgid "** NO PORT **"
+msgstr "** NO PORT **"
+
+#: pugwash:1441
+msgid "Ready to Run"
+msgstr "Ready to Run"
+
+#: pugwash:1441
+msgid "Requires Files"
+msgstr "Requires Files"
+
+#: pugwash:1447
+msgid "Installed"
+msgstr "Installed"
+
+#: pugwash:1449
+msgid "Missing"
+msgstr "Missing"
+
+#: pugwash:1452
+msgid "None"
+msgstr "None"
+
+#: pugwash:1507
+msgid "Okay"
+msgstr "Okay"
+
+#: pugwash:1683
+msgid "Installing {port_name}"
+msgstr "Installing {port_name}"
+
+#: pugwash:1693
+msgid "Uninstalling {port_name}"
+msgstr "Uninstalling {port_name}"
+
+#: pugwash:1703
+msgid "Updating all port sources:"
+msgstr "Updating all port sources:"
+
+#: pugwash:1712
+msgid "Godot/FRT {version}"
+msgstr "Godot/FRT {version}"
+
+#: pugwash:1715
+msgid "Mono {version}"
+msgstr "Mono {version}"
+
+#: pugwash:1718
+msgid "JDK {vesion}"
+msgstr "JDK {vesion}"
+

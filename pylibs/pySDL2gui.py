@@ -1684,7 +1684,7 @@ class Region:
 
         self.barspace = self._verify_int('barspace', 4)
         self.barwidth = self._verify_int('barwidth', 0, optional=True)
-        self._bar = self._verify_bar('bar', optional=True)
+        self._bar = self._verify_bar('bar', optional=True, align=self.align)
         self.list = self._verify_list('list', optional=True)
         if self.list is not None:
             self._list_selected = [0] * len(self.list)
@@ -2335,7 +2335,7 @@ class Region:
         return self._bar
     @bar.setter
     def bar(self, val):
-        self._bar = self._verify_bar(None, val)
+        self._bar = self._verify_bar(None, val, align=self.align)
 
     def _verify_bar(self, name, default=None, area=None, optional=True, align=None):
         '''
@@ -2397,10 +2397,11 @@ class Region:
 
             max_width = x - area.x
 
-        if len(right) == 0 and align in ('center', 'right'):
-            if align == 'center':
+        if align is not None and len(right) == 0 and ('center' in align or 'right' in align):
+            if 'center' in align:
                 offset = (area.width - max_width) // 2
-            elif align == 'right':
+
+            elif 'right' in align:
                 offset = (area.width - max_width)
 
             for dest, item in left:
