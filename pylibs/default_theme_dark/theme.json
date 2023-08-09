@@ -237,7 +237,7 @@
         "#element:background": {},
 
         "port_info": {
-            "area": [ 0.0, 0.68, 1.0, 0.9 ],
+            "area": [ 0.05, 0.68, 0.95, 0.9 ],
             "fill": [ 110, 110, 110 ],
             "text": "{port_info.description}",
             "thickness": 6,
@@ -270,7 +270,7 @@
         },
 
         "port_info_instruction": {
-            "area": [ 0.5, 0.1, 0.95, 0.65 ],
+            "area": [ 0.6, 0.1, 0.95, 0.65 ],
             "text": "Free Space: {system.free_space}\n\nPorter: {port_info.porter}\nGenres: {port_info.genres}\nDownload Size: {port_info.download_size}{if:port_info.runtime}\nRuntime: {port_info.runtime} ({port_info.runtime_status}){endif}\n\nInstruction: \nPlace file x in folder y then dance until tomorrow",
             "fill": [ 110, 110, 110 ],
             "thickness": 6,

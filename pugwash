@@ -84,16 +84,69 @@ from harbourmaster import (
     )
 
 
+################################################################################
+## Logging
 LOG_FILE = harbourmaster.HM_TOOLS_DIR / "PortMaster" / "pugwash.txt"
 if LOG_FILE.parent.is_dir():
     LOG_FILE_HANDLE = logger.add(LOG_FILE, level="DEBUG", backtrace=True, diagnose=True)
 
 
+################################################################################
 ## Translations
-gettext.bindtextdomain('pugwash', PYLIB_PATH / "locales")
+LANG_DIR = PYLIB_PATH / "locales"
+
+def lang_opts(lang):
+    yield lang
+
+    if '_' in lang and '.' in lang:
+        yield (lang.rsplit('_', 1)[0] + lang.rsplit('.')[1])
+
+    if '.' in lang:
+        yield lang.rsplit('.')[0]
+
+    if '_' in lang:
+        yield lang.rsplit('_', 1)[0]
+
+
+def check_lang(lang):
+    for lang_opt in lang_opts(lang):
+        temp = LANG_DIR / lang_opt / "LC_MESSAGES"
+        if temp.is_dir():
+            return lang_opt
+
+    return None
+
+
+def load_lang():
+    config = harbourmaster.HM_TOOLS_DIR / "PortMaster" / "config" / "config.json"
+    if config.is_file():
+        with open(config, 'r') as fh:
+            config = json.load(fh)
+
+        config_lang = config.get("language", None)
+
+    else:
+        config_lang = None
+
+    environ_lang = os.environ.get('LANG')
+
+    if config_lang and check_lang(config_lang):
+        os.environ['LANG'] = check_lang(config_lang)
+
+    elif config_lang and check_lang(environ_lang):
+        os.environ['LANG'] = check_lang(environ_lang)
+
+    else:
+        os.environ['LANG'] = 'en'
+
+
+load_lang()
+gettext.bindtextdomain('pugwash', str(LANG_DIR))
 gettext.textdomain('pugwash')
 _ = gettext.gettext
 
+################################################################################
+## Code starts here.
 """
 -- General State Machine --
 
@@ -168,7 +221,7 @@ def get_ip_address():
         __IP_ADDRESS = s.getsockname()[0]
 
     except Exception:
-        __IP_ADDRESS = _('Unknown')
+        __IP_ADDRESS = _("Unknown IP")
 
     finally:
         s.close()
@@ -539,9 +592,11 @@ class BaseScene:
             if region_name in self.text_regions:
                 region, text = self.text_regions[region_name]
                 region.text = self.gui.format_data(text)
+
             elif region_name in self.bar_regions:
                 region, bar = self.bar_regions[region_name]
                 new_bar = bar[:]
+
                 for i, bar_item in enumerate(bar):                    
                     if not isinstance(bar_item, str) or "{" not in bar_item:
                         continue
@@ -585,7 +640,6 @@ class BaseScene:
             return
 
         if len(key_map) == 0:
-            print(f"-> {key_map} = {None}")
             self.tags['button_bar'].bar = None
             return
 
@@ -929,16 +983,13 @@ class PortsListScene(BaseScene):
 
             logger.debug(f"{self.options['mode']}: {port_name}")
             if self.options['mode'] == 'install':
-                self.gui.set_data('port_info.mode', 'Install')
                 self.ready = False
                 self.gui.push_scene('port_info', PortInfoScene(self.gui, port_name, 'install'))
 
             elif self.options['mode'] == 'uninstall':
-                self.gui.set_data('port_info.mode', 'Uninstall')
                 self.ready = False
                 self.gui.push_scene('port_info', PortInfoScene(self.gui, port_name, 'uninstall'))
 
-            self.gui.set_data('port_info.mode', 'View')
             return True
 
 
@@ -1033,7 +1084,6 @@ class FiltersScene(BaseScene):
             self.tags['filter_list'].add_option(hm_genre, text)
 
         self.tags['filter_list'].add_option(None, "")
-
         self.tags['filter_list'].add_option(None, _("Attributes:"))
 
         for hm_genre in ['rtr', 'mono']:   # 'godot'
@@ -1301,13 +1351,30 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         else:
             return cfg_dir / "themes" / theme_name
 
-    def get_theme_info(self, theme_name):
-        theme_data = harbourmaster.json_safe_loads((self.get_theme_dir(theme_name) / "theme.json").read_text())
+    def get_theme_data(self, theme_name):
+        theme_file = (self.get_theme_dir(theme_name) / "theme.json")
+        if not theme_file.is_file():
+            print(f"Unknown file {theme_file}")
+            return None
 
+        theme_data = harbourmaster.json_safe_loads(theme_file.read_text())
+
+        if theme_data is None:
+            print(f"Unable to load {theme_file}")
+            return None
+
+        return theme_data
+
+    def get_theme_info(self, theme_name):
+        theme_data = self.get_theme_data(theme_name)
         if theme_data is None:
             return None
 
-        return theme_data.get("#info", None)
+        if "#info" not in theme_data:
+            print(f"Bad theme info {theme_name}")
+            return None
+
+        return theme_data["#info"]
 
     def list_themes(self):
         cfg_dir = harbourmaster.HM_TOOLS_DIR / "PortMaster"
@@ -1324,8 +1391,9 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
                 logger.error(f"THEME {theme_file} isn't a valid theme.")
                 continue
 
-            if theme_data.get("#info", {}).get("VERSION", 0) < self.MIN_THEME_VERSION:
-                logger.error(f"THEME {theme_file} does not meet the minimum version requirement.")
+            print(str(theme_data)[:30])
+            if theme_data.get("version", 0) < self.MIN_THEME_VERSION:
+                logger.error(f"THEME {theme_file} does not meet the minimum version requirement: {theme_data.get('version', 0)}")
                 continue
 
             themes[theme_name] = theme_data
