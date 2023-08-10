@@ -94,21 +94,25 @@ if LOG_FILE.parent.is_dir():
 ################################################################################
 ## Translations
 LANG_DIR = PYLIB_PATH / "locales"
+DEFAULT_LANG = None
 
 def lang_opts(lang):
     yield lang
 
-    if '_' in lang and '.' in lang:
-        yield (lang.rsplit('_', 1)[0] + lang.rsplit('.')[1])
-
     if '.' in lang:
         yield lang.rsplit('.')[0]
+
+    if '_' in lang and '.' in lang:
+        yield (lang.rsplit('_', 1)[0] + lang.rsplit('.')[1])
 
     if '_' in lang:
         yield lang.rsplit('_', 1)[0]
 
 
 def check_lang(lang):
+    if lang is None:
+        return None
+
     for lang_opt in lang_opts(lang):
         temp = LANG_DIR / lang_opt / "LC_MESSAGES"
         if temp.is_dir():
@@ -129,6 +133,7 @@ def load_lang():
         config_lang = None
 
     environ_lang = os.environ.get('LANG')
+    DEFAULT_LANG = environ_lang
 
     if config_lang and check_lang(config_lang):
         os.environ['LANG'] = check_lang(config_lang)
@@ -137,7 +142,20 @@ def load_lang():
         os.environ['LANG'] = check_lang(environ_lang)
 
     else:
-        os.environ['LANG'] = 'en'
+        os.environ['LANG'] = 'en_US'
+
+
+def lang_list():
+    common_languages = {
+        # Sorted by language code
+        "de_DE": _("German"),
+        "en_US": _("English"),
+        "es_ES": _("Spanish"),
+        "it_IT": _("Italian"),
+        # Add more language codes and translations here
+        }
+
+    return common_languages
 
 
 load_lang()
@@ -359,12 +377,13 @@ def theme_load(gui, theme_file):
             elif section_name == "#resources":
                 print("- loading resources:")
                 for resource_name, resource_data in section_data.items():
-                    if len(resource_data) == 0:
+                    if isinstance(resource_data, list) and len(resource_data) == 2:
+                        print(f"  - loading static svg {resource_name} - [{gui.images.load_static(resource_name, resource_data) is None and 'FAIL' or 'OKAY'}]")
+                    elif len(resource_data) == 0:
                         print(f"  - loading static {resource_name} - [{gui.images.load_static(resource_name) is None and 'FAIL' or 'OKAY'}]")
 
                     else:
                         print(f"  - loading atas {resource_name} - [{gui.images.load_atlas(resource_name, resource_data) is None and 'FAIL' or 'OKAY'}]")
-                        gui.images.load_atlas(resource_name, resource_data)
 
             elif section_name == "#elements":
                 print("- loading elements:")
@@ -705,6 +724,7 @@ class OptionScene(BaseScene):
         self.tags['option_list'].reset_options()
         self.tags['option_list'].add_option('update-ports', _("Update Ports"))
         self.tags['option_list'].add_option('select-theme', _("Select Theme"))
+        self.tags['option_list'].add_option('select-language', _("Choose Language"))
         self.tags['option_list'].add_option(None, "")
         self.tags['option_list'].add_option('back', _("Back"))
         self.set_buttons({'A': _('Enter'), 'B': _('Back')})
@@ -727,6 +747,9 @@ class OptionScene(BaseScene):
 
             elif selected_option == 'select-theme':
                 self.gui.push_scene('select-theme', ThemesScene(self.gui))
+
+            elif selected_option == 'select-language':
+                self.gui.push_scene('select-language', LanguageScene(self.gui))
 
             elif selected_option == 'back':
                 self.gui.pop_scene()
@@ -772,6 +795,56 @@ class ThemesScene(BaseScene):
             elif selected_option == 'select-theme':
                 if self.gui.message_box(_("Do you want to change theme?\n\nYou will have to restart for it to take affect."), want_cancel=True):
                     self.gui.hm.cfg_data['theme'] = selected_parameter
+                    self.gui.hm.save_config()
+                    self.gui.events.running = False
+
+                    if not harbourmaster.HM_TESTING:
+                        reboot_file = (harbourmaster.HM_TOOLS_DIR / "PortMaster" / ".pugwash-reboot")
+                        if not reboot_file.is_file():
+                            reboot_file.touch(0o644)
+
+                    return True
+
+        elif events.was_pressed('B'):
+            self.gui.pop_scene()
+            return True
+
+
+class LanguageScene(BaseScene):
+    def __init__(self, gui):
+        super().__init__(gui)
+
+        self.load_regions("option_menu", ['option_list', ])
+
+        languages = lang_list()
+        selected_lang = os.environ['LANG']
+
+        self.tags['option_list'].reset_options()
+        for lang_code, lang_name in languages.items():
+            if lang_code == selected_lang:
+                self.tags['option_list'].add_option((None, ''), _("{lang_name} (Selected)").format(lang_name=lang_name))
+            else:
+                self.tags['option_list'].add_option(('select-language', lang_code), lang_name)
+
+        self.tags['option_list'].add_option(None, "")
+        self.tags['option_list'].add_option(('back', None), _("Back"))
+        self.set_buttons({'A': _('Select'), 'B': _('Back')})
+
+    def do_update(self, events):
+        super().do_update(events)
+
+        if events.was_pressed('A'):
+            selected_option, selected_parameter = self.tags['option_list'].selected_option()
+
+            print(f"Selected {selected_option} -> {selected_parameter}")
+
+            if selected_option == 'back':
+                self.gui.pop_scene()
+                return True
+
+            elif selected_option == 'select-language':
+                if self.gui.message_box(_("Do you want to change language?\n\nYou will have to restart for it to take affect."), want_cancel=True):
+                    self.gui.hm.cfg_data['language'] = selected_parameter
                     self.gui.hm.save_config()
                     self.gui.events.running = False
 

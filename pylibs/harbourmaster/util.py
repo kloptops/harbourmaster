@@ -12,6 +12,7 @@ import sys
 import tempfile
 import time
 
+from gettext import gettext as _
 from pathlib import Path
 
 import loguru
@@ -242,7 +243,7 @@ def download(file_name, file_url, md5_source=None, md5_result=None, callback=Non
 
     if r.status_code != 200:
         if callback is not None:
-            callback.message_box(f"Unable to download file. [{r.status_code}]")
+            callback.message_box(_("Unable to download file. [{status_code}]").format(status_code=r.status_code))
 
         logger.error(f"Unable to download file: {file_url!r} [{r.status_code}]")
         return None
@@ -258,7 +259,7 @@ def download(file_name, file_url, md5_source=None, md5_result=None, callback=Non
     md5 = hashlib.md5()
 
     if callback is not None:
-        callback.message(f"Downloading {file_url!r} - ({total_length_mb})")
+        callback.message(_("Downloading {file_url} - ({total_length_mb})").format(file_url=file_url, total_length_mb=total_length_mb))
     else:
         cprint(f"Downloading <b>{file_url!r}</b> - <b>{total_length_mb}</b>")
 
@@ -284,7 +285,7 @@ def download(file_name, file_url, md5_source=None, md5_result=None, callback=Non
             cprint("\n")
 
         if callback is not None:
-            callback.progress("Downloading file.", length, total_length, 'data')
+            callback.progress(_("Downloading file."), length, total_length, 'data')
 
     md5_file = md5.hexdigest()
     if md5_source is not None:
@@ -293,18 +294,18 @@ def download(file_name, file_url, md5_source=None, md5_result=None, callback=Non
             logger.error(f"File doesn't match the md5 file: {md5_file} != {md5_source}")
 
             if callback is not None:
-                callback.message_box("Download validation failed.")
+                callback.message_box(_("Download validation failed."))
 
             return None
         else:
 
             if callback is not None:
-                callback.message("Passed file validation.")
+                callback.message(_("Passed file validation."))
             else:
                 cprint(f"<b,g,>Passed md5 check.</b,g,>")
     else:
         if callback is not None:
-            callback.message("Unable to validate download.")
+            callback.message(_("Unable to validate download."))
 
         logger.warning(f"No md5 to check against: {md5_file}")
 

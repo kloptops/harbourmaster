@@ -167,7 +167,7 @@ class HarbourMaster():
         elif self.cfg_data.get('ports_info_checked') is None or datetime_compare(self.cfg_data['ports_info_checked']) >= self.INFO_CHECK_INTERVAL:
 
             info_md5 = fetch_text(self.PORTS_INFO_URL + '.md5')
-            if info_md5 != info_file_md5.read_text().strip():
+            if not info_file_md5.is_file() or info_md5 != info_file_md5.read_text().strip():
                 self.callback.message(_("  - Fetching latest info."))
                 info_data = fetch_text(self.PORTS_INFO_URL)
 
@@ -179,8 +179,8 @@ class HarbourMaster():
 
             self.cfg_data['ports_info_checked'] = datetime.datetime.now().isoformat()
 
-        if not porters_file.is_file() or datetime_compare(self.cfg_data['porters_checked']) >= self.INFO_CHECK_INTERVAL:
-            self.callback.message("  - Fetching latest porters.")
+        if not porters_file.is_file() or self.cfg_data.get('porters_checked') is None or datetime_compare(self.cfg_data['porters_checked']) >= self.INFO_CHECK_INTERVAL:
+            self.callback.message(_("  - Fetching latest porters."))
             porters_data = fetch_text(self.PORTERS_URL)
 
             with open(porters_file, 'w') as fh:
@@ -192,7 +192,7 @@ class HarbourMaster():
         source_files = list(self.cfg_dir.glob('*.source.json'))
         source_files.sort()
 
-        self.callback.message("- Loading Sources.")
+        self.callback.message(_("  - Loading Sources."))
 
         check_keys = {'version': None, 'prefix': None, 'api': HM_SOURCE_APIS, 'name': None, 'last_checked': None, 'data': None}
         for source_file in source_files:
@@ -348,7 +348,7 @@ class HarbourMaster():
 
         ports_info = self.ports_info()
 
-        self.callback.message("- Loading Ports.")
+        self.callback.message(_("  - Loading Ports."))
 
         """
         This is a bit of a heavy function but it does the following.
@@ -815,7 +815,7 @@ class HarbourMaster():
                 # At this point the port will be installed
                 # Extract all the files to the specified directory
                 # zf.extractall(self.ports_dir)
-                self.callback.message(f"Installing {download_info['name']}.")
+                self.callback.message(_("Installing {download_name}.").format(download_name=download_info['name']))
 
                 total_files = len(zf.infolist())
                 for file_number, file_info in enumerate(zf.infolist()):
@@ -824,7 +824,7 @@ class HarbourMaster():
                     else:
                         compress_saving = file_info.compress_size / file_info.file_size * 100
 
-                    self.callback.progress("Installing", file_number+1, total_files, '%')
+                    self.callback.progress(_("Installing"), file_number+1, total_files, '%')
                     self.callback.message(f"- {file_info.filename}")
 
                     dest_file = path=self.ports_dir / file_info.filename
@@ -887,7 +887,7 @@ class HarbourMaster():
         finally:
             if not is_successs and len(undo_data) > 0:
                 logger.error("Installation failed, removing installed files.")
-                self.callback.message(f"Installation failed, removing files...")
+                self.callback.message(_("Installation failed, removing files..."))
 
                 for undo_file in undo_data[::-1]:
                     logger.debug(f"Removing {undo_file.relative_to(self.ports_dir)}")
@@ -899,7 +899,7 @@ class HarbourMaster():
                     elif undo_file.is_dir():
                         shutil.rmtree(undo_file)
 
-                self.callback.message_box(f"Port {download_info['name']} installed failed.")
+                self.callback.message_box(_("Port {download_name} installed failed.").format(download_name=download_info['name']))
 
         self._fix_permissions()
 
@@ -907,13 +907,17 @@ class HarbourMaster():
         if port_info['attr'].get('runtime', None) is not None:
             result = self.check_runtime(port_info['attr']['runtime'], in_install=True)
             if result == 0:
-                self.callback.message_box(f"Port {download_info['name']} and {port_info['attr']['runtime']} installed successfully.")
+                self.callback.message_box(_("Port {download_name} and {runtime_name} installed successfully.").format(
+                    download_name=download_info['name'],
+                    runtime_name=port_info['attr']['runtime']))
 
             else:
-                self.callback.message_box(f"Port {download_info['name']} but {port_info['attr']['runtime']} failed to install!!\n\nEither reinstall to try again to check the wiki for help.")
+                self.callback.message_box(_("Port {download_name} but {runtime_name} failed to install!!\n\nEither reinstall to try again, or check the wiki for help.").format(
+                    download_name=download_info['name'],
+                    runtime_name=port_info['attr']['runtime']))
 
         else:
-            self.callback.message_box(f"Port {download_info['name']} installed successfully.")
+            self.callback.message_box(_("Port {download_name} installed successfully.").format(download_name=download_info['name']))
 
         return 0
 
@@ -921,7 +925,8 @@ class HarbourMaster():
         if isinstance(runtime, str):
             if '/' in runtime:
                 if not in_install:
-                    self.callback.message_box(f"Port {runtime} contains a bad runtime, game may not run correctly.")
+                    self.callback.message_box(_("Port {runtime} contains a bad runtime, game may not run correctly.").format(
+                        runtime=runtime))
 
                 logger.error(f"Bad runtime {runtime}")
                 return 255
@@ -934,6 +939,7 @@ class HarbourMaster():
 
                 if self.config['offline']:
                     cprint(f"Unable to download {runtime} when offline")
+                    self.callback.message_box(_("Unable do download a runtime when in offline mode."))
                     return 0
 
                 for source_prefix, source in self.sources.items():
@@ -942,7 +948,7 @@ class HarbourMaster():
 
                     # cprint(f"Downloading required runtime <b>{runtime}</b>.")
 
-                    self.callback.message(f"Downloading runtime {runtime}.")
+                    self.callback.message(_("Downloading runtime {runtime}.").format(runtime=runtime))
 
                     download_successfull = False
                     try:
@@ -955,7 +961,7 @@ class HarbourMaster():
                                 runtime_file.unlink()
 
                             if not in_install:
-                                self.callback.message_box(f"Unable to download {runtime}, game may not run correctly.")
+                                self.callback.message_box(_("Unable to download {runtime}, game may not run correctly.").format(runtime=runtime))
 
                             return 255
 
@@ -965,7 +971,7 @@ class HarbourMaster():
                         logger.error(err)
 
                         if not in_install:
-                            self.callback.message_box(f"Unable to download {runtime}, game may not run correctly.")
+                            self.callback.message_box(_("Unable to download {runtime}, game may not run correctly.").format(runtime=runtime))
 
                         return 255
 
@@ -974,13 +980,13 @@ class HarbourMaster():
                             runtime_file.unlink()
 
                     if not in_install:
-                        self.callback.message_box(f"Successfully downloaded {runtime}.")
+                        self.callback.message_box(_("Successfully downloaded {runtime}.").format(runtime=runtime))
 
                     return 0
 
                 else:
                     if not in_install:
-                        self.callback.message_box(f"Unable to find a download for {runtime}.")
+                        self.callback.message_box(_("Unable to find a download for {runtime}.").format(runtime=runtime))
 
                     logger.error(f"Unable to find suitable source for {runtime}.")
                     return 255
@@ -990,6 +996,7 @@ class HarbourMaster():
         if port_name.startswith('http'):
             if self.config['offline']:
                 cprint(f"Unable to download {port_name} when offline")
+                self.callback.message_box(_("Unable do download a port when in offline mode."))
                 return 255
 
             download_info = raw_download(self.temp_dir, port_name, callback=self.callback)
@@ -1036,6 +1043,7 @@ class HarbourMaster():
 
             if self.config['offline']:
                 cprint(f"Unable to download {port_name} when offline")
+                self.callback.message_box(_("Unable do download a port when in offline mode."))
                 return 255
 
             download_info = source.download(source.clean_name(port_name))
@@ -1047,7 +1055,7 @@ class HarbourMaster():
             with self.callback.enable_cancellable(False):
                 return self._install_port(download_info)
 
-        self.callback.message_box(f"Unable to find a source for {port_name}")
+        self.callback.message_box(_("Unable to find a source for {port_name}").format(port_name=port_name))
 
         cprint(f"Unable to find a source for <b>{port_name}</b>")
         return 255
@@ -1061,7 +1069,7 @@ class HarbourMaster():
             port_loc = self.broken_ports
 
             if port_info is None:
-                self.callback.message_box(f"Unknown port {port_name}")
+                self.callback.message_box(_("Unknown port {port_name}").format(port_name=port_name))
                 logger.error(f"Unknown port {port_name}")
                 return 255
 
@@ -1092,7 +1100,7 @@ class HarbourMaster():
 
         # cprint(f"{all_items}")
         cprint(f"Uninstalling <b>{port_name}</b>")
-        self.callback.message(f"Removing {port_name}")
+        self.callback.message(_("Removing {port_name}").format(port_name=port_name))
 
         all_port_items = []
         for port_file in port_info['files']:
@@ -1113,7 +1121,7 @@ class HarbourMaster():
 
             if item_path.exists():
                 cprint(f"- removing {item}")
-                self.callback.message(f"- removing {item}")
+                self.callback.message(f"- {item}")
 
                 if item_path.is_dir():
                     shutil.rmtree(item_path)
@@ -1121,7 +1129,7 @@ class HarbourMaster():
                 elif item_path.is_file():
                     item_path.unlink()
 
-        self.callback.message_box(f"Successfully uninstalled {port_name}")
+        self.callback.message_box(_("Successfully uninstalled {port_name}").format(port_name=port_name))
 
         del port_loc[port_name.casefold()]
         return 0

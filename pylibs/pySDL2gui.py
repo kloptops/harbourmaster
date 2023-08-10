@@ -964,7 +964,7 @@ class ImageManager():
 
         return images
 
-    def load_static(self, filename):
+    def load_static(self, filename, data=None):
         '''
         Load image with filename.
 
@@ -979,7 +979,17 @@ class ImageManager():
         if res_filename is None:
             return None
 
-        surf = sdl2.ext.image.load_img(res_filename)
+        if filename.lower().endswith('.svg') and data is not None:
+            if len(data) != 2:
+                return None
+
+            if not isinstance(data[0], int) or not isinstance(data[1], int):
+                return None
+
+            surf = sdl2.ext.image.load_svg(res_filename, width=data[0], height=data[1])
+
+        else:
+            surf = sdl2.ext.image.load_img(res_filename)
 
         texture = sdl2.ext.renderer.Texture(self.renderer, surf)
 
