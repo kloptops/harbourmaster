@@ -68,7 +68,7 @@ class GitHubRawReleaseV1(BaseSource):
         if self._wants_update is not None:
             # cprint(f"<b>{self._config['name']}</b>: {self._wants_update}")
             if self.hm.callback is not None:
-                self.hm.callback.message(f"  - {self._config['name']}: {self._wants_update}")
+                self.hm.callback.message(f"- {self._config['name']}: {self._wants_update}")
 
             self.update()
             self._wants_update = None

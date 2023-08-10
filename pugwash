@@ -159,8 +159,8 @@ def lang_list():
 
 
 load_lang()
-gettext.bindtextdomain('pugwash', str(LANG_DIR))
-gettext.textdomain('pugwash')
+gettext.bindtextdomain('messages', str(LANG_DIR))
+gettext.textdomain('messages')
 _ = gettext.gettext
 
 ################################################################################
