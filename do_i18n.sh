@@ -5,7 +5,7 @@ POT_DIR="pylibs/locales"
 POT_FILE="messages"
 
 echo "Extracting strings ${POT_FILE}"
-xgettext -v -o "${POT_FILE}.pot" -p "${POT_DIR}" -L Python pugwash pylibs/harbourmaster/*.py
+xgettext -v -o "${POT_DIR}/${POT_FILE}.pot" -L Python pugwash pylibs/harbourmaster/*.py
 
 # pygettext.py -d libharbourmaster -o pylibs/locales/harbourmaster.pot pylibs/harbourmaster
 # pygettext.py -d harbourmaster -o pylibs/locales/harbourmaster.pot harbourmaster
@@ -22,7 +22,7 @@ for lang_dir in $POT_DIR/* ; do
             echo "Updating translations for $LANG_CODE..."
             
             # Perform msgmerge
-            msgmerge -v -U "${POT_DIR}/${POT_FILE}.pot" "${PO_FILE}"
+            msgmerge --verbose -U "${PO_FILE}" "${POT_DIR}/${POT_FILE}.pot"
         else
             echo "Creating empty translation for $LANG_CODE"
 
