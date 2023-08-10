@@ -10,6 +10,7 @@ import subprocess
 import zipfile
 
 from pathlib import Path
+from gettext import gettext as _
 
 # Included imports
 import utility
@@ -24,7 +25,6 @@ from .util import *
 from .info import *
 from .source import *
 from .captain import *
-
 
 ################################################################################
 ## Config loading
@@ -89,7 +89,7 @@ class HarbourMaster():
         self.utils = []
 
         with self.callback.enable_messages():
-            self.callback.message("Loading...")
+            self.callback.message(_("Loading..."))
 
             if not self.cfg_dir.is_dir():
                 self.cfg_dir.mkdir(0o755, parents=True)
@@ -134,14 +134,25 @@ class HarbourMaster():
         return self.__PORTERS
 
     def load_info(self):
-        self.callback.message("- Loading Info.")
+        self.callback.message(_("- Loading Info."))
         info_file = self.cfg_dir / "ports_info.json"
         info_file_md5 = self.cfg_dir / "ports_info.md5"
 
         porters_file = self.cfg_dir / "porters.json"
 
+        if self.config['offline']:
+            if not porters_file.is_file():
+                with open(porters_file, 'w') as fh:
+                    fh.write('{}')
+
+            if not info_file.is_file():
+                with open(info_file, 'w') as fh:
+                    fh.write('{"items": {}, "md5": {}, "ports": {}, "portsmd_fix": {}}')
+
+            return
+
         if not info_file.is_file():
-            self.callback.message("  - Fetching latest info.")
+            self.callback.message(_("  - Fetching latest info."))
             info_md5 = fetch_text(self.PORTS_INFO_URL + '.md5')
             info_data = fetch_text(self.PORTS_INFO_URL)
 
@@ -157,7 +168,7 @@ class HarbourMaster():
 
             info_md5 = fetch_text(self.PORTS_INFO_URL + '.md5')
             if info_md5 != info_file_md5.read_text().strip():
-                self.callback.message("  - Fetching latest info.")
+                self.callback.message(_("  - Fetching latest info."))
                 info_data = fetch_text(self.PORTS_INFO_URL)
 
                 with open(info_file, 'w') as fh:

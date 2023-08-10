@@ -911,7 +911,11 @@ class PortsListScene(BaseScene):
             self.gui.set_port_info(None, {})
 
             self.gui.set_data("port_info.title", _("** NO PORTS FOUND **"))
-            self.gui.set_data("port_info.description", _("Download ports first."))
+
+            if len(self.options['filters']) == 0:
+                self.gui.set_data("port_info.description", _("Download ports first."))
+            else:
+                self.gui.set_data("port_info.description", _("Try removing some filters."))
 
         else:
             self.tags['ports_list'].list = [
@@ -968,7 +972,7 @@ class PortsListScene(BaseScene):
             self.tags['port_image'].image = self.gui.get_port_image(port_name)
 
         if self.options['mode'] == 'install' and events.was_pressed('X'):
-            if len(self.port_list) > 0:
+            if len(self.port_list) > 0 or len(self.options['filters']) > 0:
                 self.gui.push_scene('ports', FiltersScene(self.gui, self))
 
             return True
@@ -1054,7 +1058,12 @@ class FiltersScene(BaseScene):
         self.locked_genres = list(list_scene.options['base_filters'])
         self.selected_genres = list(list_scene.options['filters'])
         self.selected_port = list_scene.selected_port()
-        self.selected_port_title = list_scene.all_ports[self.selected_port]['attr']['title']
+        if len(list_scene.all_ports) > 0:
+            self.selected_port_title = list_scene.all_ports[self.selected_port]['attr']['title']
+        else:
+            ## Christian_Hatian wins again!
+            self.selected_port_title = "2048.zip"
+
         self.port_list = []
 
         self.ready = False
@@ -1803,6 +1812,7 @@ def main(argv):
             'force-colour': False,
             'no-log': False,
             'help': False,
+            'offline': False,
             }
 
         i = 1
@@ -1826,6 +1836,7 @@ def main(argv):
         if config['quiet']:
             logger.remove(0)  # For the default handler, it's actually '0'.
             logger.add(sys.stderr, level="ERROR")
+
         elif config['debug']:
             logger.remove(0)  # For the default handler, it's actually '0'.
             logger.add(sys.stderr, level="DEBUG")
@@ -1836,6 +1847,7 @@ def main(argv):
 
         if config['no-colour']:
             utility.do_color(False)
+
         elif config['force-colour']:
             utility.do_color(True)
 
