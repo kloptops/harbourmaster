@@ -19,177 +19,181 @@ msgstr ""
 
 #: pugwash:171
 msgid "Unknown IP"
-msgstr ""
+msgstr "Unbekannte IP"
 
 #: pugwash:614
 msgid "All Ports"
-msgstr ""
+msgstr "Alle Ports"
 
 #: pugwash:615
 msgid "Ready to Run Ports"
-msgstr ""
+msgstr "Ready to Run Ports"
 
 #: pugwash:616
 msgid "Uninstall Ports"
-msgstr ""
+msgstr "Ports deinstallieren"
 
 #: pugwash:618
 msgid "Options"
-msgstr ""
+msgstr "Optionen"
 
 #: pugwash:619
 msgid "Exit"
-msgstr ""
+msgstr "Beenden"
 
 #: pugwash:620 pugwash:656 pugwash:760 pugwash:768
 msgid "Enter"
-msgstr ""
+msgstr "Eingabe"
 
 #: pugwash:620
 msgid "Quit"
-msgstr ""
+msgstr "Verlassen"
 
 #: pugwash:652
 msgid "Update Ports"
-msgstr ""
+msgstr "Ports aktualisieren"
 
 #: pugwash:653
 msgid "Select Theme"
-msgstr ""
+msgstr "Theme auswählen"
 
 #: pugwash:655 pugwash:656 pugwash:703 pugwash:704 pugwash:831 pugwash:833
 msgid "Back"
-msgstr ""
+msgstr "Zurück"
 
 #: pugwash:698
 #, python-brace-format
 msgid "{theme_name} (Selected)"
-msgstr ""
+msgstr "{theme_name} (Ausgewählt)"
 
 #: pugwash:704 pugwash:760 pugwash:768
 msgid "Select"
-msgstr ""
+msgstr "Auswählen"
 
 #: pugwash:719
 msgid ""
 "Do you want to change theme?\n"
 "\n"
 "You will have to restart for it to take affect."
-msgstr ""
+msgstr "
+"Theme wechseln?\n"
+"\n"
+"Neustart erforderlich, damit Änderungen wirksam werden."
+"
 
 #: pugwash:760 pugwash:768
 msgid "Delete"
-msgstr ""
+msgstr "Löschen"
 
 #: pugwash:760
 msgid "Upper Case"
-msgstr ""
+msgstr "Großbuchstaben"
 
 #: pugwash:760 pugwash:768
 msgid "Space"
-msgstr ""
+msgstr "Leerzeichen"
 
 #: pugwash:760 pugwash:768 pugwash:1123 pugwash:1527
 msgid "Cancel"
-msgstr ""
+msgstr "Abbrechen"
 
 #: pugwash:768
 msgid "Lower Case"
-msgstr ""
+msgstr "Kleinbuchstaben"
 
 #: pugwash:831 pugwash:833
 msgid "Show Info"
-msgstr ""
+msgstr "Info anzeigen"
 
 #: pugwash:831
 msgid "Filters"
-msgstr ""
+msgstr "Filter"
 
 #: pugwash:854
 msgid "NO PORTS"
-msgstr ""
+msgstr "KEINE PORTS"
 
 #: pugwash:859
 msgid "** NO PORTS FOUND **"
-msgstr ""
+msgstr "** KEINE PORTS GEFUNDEN **"
 
 #: pugwash:860
 msgid "Download ports first."
-msgstr ""
+msgstr "Zuerst Ports herunterladen."
 
 #: pugwash:1020
 msgid "Genres:"
-msgstr ""
+msgstr "Genres:"
 
 #: pugwash:1036
 msgid "Attributes:"
-msgstr ""
+msgstr "Attribute:"
 
 #: pugwash:1052
 msgid "Porters:"
-msgstr ""
+msgstr "Porters:"
 
 #: pugwash:1141
 msgid "Are you sure you want to cancel?"
-msgstr ""
+msgstr "Wirklich abbrechen?"
 
 #: pugwash:1396 pugwash:1470
 msgid "N/A"
-msgstr ""
+msgstr "N/V"
 
 #: pugwash:1443
 msgid "** NO PORT **"
-msgstr ""
+msgstr "** KEIN PORT **"
 
 #: pugwash:1458
 msgid "Ready to Run"
-msgstr ""
+msgstr "Ready to Run"
 
 #: pugwash:1458
 msgid "Requires Files"
-msgstr ""
+msgstr "Benötigt Dateien"
 
 #: pugwash:1464
 msgid "Installed"
-msgstr ""
+msgstr "Installiert"
 
 #: pugwash:1466
 msgid "Missing"
-msgstr ""
+msgstr "Fehlt"
 
 #: pugwash:1469
 msgid "None"
-msgstr ""
+msgstr "Keine"
 
 #: pugwash:1524
 msgid "Okay"
-msgstr ""
+msgstr "Okay"
 
 #: pugwash:1700
 #, python-brace-format
 msgid "Installing {port_name}"
-msgstr ""
+msgstr "Installation von {port_name}"
 
 #: pugwash:1710
 #, python-brace-format
 msgid "Uninstalling {port_name}"
-msgstr ""
+msgstr "Deinstallation von {port_name}"
 
 #: pugwash:1720
 msgid "Updating all port sources:"
-msgstr ""
+msgstr "Aktualisieren aller Port-Quellen:"
 
 #: pugwash:1729
 #, python-brace-format
 msgid "Godot/FRT {version}"
-msgstr ""
+msgstr "Godot/FRT {version}"
 
 #: pugwash:1732
 #, python-brace-format
 msgid "Mono {version}"
-msgstr ""
+msgstr "Mono {version}"
 
 #: pugwash:1735
 #, python-brace-format
 msgid "JDK {vesion}"
-msgstr ""
+msgstr "JDK {vesion}"
