@@ -27,12 +27,12 @@ HW_INFO = {
     # Anbernic Devices
     'rg552':   {'resolution': (1920, 1152), 'analogsticks': 2, 'cpu': 'rk3399', 'capabilities': ['5:3', '1920x1152', 'power', 'hires', 'wide']},
     'rg503':   {'resolution': ( 960,  544), 'analogsticks': 2, 'cpu': 'rk3566', 'capabilities': ['30:17', '960x544', 'power', 'hires', 'wide']},
+    'rg351mp': {'resolution': ( 640,  480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['4:3', '640x480']},
+    'rg351p':  {'resolution': ( 480,  320), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['3:2', '480x320', 'lowres']},
     'rg353v':  {'resolution': ( 640,  480), 'analogsticks': 2, 'cpu': 'rk3366', 'capabilities': ['4:3', '640x480', 'power']},
     'rg353p':  {'resolution': ( 640,  480), 'analogsticks': 2, 'cpu': 'rk3366', 'capabilities': ['4:3', '640x480', 'power']},
     'rg353m':  {'resolution': ( 640,  480), 'analogsticks': 2, 'cpu': 'rk3366', 'capabilities': ['4:3', '640x480', 'power']},
-    'rg351mp': {'resolution': ( 640,  480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['4:3', '640x480']},
     'rg351v':  {'resolution': ( 640,  480), 'analogsticks': 1, 'cpu': 'rk3326', 'capabilities': ['4:3', '640x480']},
-    'rg351p':  {'resolution': ( 480,  320), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['3:2', '480x320', 'lowres']},
 
     # Hardkernel Devices
     'oga': {'resolution': (480, 320), 'analogsticks': 1, 'cpu': 'rk3326', 'capabilities': ['3:2', '480x320', 'lowres']},
@@ -226,14 +226,25 @@ def _merge_info(info, new_info):
     return info
 
 
+def find_device_by_resolution(resolution):
+    for device, information in HW_INFO.items():
+        if resolution == information['resolution']:
+            return device
+
+    return 'default'
+
+
 __root_info = None
-def device_info():
+def device_info(override_device=None):
     global __root_info
-    if __root_info is not None:
+    if override_device is None and __root_info is not None:
         return __root_info
 
     # Best guess at what device we are running on, and what it is capable of.
     info = new_device_info()
+
+    if override_device is not None:
+        info['device'] = override_device
 
     _merge_info(info, HW_INFO.get(info['device'], HW_INFO['default']))
 
@@ -250,5 +261,6 @@ def device_info():
 
 __all__ = (
     'device_info',
+    'find_device_by_resolution',
     'HW_INFO',
     )

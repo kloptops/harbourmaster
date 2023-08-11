@@ -383,6 +383,14 @@ class HarbourMaster():
                     }
                 port_info['changed'] = True
 
+            if port_info['attr']['porter'] is None:
+                port_info['attr']['porter'] = ['Unknown']
+                port_info['changed'] = True
+
+            if isinstance(port_info['attr']['porter'], str):
+                port_info['attr']['porter'] = ports_info['portsmd_fix'].get(port_info['attr']['porter'].lower(), port_info['attr']['porter'])
+                port_info['changed'] = True
+
             # Add all the root dirs/scripts in the port
             for item in port_info['items']:
                 add_dict_list_unique(all_items, item, port_info['name'])
@@ -538,6 +546,12 @@ class HarbourMaster():
                         port_info['attr']['title'] = item[:-3]
                         break
 
+            if port_info['attr']['porter'] is None:
+                port_info['attr']['porter'] = ['Unknown']
+
+            if isinstance(port_info['attr']['porter'], str):
+                port_info['attr']['porter'] = ports_info['portsmd_fix'].get(port_info['attr']['porter'].lower(), port_info['attr']['porter'])
+
             if port_info.get('status', None) is None:
                 port_info['status'] = {}
 
@@ -607,6 +621,7 @@ class HarbourMaster():
                     port_info['changed'] = True
 
                 self.broken_ports[port_name] = port_info
+
             else:
                 if port_info['status'].get('status', 'Unknown') != 'Installed':
                     port_info['status']['status'] = 'Installed'

@@ -53,6 +53,7 @@ from .source import (
 
 from .hardware import (
     device_info,
+    find_device_by_resolution,
     HW_INFO,
     )
 

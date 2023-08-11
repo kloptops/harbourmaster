@@ -105,7 +105,6 @@ def oc_join(strings):
     """
     Oxford comma join
     """
-
     if len(strings) == 0:
         return ""
 

@@ -122,6 +122,7 @@ class GUI:
         '''
         self.text.clean()
 
+
 class ResourceManager:
     def __init__(self, gui):
         self.gui = gui
@@ -625,7 +626,7 @@ class Texture:
 
     The texture can be a subtexture by using srcrect.
     '''
-    def __init__(self, gui, texture, size=None, parent=None, srcrect=None):
+    def __init__(self, gui, texture, size=None, parent=None, srcrect=None, color_mod=None):
         self.gui = gui
         self.renderer = gui.renderer
         self.parent = parent
@@ -646,6 +647,14 @@ class Texture:
 
         if parent is not None:
             parent.children.append(self)
+
+        if color_mod is None:
+            color_mod = (255, 255, 255)
+        else:
+            color_mod = color_mod[:3]
+
+        self.color_mod = color_mod
+
         # else:
         #     self.gui.textures.append(self)
 
@@ -681,7 +690,14 @@ class Texture:
 
         self.texture.destroy()
 
+    def set_color_mod(self, color):
+        self.color_mod = color[:3]
+
+    def get_color_mod(self):
+        return self.color_mod[:]
+
     def draw(self):
+        sdl2.SDL_SetTextureColorMod(self.texture.tx, *self.color_mod)
         self.renderer.copy(self.texture, self.srcrect, dstrect=self.size.sdl())
 
     def draw_at(self, x, y):
@@ -692,6 +708,7 @@ class Texture:
         y: y position to draw at
         '''
 
+        sdl2.SDL_SetTextureColorMod(self.texture.tx, *self.color_mod)
         self.renderer.copy(self.texture, self.srcrect, dstrect=(x, y))
 
     def draw_in(self, dest, fit=False, clip=False):
@@ -703,6 +720,8 @@ class Texture:
              ratio
         clip: set true to clip the image into the dest.
         '''
+
+        sdl2.SDL_SetTextureColorMod(self.texture.tx, *self.color_mod)
 
         if fit:
             dest = self.size.fitted(dest)
@@ -759,7 +778,7 @@ class Image:
     draw
     '''
 
-    def __init__(self, texture, srcrect=None, renderer=None):
+    def __init__(self, texture, srcrect=None, renderer=None, color_mod=None):
         '''
         Create a new Image from a texture and a source Rect.
 
@@ -788,6 +807,13 @@ class Image:
         else:
             raise GUIValueError('srcrect not a supported type')
 
+        if color_mod is None:
+            color_mod = (255, 255, 255)
+        else:
+            color_mod = color_mod[:3]
+
+        self.color_mod = color_mod
+
         self.x = self.y = 0
         self.flip_x = self.flip_y = 0
         self.angle = 0
@@ -796,6 +822,12 @@ class Image:
         # default dest rect is fitted to full screen
         self.dstrect = Rect.from_sdl(self.srcrect).fitted(
             Rect(0, 0, *self.renderer.logical_size)).sdl()
+
+    def set_color_mod(self, color):
+        self.color_mod = color[:3]
+
+    def get_color_mod(self):
+        return self.color_mod[:]
 
     def draw_at(self, x, y, angle=0, flip_x=None, flip_y=None, center=None):
         '''
@@ -816,6 +848,7 @@ class Image:
         else:
             flip = 1 * bool(flip_x) | 2 * bool(flip_y)
 
+        sdl2.SDL_SetTextureColorMod(self.texture.tx, *self.color_mod)
         self.renderer.copy(
             self.texture,
             self.srcrect,
@@ -849,6 +882,7 @@ class Image:
             flip = 1 * bool(flip_x) | 2 * bool(flip_y)
 
         set_color_mod(self.texture, (255, 255, 255))
+        sdl2.SDL_SetTextureColorMod(self.texture.tx, *self.color_mod)
         self.renderer.copy(self.texture, self.srcrect,
             dstrect=dest, angle=angle, flip=flip, center=center)
 
@@ -856,6 +890,7 @@ class Image:
         ''''Draw image to its current destrect(Rect region), which defaults to
         full screen maintaining aspect ratio'''
         flip = 1 * bool(self.flip_x) | 2 * bool(self.flip_y)
+        sdl2.SDL_SetTextureColorMod(self.texture.tx, *self.color_mod)
         self.renderer.copy(self.texture, self.srcrect,
             dstrect=self.dstrect, angle=self.angle,
             flip=flip, center=self.center)
@@ -918,8 +953,58 @@ class ImageManager():
             self._clean()
             return self.images[filename]
 
+    def load_data(self, file_name, data):
+        res_filename = self.gui.resources.find(file_name)
+
+        if res_filename is None:
+            return None
+
+        if file_name.lower().endswith('.svg') and "size" in data:
+            image_size = data["size"]
+
+            if len(image_size) != 2:
+                return None
+
+            if not isinstance(image_size[0], int) or not isinstance(image_size[1], int):
+                return None
+
+            surf = sdl2.ext.image.load_svg(res_filename, width=image_size[0], height=image_size[1])
+        else:
+            surf = sdl2.ext.image.load_img(res_filename)
+
+        texture = sdl2.ext.renderer.Texture(self.renderer, surf)
+
+        stored_name = data.get("name", file_name)
+        image_mod = data.get("image-mod", None)
+
+        if "atlas" in data:
+            images = {}
+
+            for name, item in data["atlas"].items():
+                r = item[:4]
+                flip_x, flip_y, angle, *_ = list(item[4:] + [0, 0, 0])
+
+                im = Image(texture, r, renderer=self.renderer, color_mod=image_mod)
+                im.flip_x = flip_x
+                im.flip_y = flip_y
+                im.angle = angle
+
+                self.images[name] = im
+                images[name] = im
+
+            return images
+
+        else:
+            image = Image(texture, renderer=self.renderer, color_mod=image_mod)
+
+            self.images[stored_name] = image
+
+            return image
+
     def load_atlas(self, filename, atlas):
         '''
+        **** DEPRECATED ****
+
         Load image filename, create Images from an atlas dict, and create
         a named shortcut for each image in the atlas.
 
@@ -966,6 +1051,8 @@ class ImageManager():
 
     def load_static(self, filename, data=None):
         '''
+        **** DEPRECATED ****
+
         Load image with filename.
 
         This does not get removed from the cache.
@@ -1628,6 +1715,7 @@ class Region:
         self.borderx = self._verify_int('border-x', self.border)
 
         self.image = self.images.load(self._dict.get('image'))
+        self.image_mod = self._verify_color('image-mod', optional=True)
         self.imagesize = self._verify_ints('image-size', 2, None, optional=True)
         self.imagemode = self._verify_option('image-mode',
                 ('fit', 'stretch', 'repeat', None), 'fit')
@@ -1694,6 +1782,7 @@ class Region:
 
         self.barspace = self._verify_int('barspace', 4)
         self.barwidth = self._verify_int('barwidth', 0, optional=True)
+        self.bar_select_mode = 'item'
         self._bar = self._verify_bar('bar', optional=True, align=self.align)
         self.list = self._verify_list('list', optional=True)
         if self.list is not None:
@@ -1821,6 +1910,12 @@ class Region:
         if self.image and not self.patch:
             image = self.image #s.load(self.image)
             dest = Rect.from_sdl(image.srcrect)
+
+            color_mod = None
+            if self.image_mod is not None:
+                color_mod = image.get_color_mod()
+                image.set_color_mod(self.image_mod[:3])
+
             if self.imagesize:
                 dest.size = self.imagesize
 
@@ -1841,6 +1936,9 @@ class Region:
             else:
                 dest.topleft = area.topleft
                 image.draw_in(dest.clip(area).tuple())
+
+            if color_mod is not None:
+                image.set_color_mod(color_mod)
 
         text_area = area.inflated(-self.borderx * 2, -self.bordery * 2)
 
@@ -2436,7 +2534,7 @@ class Region:
             if isinstance(item, Image):
                 item.draw_in(Rect.from_sdl(item.srcrect).fitted(dest).tuple())
 
-            elif i == selected:
+            elif self.bar_select_mode == 'item' and i == selected:
                 if not active and self.inactive_select_color is not None:
                     select = self.inactive_select_color
 
@@ -2455,9 +2553,19 @@ class Region:
                 texture.draw_in(dest, fit=True)
 
             else:
+                if self.bar_select_mode == 'full':
+                    if active and self.select_color is not None:
+                        select = self.select_color
+                    elif not active and self.inactive_select_color is not None:
+                        select = self.inactive_select_color
+                    else:
+                        select = self.font_color
+                else:
+                    select = self.font_color
+
                 texture = self.texts.render_text(
                     item,
-                    self.font, self.fontsize, self.font_color, align='left')
+                    self.font, self.fontsize, select, align='left')
 
                 setattr(texture.size, 'center', dest.center)
 
@@ -2800,6 +2908,7 @@ def get_color_mod(texture):
     sdl2.SDL_GetTextureColorMod(texture.tx, byref(r), byref(g), byref(b))
     print('inside get', r.value, g.value, b.value)
     return  r.value, g.value, b.value
+
 
 def set_color_mod(texture, color):
     '''

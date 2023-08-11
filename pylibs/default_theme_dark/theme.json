@@ -8,50 +8,51 @@
     "#base": {
         "font": "DejaVuSans.ttf",
         "font-scale[30:17]": 1.0,
-        "font-scale[5:3]": 3.0,
+        "font-scale[1920x1152]": 3.0,
         "font-scale[16:9]": 2.0,
         "font-scale[3:2]": 0.85,
         "font-scale[427:240]": 0.9
     },
 
     "#pallet": {
-        "background": [ 85, 85, 85, 255 ],
-        "background_fade": [50, 50, 50, 85],
-        "list_text": [255, 255, 255, 255],
-        "list_selected": [255, 0, 0, 255],
-        "list_unselectable": [128, 0, 0, 255],
-        "button": [200, 200, 200, 255]
+        "background":        [  85,  85,  85, 255 ],
+        "background_fade":   [  50,  50,  50,  85 ],
+        "list_text":         [ 255, 255, 255, 255 ],
+        "list_selected":     [ 255,   0,   0, 255 ],
+        "list_unselectable": [ 128,   0,   0, 255 ],
+        "button":            [ 200, 200, 200, 255 ],
+        "general_font":      [ 200, 200, 200 ],
+        "download_font":     [   0,   0,   0 ],
+        "panels":            [ 110, 110, 110 ],
+        "selection-fill":    [ 153, 180, 255 ],
+        "secondary-selection-fill": [ 53, 53, 53 ]
+
     },
 
     "#resources": {
-        "nine.png": {
-            "button":  [  0,   0, 320, 167],
-            "dialog":  [  0, 169, 320, 161],
-            "box":     [  0, 332, 320, 106],
-            "boxfill": [  0, 439, 320, 106],
-            "arrow_r": [ 11, 559,  42,  42],
-            "arrow_l": [ 11, 559,  42,  42, 1],
-            "circle":  [ 64, 547,  62,  62],
-            "bar":     [373, 225, 222,  18]
-        },
         "buttons.png": {
-            "_A":         [  0,   0, 180, 180],
-            "_B":         [180,   0, 180, 180],
-            "_X":         [360,   0, 180, 180],
-            "_Y":         [540,   0, 180, 180],
-            "_START":     [  0, 180, 360, 180],
-            "_SELECT":    [360, 180, 360, 180],
-            "_L":         [  0, 360, 270, 180],
-            "_R":         [270, 360, 270, 180],
-            "_UNCHECKED": [720,   0, 180, 180],
-            "_CHECKED":   [900,   0, 180, 180],
-            "_MORE":      [720, 180, 180, 180],
-            "_LEFT":      [900, 180,  90, 180],
-            "_RIGHT":     [990, 180,  90, 180],
-            "_UP":        [900, 360, 180,  90],
-            "_DOWN":      [900, 450, 180,  90]
+            "image-mod": [255, 255, 255],
+            "atlas": {
+                "_A":         [  0,   0, 180, 180],
+                "_B":         [180,   0, 180, 180],
+                "_X":         [360,   0, 180, 180],
+                "_Y":         [540,   0, 180, 180],
+                "_START":     [  0, 180, 360, 180],
+                "_SELECT":    [360, 180, 360, 180],
+                "_L":         [  0, 360, 270, 180],
+                "_R":         [270, 360, 270, 180],
+                "_UNCHECKED": [720,   0, 180, 180],
+                "_CHECKED":   [900,   0, 180, 180],
+                "_MORE":      [720, 180, 180, 180],
+                "_LEFT":      [900, 180,  90, 180],
+                "_RIGHT":     [990, 180,  90, 180],
+                "_UP":        [900, 360, 180,  90],
+                "_DOWN":      [900, 450, 180,  90]
+            }
         },
-        "pointenfedde.png": {}
+        "pointenfedde.png": {
+            "image-mod": [255, 255, 255]
+        }
     },
 
     "#elements": {
@@ -93,7 +94,7 @@
             "comment": "Port Info",
             "parent": "port_info_area",
             "area": [ 0.0, 0.4, 1.0, 1.0 ],
-            "area[5:3, hires]": [ 0.0, 0.5, 1.0, 1.0 ]
+            "area[1920x1152, hires]": [ 0.0, 0.5, 1.0, 1.0 ]
         },
         "background": {
             "area": [ 0.0, 0.0, 1.0, 1.0 ],
@@ -106,7 +107,7 @@
         "button_bar": {
             "area": [ 0.60, 0.93, 0.95, 1.0 ],
             "font-size": 16,
-            "font-color": [ 255, 255, 255 ],
+            "font-color": "general_font",
             "align": "midright",
             "bar": [
                 "_A",
@@ -133,12 +134,12 @@
         "port_info": {
             "parent": "port_info_area",
             "area": [ 0.0, 0.0, 1.0, 1.0 ],
-            "fill": [ 110, 110, 110 ],
+            "fill": "panels",
             "thickness": 10,
             "border": 8,
             "text": "",
             "font-size": 24,
-            "font-color": [ 255, 255, 255 ],
+            "font-color": "general_font",
             "text-wrap": true
         },
 
@@ -149,9 +150,9 @@
             "font-size": 17,
             "font-size[427:240]": 22,
             "font-size[16:9]": 19,
-            "font-size[5:3]": 27,
-            "alt-fill": [ 53, 53, 53 ],
-            "select-fill": [ 153, 180, 255 ],
+            "font-size[1920x1152]": 27,
+            "alt-fill": "secondary-selection-fill",
+            "select-fill": "selection-fill",
             "font-color": "list_text",
             "select-color": "list_selected",
             "text-clip": true,
@@ -163,7 +164,7 @@
         },
 
         "port_filters": {
-            "text": "{if:ports_list.filters}Filters: {ports_list.filters}\n{endif}Available Ports: {if:!ports_list.total_ports::ports_list.filter_ports}{ports_list.filter_ports} / {ports_list.total_ports}{else}{ports_list.total_ports}{endif}",
+            "text": "{if:!ports_list.total_ports::ports_list.filter_ports}Available Ports: {ports_list.filter_ports} / {ports_list.total_ports} \nFilters: {ports_list.filters}{endif}",
             "area": [ 0.0, 0.0, 0.4, 0.1 ],
             "area[4:3|30:17|3:2]": [ 0.0, 0.0, 0.3, 0.1 ],
             "font-size": 14,
@@ -184,11 +185,11 @@
             "area[16:9]": [ 5, 80, -5, -5 ],
             "area[427:240]": [ 5, 80, -5, -5 ],
             "area[30:17]": [ 5, 80, -5, -5 ],
-            "area[5:3]": [ 0.05, 0.0, 1.0, 0.8 ],
+            "area[1920x1152]": [ 0.05, 0.0, 1.0, 0.8 ],
             "font-size": 16,
-            "font-size[5:3]": 11,
+            "font-size[1920x1152]": 11,
             "font-size[16:9]": 11,
-            "font-color": [ 255, 255, 255 ],
+            "font-color": "general_font",
             "text-wrap": true,
             "text": "Genres: {port_info.genres}\nDownload Size: {port_info.download_size}{if:port_info.runtime}\nRuntime: {port_info.runtime} ({port_info.runtime_status}){endif}"
         },
@@ -199,13 +200,13 @@
             "area[4:3]": [ 5, 118, -5, -50 ],
             "area[3:2]": [ 5, 65, -5, -13 ],
             "area[16:9]": [ 5, 165, -5, -100 ],
-            "area[5:3]": [ 0.05, 0.2, 0.8, 0.7 ],
+            "area[1920x1152]": [ 0.05, 0.2, 0.8, 0.7 ],
             "area[427:240]": [ 5, 145, -5, -50 ],
             "area[30:17]": [ 5, 145, -5, -65 ],
             "font-size": 17,
-            "font-size[5:3]": 13,
+            "font-size[1920x1152]": 13,
             "font-size[16:9]": 13,
-            "font-color": [ 255, 255, 255 ],
+            "font-color": "general_font",
             "text-wrap": true,
             "autoscroll": "marquee",
             "scroll-speed": 60,
@@ -220,7 +221,7 @@
             "area": [ 0.0, 0.0, 1.0, 1.0 ],
             "text": "{port_info.title}",
             "font-size": 22,
-            "font-color": [ 153, 204, 255 ],
+            "font-color": "selection-fill",
             "align": "center"
         },
 
@@ -238,7 +239,7 @@
 
         "port_info": {
             "area": [ 0.05, 0.68, 0.95, 0.9 ],
-            "fill": [ 110, 110, 110 ],
+            "fill": "panels",
             "text": "{port_info.description}",
             "thickness": 6,
             "border": 8,
@@ -248,7 +249,7 @@
             "scroll-delay-end": 1500,
             "font-size": 15,
             "font-size[427:240]": 22,
-            "font-color": [ 255, 255, 255 ],
+            "font-color": "general_font",
             "text-wrap": true
 
         },
@@ -272,11 +273,11 @@
         "port_info_instruction": {
             "area": [ 0.6, 0.1, 0.95, 0.65 ],
             "text": "Free Space: {system.free_space}\n\nPorter: {port_info.porter}\nGenres: {port_info.genres}\nDownload Size: {port_info.download_size}{if:port_info.runtime}\nRuntime: {port_info.runtime} ({port_info.runtime_status}){endif}\n\nInstruction: \nPlace file x in folder y then dance until tomorrow",
-            "fill": [ 110, 110, 110 ],
+            "fill": "panels",
             "thickness": 6,
             "border": 8,
             "font-size": 13,
-            "font-color": [ 255, 255, 255 ],
+            "font-color": "general_font",
             "text-wrap": true,
             "parent": "element:background"
         },
@@ -306,7 +307,7 @@
             "text": "Time: {system.time_24hr}\nCFW: {system.cfw_name} ({system.cfw_version})\nDevice: {system.device_name}\nBattery: {system.battery_level}",
             "font-size": 13,
             "font-size[427:240]": 17,
-            "font-color": [ 255, 255, 255 ],
+            "font-color": "general_font",
             "area": [ 0.02, 0.05, 0.95, 0.95 ],
             "align": "topright"
         },
@@ -314,7 +315,7 @@
             "text": "PM: {system.portmaster_version}\nHM: {system.harbourmaster_version}\nSpace: {system.free_space} free / {system.total_space} total",
             "font-size": 12,
             "font-size[427:240]": 16,
-            "font-color": [ 255, 255, 255 ],
+            "font-color": "general_font",
             "area": [ 0.02, 0.05, 0.95, 0.95 ],
             "align": "bottomleft"
         },
@@ -339,7 +340,7 @@
             "text": "IP: {system.ip_address}",
             "font-size": 11,
             "font-size[427:240]": 16,
-            "font-color": [ 255, 255, 255 ],
+            "font-color": "general_font",
             "area": [ 0.02, 0.05, 0.95, 0.95 ],
             "align": "bottomleft"
         }
@@ -352,14 +353,14 @@
         },
         "filter_list": {
             "area": [ 0.3, 0.00, 1.0, 1.0 ],
-            "area[3:2]": [ 0.3, 0.02, 0.99, 1.0 ],
-            "area[5:3]": [ 0.4, 0.00, 1.0, 1.0 ],
+            "area[3:2]": [ 0.4, 0.0, 0.99, 1.0 ],
+            "area[1920x1152]": [ 0.4, 0.00, 1.0, 1.0 ],
             "area[16:9]": [ 0.4, 0.00, 1.0, 1.0 ],
             "area[427:240]": [ 0.4, 0.00, 1.0, 1.0 ],
             "area[30:17]": [ 0.4, 0.00, 1.0, 1.0 ],
-            "fill": [ 110, 110, 110 ],
+            "fill": "panels",
             "font-size": 16,
-            "font-size[5:3]": 15,
+            "font-size[1920x1152]": 15,
             "font-size[30:17]": 15,
             "font-color": "list_text",
             "select-color": "list_selected",
@@ -375,24 +376,24 @@
 
         "message_text": {
             "area": [ 0.05, 0.05, 0.95, 0.8 ],
-            "fill": [ 110, 110, 110 ],
+            "fill": "panels",
             "thickness": 6,
             "text-wrap": true,
             "border": 10,
             "font-size": 24,
-            "font-color": [ 255, 255, 255 ],
+            "font-color": "general_font",
             "align": "bottomleft",
             "text": ""
         },
 
         "progress_bar": {
             "area": [ 0.05, 0.83, 0.95, 0.90 ],
-            "fill": [ 110, 110, 110 ],
-            "progress-fill": [ 153, 204, 255 ],
+            "fill": "panels",
+            "progress-fill": "selection-fill",
             "text": "{system.progress_text}",
             "align": "midleft",
             "font-size": 14,
-            "font-color": [ 255, 255, 255 ],
+            "font-color": "download_font",
             "border": 2,
             "thickness": 1
         },
@@ -402,7 +403,7 @@
             "text": "{system.progress_amount}",
             "align": "midright",
             "font-size": 14,
-            "font-color": [ 255, 255, 255 ],
+            "font-color": "download_font",
             "thickness": 1,
             "border": 2
         },
@@ -433,11 +434,12 @@
 
         "message_text": {
             "area": [ 0.05, 0.5, 0.95, 0.8 ],
-            "fill": [ 110, 110, 110 ],
+            "area[3:2]": [ 0.05, 0.45, 0.95, 0.9 ],
+            "fill": "panels",
             "thickness": 6,
             "border": 8,
             "font-size": 24,
-            "font-color": [ 255, 255, 255 ],
+            "font-color": "general_font",
             "align": "center",
             "text": "",
             "text-wrap": true

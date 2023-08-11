@@ -377,13 +377,14 @@ def theme_load(gui, theme_file):
             elif section_name == "#resources":
                 print("- loading resources:")
                 for resource_name, resource_data in section_data.items():
-                    if isinstance(resource_data, list) and len(resource_data) == 2:
-                        print(f"  - loading static svg {resource_name} - [{gui.images.load_static(resource_name, resource_data) is None and 'FAIL' or 'OKAY'}]")
-                    elif len(resource_data) == 0:
-                        print(f"  - loading static {resource_name} - [{gui.images.load_static(resource_name) is None and 'FAIL' or 'OKAY'}]")
+                    resource_set_name = resource_data.get("name", resource_name)
 
+                    success = gui.images.load_data(resource_name, resource_data) is None and 'FAIL' or 'OKAY'
+
+                    if resource_set_name != resource_name:
+                        print(f"  - loading {resource_name} as {resource_set_name} - [{succes}]")
                     else:
-                        print(f"  - loading atas {resource_name} - [{gui.images.load_atlas(resource_name, resource_data) is None and 'FAIL' or 'OKAY'}]")
+                        print(f"  - loading {resource_name} - [{success}]")
 
             elif section_name == "#elements":
                 print("- loading elements:")
@@ -1040,6 +1041,7 @@ class PortsListScene(BaseScene):
 
             port_name = self.port_list[self.last_port]
             port_info = self.all_ports[port_name]
+
             self.gui.set_port_info(port_name, port_info)
 
             self.tags['port_image'].image = self.gui.get_port_image(port_name)
@@ -1082,15 +1084,26 @@ class PortInfoScene(BaseScene):
         self.update_port()
 
         if self.action == 'install':
-            self.set_buttons({'A': 'Install', 'B': 'Back'})
+            self.set_buttons({'A': _('Install'), 'B': _('Back')})
         else:
-            self.set_buttons({'A': 'Uninstall', 'B': 'Back'})
+            self.set_buttons({'A': _('Uninstall'), 'B': _('Back')})
 
     def update_port(self):
         if self.gui.hm is None:
             return
 
-        self.port_info = self.gui.hm.port_info(self.port_name)
+        if self.action == 'install':
+            self.port_info = self.gui.hm.port_info(self.port_name)
+
+        elif self.port_name in self.gui.hm.installed_ports:
+            self.port_info = self.gui.hm.installed_ports[self.port_name]
+
+        elif self.port_name in self.gui.hm.broken_ports:
+            self.port_info = self.gui.hm.broken_ports[self.port_name]
+
+        else:
+            raise RuntimeError(f"HRMMMMmmmmm {self.port_name}")
+
         logger.debug(f"{self.action}: {self.port_name} -> {self.port_info}")
 
         self.tags['port_image'].image = self.gui.get_port_image(self.port_name)
@@ -1149,6 +1162,7 @@ class FiltersScene(BaseScene):
         genres = self.locked_genres + self.selected_genres
         total_ports = len(self.gui.hm.list_ports(genres))
 
+        self.tags['filter_list'].bar_select_mode = 'full'
         self.tags['filter_list'].reset_options()
         self.tags['filter_list'].add_option(None, _("Genres:"))
 
@@ -1158,10 +1172,10 @@ class FiltersScene(BaseScene):
 
             if hm_genre in genres:
                 ports = total_ports
-                text = f"- [x]  {hm_genre}   ({ports})"
+                text = ["    ", "_CHECKED", f"  {hm_genre}", None, "    ", f"  {ports}"]
             else:
                 ports = len(self.gui.hm.list_ports(genres + [hm_genre]))
-                text = f"- [ ]  {hm_genre}   ({ports})"
+                text = ["    ", "_UNCHECKED", f"  {hm_genre}", None, "    ", f"  {ports}"]
 
             self.tags['filter_list'].add_option(hm_genre, text)
 
@@ -1174,10 +1188,10 @@ class FiltersScene(BaseScene):
 
             if hm_genre in genres:
                 ports = total_ports
-                text = f"- [x]  {hm_genre}   ({ports})"
+                text = ["    ", "_CHECKED", f"  {hm_genre}", None, "    ", f"  {ports}"]
             else:
                 ports = len(self.gui.hm.list_ports(genres + [hm_genre]))
-                text = f"- [ ]  {hm_genre}   ({ports})"
+                text = ["    ", "_UNCHECKED", f"  {hm_genre}", None, "    ", f"  {ports}"]
 
             self.tags['filter_list'].add_option(hm_genre, text)
 
@@ -1185,12 +1199,15 @@ class FiltersScene(BaseScene):
         self.tags['filter_list'].add_option(None, _("Porters:"))
 
         for hm_genre in self.gui.hm.porters_list():
+            if hm_genre in self.locked_genres:
+                continue
+
             if hm_genre in genres:
                 ports = total_ports
-                text = f"- [x]  {hm_genre}   ({ports})"
+                text = ["    ", "_CHECKED", f"  {hm_genre}", None, "    ", f"  {ports}"]
             else:
                 ports = len(self.gui.hm.list_ports(genres + [hm_genre]))
-                text = f"- [ ]  {hm_genre}   ({ports})"
+                text = ["    ", "_UNCHECKED", f"  {hm_genre}", None, "    ", f"  {ports}"]
 
             self.tags['filter_list'].add_option(hm_genre, text)
 
@@ -1277,8 +1294,14 @@ class MessageWindowScene(BaseScene):
 
 
 class MessageBoxScene(BaseScene):
-    def __init__(self, gui, message, *, want_cancel=False, ok_text="Okay", cancel_text="Cancel"):
+    def __init__(self, gui, message, *, want_cancel=False, ok_text=None, cancel_text=None):
         super().__init__(gui)
+
+        if ok_text is None:
+            ok_text = _("Okay")
+
+        if cancel_text is None:
+            cancel_text = _("Cancel")
 
         self.load_regions("message_box", ['message_text', ])
 
@@ -1338,11 +1361,19 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             if not pretend_device:
                 pretend_device = 'pc'
 
-            if pretend_device in harbourmaster.HW_INFO:
-                capabilities.update(**harbourmaster.HW_INFO[pretend_device])
-                self.display_width, self.display_height = capabilities['resolution']
+            capabilities = harbourmaster.device_info(pretend_device)
+
+            # if pretend_device in harbourmaster.HW_INFO:
+            #     capabilities.update(**harbourmaster.HW_INFO[pretend_device])
+            self.display_width, self.display_height = capabilities['resolution']
 
             print(f"Forcing size: {self.display_width}x{self.display_height}")
+
+        if capabilities['device'] == 'default':
+            device = harbourmaster.find_device_by_resolution((self.display_width, self.display_height))
+            logger.debug(f"FOUND: {device}")
+            if device != 'default':
+                capabilities = harbourmaster.device_info(device)
 
         # Create the window
         self.window = sdl2.ext.Window("PortMaster", size=(self.display_width, self.display_height))
