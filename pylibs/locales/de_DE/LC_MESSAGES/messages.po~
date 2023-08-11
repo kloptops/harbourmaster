@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-08-11 20:39+0800\n"
+"POT-Creation-Date: 2023-08-11 20:32+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -125,7 +125,7 @@ msgstr "Großbuchstaben"
 msgid "Space"
 msgstr "Leerzeichen"
 
-#: pugwash:888 pugwash:896 pugwash:1273 pugwash:1304 pugwash:1691
+#: pugwash:888 pugwash:896 pugwash:1273 pugwash:1304 pugwash:1693
 msgid "Cancel"
 msgstr "Abbrechen"
 
@@ -183,63 +183,63 @@ msgstr "Porters:"
 msgid "Are you sure you want to cancel?"
 msgstr "Wirklich abbrechen?"
 
-#: pugwash:1301 pugwash:1688
+#: pugwash:1301 pugwash:1690
 msgid "Okay"
 msgstr "Okay"
 
-#: pugwash:1560 pugwash:1634
+#: pugwash:1562 pugwash:1636
 msgid "N/A"
 msgstr "N/V"
 
-#: pugwash:1607
+#: pugwash:1609
 msgid "** NO PORT **"
 msgstr "** KEIN PORT **"
 
-#: pugwash:1622
+#: pugwash:1624
 msgid "Ready to Run"
 msgstr "Ready to Run"
 
-#: pugwash:1622
+#: pugwash:1624
 msgid "Requires Files"
 msgstr "Benötigt Dateien"
 
-#: pugwash:1628
+#: pugwash:1630
 msgid "Installed"
 msgstr "Installiert"
 
-#: pugwash:1630
+#: pugwash:1632
 msgid "Missing"
 msgstr "Fehlt"
 
-#: pugwash:1633
+#: pugwash:1635
 msgid "None"
 msgstr "Keine"
 
-#: pugwash:1864
+#: pugwash:1866
 #, python-brace-format
 msgid "Installing {port_name}"
 msgstr "Installation von {port_name}"
 
-#: pugwash:1874
+#: pugwash:1876
 #, python-brace-format
 msgid "Uninstalling {port_name}"
 msgstr "Deinstallation von {port_name}"
 
-#: pugwash:1884
+#: pugwash:1886
 msgid "Updating all port sources:"
 msgstr "Aktualisieren aller Port-Quellen:"
 
-#: pugwash:1893
+#: pugwash:1895
 #, python-brace-format
 msgid "Godot/FRT {version}"
 msgstr "Godot/FRT {version}"
 
-#: pugwash:1896
+#: pugwash:1898
 #, python-brace-format
 msgid "Mono {version}"
 msgstr "Mono {version}"
 
-#: pugwash:1899
+#: pugwash:1901
 #, python-brace-format
 msgid "JDK {vesion}"
 msgstr "JDK {vesion}"

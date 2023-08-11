@@ -102,10 +102,11 @@ def nice_device_to_device(raw_device):
 
         ('Anbernic RG351MP*', 'rg351mp'),
         ('Anbernic RG351V*',  'rg351v'),
-        ('Anbernic RG351*',  'rg351p'),
+        ('Anbernic RG351*',   'rg351p'),
         ('Anbernic RG353MP*', 'rg353mp'),
         ('Anbernic RG353V*',  'rg353v'),
         ('Anbernic RG353P*',  'rg353p'),
+        ('Anbernic RG552',    'rg552'),
         )
 
     for pattern, device in pattern_to_device:
@@ -146,11 +147,11 @@ def new_device_info():
             info['name'] = result[0]
             info['version'] = result[1]
 
-    # Works on uOS / JELOS
+    # Works on uOS / JELOS / AmberELEC
     sfdbm = safe_cat('/sys/firmware/devicetree/base/model')
     if sfdbm != '':
         device = nice_device_to_device(sfdbm)
-        if device is not None:
+        if device != 'default':
             info.setdefault('device', device)
 
     # Works on AmberELEC / uOS / JELOS
