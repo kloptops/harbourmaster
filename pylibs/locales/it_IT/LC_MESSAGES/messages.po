@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-08-11 20:39+0800\n"
+"POT-Creation-Date: 2023-08-11 21:43+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -128,7 +128,7 @@ msgstr ""
 msgid "Space"
 msgstr ""
 
-#: pugwash:888 pugwash:896 pugwash:1273 pugwash:1304 pugwash:1691
+#: pugwash:888 pugwash:896 pugwash:1312 pugwash:1343 pugwash:1730
 msgid "Cancel"
 msgstr ""
 
@@ -170,79 +170,79 @@ msgstr "Installato"
 msgid "Uninstall"
 msgstr "Disinstalla"
 
-#: pugwash:1167
+#: pugwash:1190
 msgid "Genres:"
 msgstr "Genere"
 
-#: pugwash:1183
+#: pugwash:1218
 msgid "Attributes:"
 msgstr "Runtime"
 
-#: pugwash:1199
+#: pugwash:1245
 msgid "Porters:"
 msgstr "Porter"
 
-#: pugwash:1291
+#: pugwash:1330
 msgid "Are you sure you want to cancel?"
 msgstr "Sicuro di voler annullare?"
 
-#: pugwash:1301 pugwash:1688
+#: pugwash:1340 pugwash:1727
 msgid "Okay"
 msgstr ""
 
-#: pugwash:1560 pugwash:1634
+#: pugwash:1599 pugwash:1673
 msgid "N/A"
 msgstr "N/A"
 
-#: pugwash:1607
+#: pugwash:1646
 msgid "** NO PORT **"
 msgstr "** Nessun Risultato **"
 
-#: pugwash:1622
+#: pugwash:1661
 msgid "Ready to Run"
 msgstr "Port già Pronti"
 
-#: pugwash:1622
+#: pugwash:1661
 msgid "Requires Files"
 msgstr "File richiesti"
 
-#: pugwash:1628
+#: pugwash:1667
 msgid "Installed"
 msgstr "Installato"
 
-#: pugwash:1630
+#: pugwash:1669
 msgid "Missing"
 msgstr "Mancante"
 
-#: pugwash:1633
+#: pugwash:1672
 msgid "None"
 msgstr ""
 
-#: pugwash:1864
+#: pugwash:1903
 #, python-brace-format
 msgid "Installing {port_name}"
 msgstr "Installo {port_name}"
 
-#: pugwash:1874
+#: pugwash:1913
 #, python-brace-format
 msgid "Uninstalling {port_name}"
 msgstr "Disinstallo {port_name}"
 
-#: pugwash:1884
+#: pugwash:1923
 msgid "Updating all port sources:"
 msgstr "Aggiorno le fonti..."
 
-#: pugwash:1893
+#: pugwash:1932
 #, python-brace-format
 msgid "Godot/FRT {version}"
 msgstr ""
 
-#: pugwash:1896
+#: pugwash:1935
 #, python-brace-format
 msgid "Mono {version}"
 msgstr ""
 
-#: pugwash:1899
+#: pugwash:1938
 #, python-brace-format
 msgid "JDK {vesion}"
 msgstr ""

@@ -2208,6 +2208,9 @@ class Region:
         if self.list is None:
             return None
 
+        if len(self.options) == 0:
+            return None
+
         return self.options[self.selected]
 
     def list_selected(self):

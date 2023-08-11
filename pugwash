@@ -1163,8 +1163,14 @@ class FiltersScene(BaseScene):
         total_ports = len(self.gui.hm.list_ports(genres))
 
         self.tags['filter_list'].bar_select_mode = 'full'
+
+        first_add = True
+        add_blank = False
+
+        selected_option = self.tags['filter_list'].selected_option()
+        selected_offset = 0
+
         self.tags['filter_list'].reset_options()
-        self.tags['filter_list'].add_option(None, _("Genres:"))
 
         for hm_genre in harbourmaster.HM_GENRES:
             if hm_genre in self.locked_genres:
@@ -1177,10 +1183,20 @@ class FiltersScene(BaseScene):
                 ports = len(self.gui.hm.list_ports(genres + [hm_genre]))
                 text = ["    ", "_UNCHECKED", f"  {hm_genre}", None, "    ", f"  {ports}"]
 
+            if ports == 0:
+                continue
+
+            if first_add:
+                self.tags['filter_list'].add_option(None, _("Genres:"))
+                first_add = False
+                add_blank = True
+
             self.tags['filter_list'].add_option(hm_genre, text)
 
-        self.tags['filter_list'].add_option(None, "")
-        self.tags['filter_list'].add_option(None, _("Attributes:"))
+            if selected_option == hm_genre:
+                selected_offset = len(self.tags['filter_list'].options) - 1
+
+        first_add = True
 
         for hm_genre in ['rtr', 'mono']:   # 'godot'
             if hm_genre in self.locked_genres:
@@ -1193,10 +1209,21 @@ class FiltersScene(BaseScene):
                 ports = len(self.gui.hm.list_ports(genres + [hm_genre]))
                 text = ["    ", "_UNCHECKED", f"  {hm_genre}", None, "    ", f"  {ports}"]
 
+            if ports == 0:
+                continue
+
+            if first_add:
+                if add_blank:
+                    self.tags['filter_list'].add_option(None, "")
+                self.tags['filter_list'].add_option(None, _("Attributes:"))
+                first_add = False
+
             self.tags['filter_list'].add_option(hm_genre, text)
 
-        self.tags['filter_list'].add_option(None, "")
-        self.tags['filter_list'].add_option(None, _("Porters:"))
+            if selected_option == hm_genre:
+                selected_offset = len(self.tags['filter_list'].options) - 1
+
+        first_add = True
 
         for hm_genre in self.gui.hm.porters_list():
             if hm_genre in self.locked_genres:
@@ -1209,9 +1236,21 @@ class FiltersScene(BaseScene):
                 ports = len(self.gui.hm.list_ports(genres + [hm_genre]))
                 text = ["    ", "_UNCHECKED", f"  {hm_genre}", None, "    ", f"  {ports}"]
 
+            if ports == 0:
+                continue
+
+            if first_add:
+                if add_blank:
+                    self.tags['filter_list'].add_option(None, "")
+                self.tags['filter_list'].add_option(None, _("Porters:"))
+                first_add = False
+
             self.tags['filter_list'].add_option(hm_genre, text)
 
-        self.tags['filter_list'].list_select(self.tags['filter_list'].selected, direction=1)
+            if selected_option == hm_genre:
+                selected_offset = len(self.tags['filter_list'].options) - 1
+
+        self.tags['filter_list'].list_select(selected_offset, direction=1)
 
         self.ready = True
 
