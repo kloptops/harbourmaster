@@ -819,6 +819,8 @@ class HarbourMaster():
         undo_data = []
         is_successs = False
 
+        port_nice_name = download_info.get('attr', {}).get('title', download_info['name'])
+
         try:
             extra_info = {}
             port_info = check_port(download_info['name'], download_info['zip_file'], extra_info)
@@ -830,7 +832,7 @@ class HarbourMaster():
                 # At this point the port will be installed
                 # Extract all the files to the specified directory
                 # zf.extractall(self.ports_dir)
-                self.callback.message(_("Installing {download_name}.").format(download_name=download_info['name']))
+                self.callback.message(_("Installing {download_name}.").format(download_name=port_nice_name))
 
                 total_files = len(zf.infolist())
                 for file_number, file_info in enumerate(zf.infolist()):
@@ -914,25 +916,27 @@ class HarbourMaster():
                     elif undo_file.is_dir():
                         shutil.rmtree(undo_file)
 
-                self.callback.message_box(_("Port {download_name} installed failed.").format(download_name=download_info['name']))
+                self.callback.message_box(_("Port {download_name} installed failed.").format(download_name=port_nice_name))
 
         self._fix_permissions()
 
         logger.debug(port_info)
         if port_info['attr'].get('runtime', None) is not None:
+            runtime_name = runtime_nicename(port_info['attr']['runtime'])
+
             result = self.check_runtime(port_info['attr']['runtime'], in_install=True)
             if result == 0:
-                self.callback.message_box(_("Port {download_name} and {runtime_name} installed successfully.").format(
-                    download_name=download_info['name'],
-                    runtime_name=port_info['attr']['runtime']))
+                self.callback.message_box(_("Port {download_name!r} and {runtime_name!r} installed successfully.").format(
+                    download_name=port_nice_name,
+                    runtime_name=runtime_name))
 
             else:
-                self.callback.message_box(_("Port {download_name} but {runtime_name} failed to install!!\n\nEither reinstall to try again, or check the wiki for help.").format(
-                    download_name=download_info['name'],
-                    runtime_name=port_info['attr']['runtime']))
+                self.callback.message_box(_("Port {download_name!r} installed sucessfully, but {runtime_name!r} failed to install!!\n\nEither reinstall to try again, or check the wiki for help.").format(
+                    download_name=port_nice_name,
+                    runtime_name=runtime_name))
 
         else:
-            self.callback.message_box(_("Port {download_name} installed successfully.").format(download_name=download_info['name']))
+            self.callback.message_box(_("Port {download_name!r} installed successfully.").format(download_name=port_nice_name))
 
         return 0
 

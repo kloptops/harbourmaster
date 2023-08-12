@@ -8,7 +8,7 @@
     "#base": {
         "font": "DejaVuSans.ttf",
         "font-scale[30:17]": 1.0,
-        "font-scale[1920x1152]": 3.0,
+        "font-scale[1920x1152]": 2.0,
         "font-scale[16:9]": 2.0,
         "font-scale[3:2]": 0.85,
         "font-scale[427:240]": 0.9
@@ -18,13 +18,13 @@
         "background":        [  85,  85,  85, 255 ],
         "background_fade":   [  50,  50,  50,  85 ],
         "list_text":         [ 255, 255, 255, 255 ],
-        "list_selected":     [ 255,   0,   0, 255 ],
+        "list_selected":     [ 153, 180, 255, 255 ],
         "list_unselectable": [ 128,   0,   0, 255 ],
         "button":            [ 200, 200, 200, 255 ],
         "general_font":      [ 200, 200, 200 ],
         "download_font":     [   0,   0,   0 ],
         "panels":            [ 110, 110, 110 ],
-        "selection-fill":    [ 153, 180, 255 ],
+        "selection-fill":    [ 50, 80, 155 ],
         "secondary-selection-fill": [ 53, 53, 53 ]
 
     },
@@ -150,7 +150,7 @@
             "font-size": 17,
             "font-size[427:240]": 22,
             "font-size[16:9]": 19,
-            "font-size[1920x1152]": 27,
+            "font-size[1920x1152]": 22,
             "alt-fill": "secondary-selection-fill",
             "select-fill": "selection-fill",
             "font-color": "list_text",
@@ -221,7 +221,7 @@
             "area": [ 0.0, 0.0, 1.0, 1.0 ],
             "text": "{port_info.title}",
             "font-size": 22,
-            "font-color": "selection-fill",
+            "font-color": "list_selected",
             "align": "center"
         },
 
@@ -258,7 +258,7 @@
             "text": "{port_info.title}",
             "area": [ 0.00, 0.00, 1.00, 0.1 ],
             "font-size": 24,
-            "font-color": [ 153, 204, 255 ],
+            "font-color": "list_selected",
             "autoscroll": null,
             "text-wrap": false,
             "align": "center"
@@ -433,8 +433,12 @@
         "#element:background": {},
 
         "message_text": {
-            "area": [ 0.05, 0.5, 0.95, 0.8 ],
-            "area[3:2]": [ 0.05, 0.45, 0.95, 0.9 ],
+            "area": [ 0.05, 0.2, 0.95, 0.8 ],
+            "area[3:2]": [ 0.05, 0.2, 0.95, 0.9 ],
+            "autoscroll": "marquee",
+            "scroll-speed": 40,
+            "scroll-delay-start": 1500,
+            "scroll-delay-end": 1500,
             "fill": "panels",
             "thickness": 6,
             "border": 8,

@@ -1446,6 +1446,7 @@ class SoundManager():
         self.gui = gui
         self.sounds = {}
         self.song = None
+        self.filename = None
         self.is_init = False
         self.init_failed = False
 
@@ -1482,6 +1483,7 @@ class SoundManager():
         res_filename = self.gui.resources.find(filename)
 
         if res_filename is None:
+            print(f"SOUND: unable to find {res_filename}")
             return None
 
         sample = sdl2.sdlmixer.Mix_LoadWAV(
@@ -1498,6 +1500,16 @@ class SoundManager():
         self.sounds[name] = sample
         return name
 
+    def easy_music(self, filename, loops=-1, volume=1):
+        if filename == self.filename:
+            return
+
+        if filename is None:
+            self.stop()
+            return
+
+        self.music(filename)
+
     def music(self, filename, loops=-1, volume=1):
         '''
         Loads a music file and plays immediately plays it
@@ -1512,6 +1524,7 @@ class SoundManager():
         res_filename = self.gui.resources.find(filename)
 
         if res_filename is None:
+            print(f"MUSIC: unable to find {filename}")
             return None
 
         sdl2.sdlmixer.Mix_VolumeMusic(int(volume * 128))
@@ -1526,8 +1539,16 @@ class SoundManager():
         if self.song:
             sdl2.sdlmixer.Mix_FreeMusic(self.song)
 
+        self.filename = filename
         self.song = music
+
         return self.song
+
+    def stop(self):
+        if self.song:
+            sdl2.sdlmixer.Mix_FreeMusic(self.song)
+            self.song = None
+            self.filename = None
 
     @property
     def volume(self):
@@ -1556,12 +1577,15 @@ class SoundManager():
             return
 
         sample = self.sounds.get(name)
-        if sample:
-            channel = sdl2.sdlmixer.Mix_PlayChannel(-1, sample, 0)
-            if channel == -1:
-                raise GUIRuntimeError(
-                    f'Cannot play sample {name}: {sdl2.sdlmixer.Mix_GetError()}')
-            sdl2.sdlmixer.Mix_Volume(channel, int(volume * 128))
+        if not sample:
+            print(f"PLAY: unable to find {name}")
+            return
+
+        channel = sdl2.sdlmixer.Mix_PlayChannel(-1, sample, 0)
+        if channel == -1:
+            raise GUIRuntimeError(
+                f'Cannot play sample {name}: {sdl2.sdlmixer.Mix_GetError()}')
+        sdl2.sdlmixer.Mix_Volume(channel, int(volume * 128))
 
     def __del__(self):
         if not self.is_init:
@@ -1749,13 +1773,14 @@ class Region:
         self._text = self._verify_text('text', optional=True)
         self.textclip = self._verify_bool('text-clip', True, optional=True)
         self.textwrap = self._verify_bool('text-wrap', False, optional=True)
-        self.linespace = self._verify_int('linespace', 0, optional=True)
+        self.linespace = self._verify_int('line-space', 0, optional=True)
         self.align = self._verify_option('align', Rect.POINTS, 'topleft')
 
         self.imagelist = 0 ## TODO
         self.ilistalign = 0 ## TODO
 
         self.itemsize = self._verify_int('item-size', None, optional=True)
+        self.item_spacer = self._verify_int('item-spacer', 0, optional=True)
 
         self.select_color = self._verify_color('select-color', optional=True)
         self.select_fill = self._verify_color('select-fill', optional=True)
@@ -1764,8 +1789,8 @@ class Region:
         self.inactive_select_color = self._verify_color('inactive-select-color', optional=True)
         self.inactive_select_fill = self._verify_color('inactive-select-fill', optional=True)
 
-        self.click_sound = self._verify_text('click_sound', optional=True)
-        self.cancel_sound = self._verify_text('cancel_sound', optional=True)
+        self.click_sound = self._verify_text('click-sound', optional=True)
+        self.cancel_sound = self._verify_text('cancel-sound', optional=True)
 
         self.scrollable = self._verify_bool('scrollable', False, True)
 
@@ -1780,8 +1805,8 @@ class Region:
         self.scroll_delay_end = self._verify_int('scroll-delay-end', 1000, True)
         self.scroll_state = self.SCROLL_START_PAUSE
 
-        self.barspace = self._verify_int('barspace', 4)
-        self.barwidth = self._verify_int('barwidth', 0, optional=True)
+        self.barspace = self._verify_int('bar-space', 4)
+        self.barwidth = self._verify_int('bar-width', 0, optional=True)
         self.bar_select_mode = 'item'
         self._bar = self._verify_bar('bar', optional=True, align=self.align)
         self.list = self._verify_list('list', optional=True)
@@ -2032,11 +2057,11 @@ class Region:
         # RENDER LIST
         elif self.list:
             if self.itemsize is not None:
-                itemsize = self.itemsize  # + self.bordery
+                itemsize = self.itemsize
             else:
-                itemsize = self.texts.line_height(self.font, self.fontsize)  # + self.bordery
+                itemsize = self.texts.line_height(self.font, self.fontsize)
 
-            self.page_size = max(area.height // itemsize, 1)
+            self.page_size = max(area.height // (itemsize + self.item_spacer), 1)
             self.selected = self.selected % len(self.list)
 
             # self.fonts.load(self.font, self.fontsize)
@@ -2172,7 +2197,7 @@ class Region:
                     else:
                         texture.draw_in(irect, fit=True)
 
-                irect.y += itemsize
+                irect.y += itemsize + self.item_spacer
                 i += 1
 
     def reset_options(self):

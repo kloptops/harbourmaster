@@ -216,6 +216,7 @@ def remove_pm_signature(file_name):
     with file_name.open('w') as fh:
         fh.write("\n".join(file_data))
 
+
 def hash_file(file_name):
     if isinstance(file_name, str):
         file_name = pathlib.Path(file_name)
@@ -227,6 +228,19 @@ def hash_file(file_name):
         md5.update(fh.read())
 
     return md5.hexdigest()
+
+
+def runtime_nicename(runtime):
+    if runtime.startswith("frt"):
+        return ("Godot/FRT {version}").format(version=runtime.split('_', 1)[1].rsplit('.', 1)[0])
+
+    if runtime.startswith("mono"):
+        return ("Mono {version}").format(version=runtime.split('-', 1)[1].rsplit('-', 1)[0])
+
+    if "jdk" in runtime and runtime.startswith("zulu11"):
+        return ("JDK {vesion}").format(version=runtime.split('-')[2][3:])
+
+    return runtime
 
 
 def download(file_name, file_url, md5_source=None, md5_result=None, callback=None):
@@ -270,7 +284,7 @@ def download(file_name, file_url, md5_source=None, md5_result=None, callback=Non
             length += len(data)
 
             if callback is not None:
-                callback.progress("Downloading file.", length, total_length, 'data')
+                callback.progress(_("Downloading file."), length, total_length, 'data')
             else:
                 if total_length is None:
                     sys.stdout.write(f"\r[{'?' * 40}] - {nice_size(length)} / {total_length_mb} ")
@@ -546,5 +560,6 @@ __all__ = (
     'oc_join',
     'remove_dict_list',
     'remove_pm_signature',
+    'runtime_nicename',
     'timeit',
     )
