@@ -1469,13 +1469,13 @@ class SoundManager():
 
             self.is_init = True
 
-    def load(self, filename, name=None, volume=1):
+    def load(self, filename, name=None, volume=128):
         '''
         Load a given sound file into the Sound Manager
 
         :param filename: filename for sound file to load
         :param name: alternate name to use to play the sound instead of its filename
-        :param volume: default volume level to play the sound at, from 0.0 to 1.0
+        :param volume: default volume level to play the sound at, from 0 to 128
         '''
         if not self.is_init:
             return None
@@ -1496,27 +1496,28 @@ class SoundManager():
             return None
             # raise GUIRuntimeError(f'Cannot open audio file: {sdl2.Mix_GetError()}')
 
-        sdl2.sdlmixer.Mix_VolumeChunk(sample, int(128 * volume))
+        sdl2.sdlmixer.Mix_VolumeChunk(sample, (int(max(0, min(volume, 128)))))
         self.sounds[name] = sample
         return name
 
-    def easy_music(self, filename, loops=-1, volume=1):
+    def easy_music(self, filename, loops=-1, volume=128):
         if filename == self.filename:
+            sdl2.sdlmixer.Mix_VolumeMusic(int(max(0, min(volume, 128))))
             return
 
         if filename is None:
             self.stop()
             return
 
-        self.music(filename)
+        self.music(filename, loops, volume)
 
-    def music(self, filename, loops=-1, volume=1):
+    def music(self, filename, loops=-1, volume=128):
         '''
         Loads a music file and plays immediately plays it
 
         :param filename: path to music file to load and play
         :param loops: number of times to play song, or loop forever by default
-        :param volume: volume level to play music, between 0.0 and 1.0
+        :param volume: volume level to play music, between 0 to 128
         '''
         if not self.is_init:
             return None
@@ -1527,7 +1528,7 @@ class SoundManager():
             print(f"MUSIC: unable to find {filename}")
             return None
 
-        sdl2.sdlmixer.Mix_VolumeMusic(int(volume * 128))
+        sdl2.sdlmixer.Mix_VolumeMusic(int(max(0, min(volume, 128))))
         music = sdl2.sdlmixer.Mix_LoadMUS(
                     sdl2.ext.compat.byteify(str(res_filename), 'utf-8'))
 
@@ -1790,7 +1791,9 @@ class Region:
         self.inactive_select_fill = self._verify_color('inactive-select-fill', optional=True)
 
         self.click_sound = self._verify_text('click-sound', optional=True)
-        self.cancel_sound = self._verify_text('cancel-sound', optional=True)
+        self.click_sound_volume = self._verify_int('click-sound-volume', 128, optional=True, minimum=0, maximum=128)
+        self.button_sound = self._verify_text('button-sound', optional=True)
+        self.button_sound_volume = self._verify_int('button-sound-volume', 128, optional=True, minimum=0, maximum=128)
 
         self.scrollable = self._verify_bool('scrollable', False, True)
 
@@ -2724,7 +2727,7 @@ class Region:
         #print(f'{name}: {val}')
         return val
 
-    def _verify_int(self, name, default=0, optional=False):
+    def _verify_int(self, name, default=0, optional=False, minimum=None, maximum=None):
         'verify that value of self._dict[name] is valid int value'
 
         val = self._dict.get(name, default)
@@ -2734,9 +2737,16 @@ class Region:
         if not isinstance(val, int):
             raise GUIThemeError(f'{name} is not an int')
         #print(f'{name}: {val}')
+
+        if minimum is not None and val < minimum:
+            val = minimum
+
+        if maximum is not None and val > maximum:
+            val = maximum
+
         return val
 
-    def _verify_float(self, name, default=0, optional=False):
+    def _verify_float(self, name, default=0, optional=False, minimum=None, maximum=None):
         'verify that value of self._dict[name] is valid float value'
 
         val = self._dict.get(name, default)
@@ -2746,6 +2756,13 @@ class Region:
         if not isinstance(val, float):
             raise GUIThemeError(f'{name} is not an float')
         #print(f'{name}: {val}')
+
+        if minimum is not None and val < minimum:
+            val = minimum
+
+        if maximum is not None and val > maximum:
+            val = maximum
+
         return val
 
     def _verify_file(self, name, default=None, optional=False):

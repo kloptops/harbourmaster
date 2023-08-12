@@ -924,6 +924,7 @@ class HarbourMaster():
         if port_info['attr'].get('runtime', None) is not None:
             runtime_name = runtime_nicename(port_info['attr']['runtime'])
 
+            self.callback.progress(None, None, None)
             result = self.check_runtime(port_info['attr']['runtime'], in_install=True)
             if result == 0:
                 self.callback.message_box(_("Port {download_name!r} and {runtime_name!r} installed successfully.").format(

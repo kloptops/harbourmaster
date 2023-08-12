@@ -595,11 +595,27 @@ class BaseScene:
         self.text_regions = {}
         self.bar_regions = {}
         self.update_regions = {}
+        self.music = None
+        self.music_volume = 128
+        self.active = False
+
+    def scene_deactivate(self):
+        self.active = False
+
+    def scene_activate(self):
+        if not self.active:
+            self.active = True
+            self.gui.sounds.easy_music(self.music, volume=max(0, min(self.music_volume, 128)))
 
     def load_regions(self, section, required_tags):
         rects = self.gui.new_rects()
         temp_required_tags = list(required_tags)
+
         for number, (region_name, region_data) in enumerate(self.gui.theme_data[section].items()):
+            if "music" in region_data:
+                self.music = region_data["music"]
+                self.music_volume = region_data.get("music-volume", 128)
+
             # print(f"Loading region {region_name}: {region_data}")
             region = pySDL2gui.Region(self.gui, region_data, region_name, number, rects)
 
@@ -719,6 +735,12 @@ class BaseScene:
 
         self.tags['button_bar'].bar = output
 
+    def button_activate(self):
+        if 'button_bar' not in self.tags:
+            return
+
+        self.gui.sounds.play(self.tags['button_bar'].button_sound, volume=self.tags['button_bar'].button_sound_volume)
+
 
 class MainMenuScene(BaseScene):
     def __init__(self, gui):
@@ -741,6 +763,8 @@ class MainMenuScene(BaseScene):
         if events.was_pressed('A'):
             selected_option, selected_parameter = self.tags['option_list'].selected_option()
 
+            self.button_activate()
+
             if selected_option in ('install', 'uninstall'):
                 self.gui.push_scene('ports', PortsListScene(self.gui, {'mode': selected_option, 'base_filters': selected_parameter}))
                 return True
@@ -754,6 +778,7 @@ class MainMenuScene(BaseScene):
                 return True
 
         elif events.was_pressed('B'):
+            self.button_activate()
             self.gui.do_cancel()
             return True
 
@@ -784,6 +809,8 @@ class OptionScene(BaseScene):
         if events.was_pressed('A'):
             selected_option = self.tags['option_list'].selected_option()
 
+            self.button_activate()
+
             print(f"Selected {selected_option}")
 
             if selected_option == 'update-ports':
@@ -796,18 +823,22 @@ class OptionScene(BaseScene):
 
             elif selected_option == 'select-theme':
                 self.gui.push_scene('select-theme', ThemesScene(self.gui))
+                return True
 
             elif selected_option == 'select-scheme':
                 self.gui.push_scene('select-scheme', ThemeSchemeScene(self.gui))
+                return True
 
             elif selected_option == 'select-language':
                 self.gui.push_scene('select-language', LanguageScene(self.gui))
+                return True
 
             elif selected_option == 'back':
                 self.gui.pop_scene()
                 return True
 
         elif events.was_pressed('B'):
+            self.button_activate()
             self.gui.pop_scene()
             return True
 
@@ -838,6 +869,8 @@ class ThemesScene(BaseScene):
         if events.was_pressed('A'):
             selected_option, selected_parameter = self.tags['option_list'].selected_option()
 
+            self.button_activate()
+
             print(f"Selected {selected_option} -> {selected_parameter}")
 
             if selected_option == 'back':
@@ -859,6 +892,7 @@ class ThemesScene(BaseScene):
                     return True
 
         elif events.was_pressed('B'):
+            self.button_activate()
             self.gui.pop_scene()
             return True
 
@@ -893,6 +927,8 @@ class ThemeSchemeScene(BaseScene):
         if events.was_pressed('A'):
             selected_option, selected_parameter = self.tags['option_list'].selected_option()
 
+            self.button_activate()
+
             print(f"Selected {selected_option} -> {selected_parameter}")
 
             if selected_option == 'back':
@@ -913,6 +949,7 @@ class ThemeSchemeScene(BaseScene):
                     return True
 
         elif events.was_pressed('B'):
+            self.button_activate()
             self.gui.pop_scene()
             return True
 
@@ -943,6 +980,8 @@ class LanguageScene(BaseScene):
         if events.was_pressed('A'):
             selected_option, selected_parameter = self.tags['option_list'].selected_option()
 
+            self.button_activate()
+
             print(f"Selected {selected_option} -> {selected_parameter}")
 
             if selected_option == 'back':
@@ -963,6 +1002,7 @@ class LanguageScene(BaseScene):
                     return True
 
         elif events.was_pressed('B'):
+            self.button_activate()
             self.gui.pop_scene()
             return True
 
@@ -1153,6 +1193,8 @@ class PortsListScene(BaseScene):
             self.tags['port_image'].image = self.gui.get_port_image(port_name)
 
         if self.options['mode'] == 'install' and events.was_pressed('X'):
+            self.button_activate()
+
             if len(self.port_list) > 0 or len(self.options['filters']) > 0:
                 self.gui.push_scene('ports', FiltersScene(self.gui, self))
 
@@ -1163,6 +1205,7 @@ class PortsListScene(BaseScene):
             return True
 
         if events.was_pressed('A') and len(self.port_list) > 0:
+            self.button_activate()
             self.last_port = self.tags['ports_list'].selected
             port_name = self.port_list[self.last_port]
 
@@ -1221,6 +1264,7 @@ class PortInfoScene(BaseScene):
         super().do_update(events)
 
         if events.was_pressed('A'):
+            self.button_activate()
             self.gui.pop_scene()
 
             if self.action == 'install':
@@ -1232,6 +1276,7 @@ class PortInfoScene(BaseScene):
             return True
 
         if events.was_pressed('B'):
+            self.button_activate()
             self.gui.pop_scene()
             return True
 
@@ -1948,12 +1993,21 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             scene[0]
             for scene in self.scenes]
 
+    def all_scenes(self):
+        for layer, scenes in self.scenes:
+            yield from scenes
+
     def push_scene(self, name, scene):
         """
         Add a scene, if the name is the same as the current layer it is added to it.
         """
         if name is None:
             name = self.scenes[-1][0]
+
+        for old_scene in self.all_scenes():
+            if old_scene.active:
+                print(f"DEACTIVATE {scene}")
+                old_scene.scene_deactivate()
 
         if name == self.scenes[-1][0]:
             logger.debug(f"PUSH SCENE ADD {name}")
@@ -1965,6 +2019,9 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             self.scenes.append((name, [scene]))
 
             logger.debug(f"SCENE LIST: {self.scene_list()}")
+
+        print(f"ACTIVATE {scene}")
+        scene.scene_activate()
 
     def pop_scene(self, name=None):
         """
@@ -2004,6 +2061,10 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
                 self.scenes.pop(-1)
 
             logger.debug(f"SCENE LIST: {self.scene_list()}")
+
+        if not self.scenes[-1][1][-1].active:
+            print(f"ACTIVATE {self.scenes[-1][1][-1]}")
+            self.scenes[-1][1][-1].scene_activate()
 
     ## Cancelling code.
     def do_cancel(self):

@@ -134,12 +134,15 @@
             "area": [ 0.0, 0.4, 1.0, 1.0 ],
             "area[1920x1152, hires]": [ 0.0, 0.5, 1.0, 1.0 ]
         },
+
         "background": {
             "area": [ 0.0, 0.0, 1.0, 1.0 ],
             "fill": "background",
             "border": 8,
             "font-size": 36,
-            "font-color": "general_font"
+            "font-color": "general_font",
+            "music": "music.mod",
+            "music-volume": 128
         },
 
         "button_bar": {
@@ -152,7 +155,8 @@
                 "Accept",
                 "_B",
                 "Back"
-            ]
+            ],
+            "button-sound": "click"
         },
 
         "option_list": {
@@ -163,7 +167,8 @@
             "select-color": "list_selected",
             "text-clip": false,
             "thickness": 10,
-            "click-sound": "click"
+            "click-sound": "click",
+            "click-sound-volume": 64
         }
     },
 
@@ -362,7 +367,9 @@
     },
 
     "option_menu": {
-        "#element:background": {},
+        "#element:background": {
+            "music": null
+        },
 
         "#element:option_list": {
             "list": [],
