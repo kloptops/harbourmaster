@@ -22,7 +22,7 @@ for lang_dir in $POT_DIR/* ; do
             echo "Updating translations for $LANG_CODE..."
             
             # Perform msgmerge
-            msgmerge --verbose -U "${PO_FILE}" "${POT_DIR}/${POT_FILE}.pot"
+            msgmerge --no-fuzzy-matching --verbose -U "${PO_FILE}" "${POT_DIR}/${POT_FILE}.pot"
         else
             echo "Creating empty translation for $LANG_CODE"
 

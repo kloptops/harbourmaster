@@ -70,19 +70,25 @@ You can override entire elements based on hardware capabilities:
 Since this uses the capabilities system used in ports you can add them together and or not them.
 
 
-
 Currently the capabilities are:
 
 - `hires`: devices with a screen resolution greater than 640:480
 - `lowres`: devices with a screen resolution smaller then 640:480
 - `power`: any device above an `rk3326` cpu.
 - `opengl`: any device with `OpenGL`, not OpenGLES.
+- `wide`: any aspect ratio above 4:3
 - `3:2`: aspect ratio of 3:2
 - `4:3`: aspect ratio of 4:3
 - `5:3`: aspect ratio of 5:3
 - `16:9`: aspect ratio of 16:9
 - `427:240`: aspect ratio of 427:240 (ogs/ogu & friends)
-- `wide`: any aspect ratio above 4:3
+- `480x320`: screen resolution of 480x320
+- `640x480`: screen resolution of 640x480
+- `854x480`: screen resolution of 854x480
+- `960x544`: screen resolution of 960x544
+- `1280x720`: screen resolution of 1280x720
+- `1920x1152`: screen resolution of 1920x1152
+
 
 You can combine them like so:
 
@@ -108,70 +114,65 @@ Currently there are the following scenes:
 This is the main menu scene, it requires the `option_list` element. It is the first scene to load and if backed out of will quit the program.
 
 ```json
-    "option_list": {
-        "list": [
-            "All Ports",
-            "Ready to Run Ports",
-            "Uninstall Ports",
-            "Option Menu",
-            "Exit"
-        ],
-        "option": [
-            "install",
-            "install-rtr",
-            "uninstall",
-            "option",
-            "exit"
-        ]
+    "main_menu": {
+        "option_list": {
+            "area": [ 0.0, 0.0, 1.0, 1.0 ],
+            "font": "DejaVuSans.ttf",
+            "font-size": 10,
+            "list": []
+        },
+        "button_bar": {
+            "area": [ 0.0, 8.0, 1.0, 1.0 ],
+            "font": "DejaVuSans.ttf",
+            "font-size": 10,
+            "bar": []
+        }
     }
 ```
 
 The option_list can contain whatever text you feel is most appropriate, the actual option that gets called is the same option in the `option` list.
-
-Currently the supported options for the main menu are as listed, more can be added as necessary.
 
 ### Scene: options_menu
 
-This is the options menu scene, it requires the `option_list` element. It is loaded from main-menu via.
+This is the options menu scene, it requires the `option_list` element. It is loaded from main-menu, this scene is reused for each subsequent option submenu.
 
 ```json
-    "option_list": {
-        "list": [
-            "Update ports",
-            "Back"
-        ],
-        "option": [
-            "update-ports",
-            "back"
-        ]
+    "options_menu": {
+        "option_list": {
+            "area": [ 0.0, 0.0, 1.0, 1.0 ],
+            "font": "DejaVuSans.ttf",
+            "font-size": 10,
+            "list": []
+        },
+        "button_bar": {
+            "area": [ 0.0, 8.0, 1.0, 1.0 ],
+            "font": "DejaVuSans.ttf",
+            "font-size": 10,
+            "bar": []
+        }
     }
 ```
 
-The option_list can contain whatever text you feel is most appropriate, the actual option that gets called is the same option in the `option` list.
+### Scene: ports_list
 
-Currently the supported options for the main menu are as listed, more will be added as necessary.
-
-
-### Scene: options_menu
-
-This is the options menu scene, it requires the `option_list` element. It is loaded from main-menu via.
+This is the main list of ports, it requires the `ports_list` element. It is loaded from main-menu, this scene is reused for listing ports for installing and uninstalling.
 
 ```json
-    "option_list": {
-        "list": [
-            "Update ports",
-            "Back"
-        ],
-        "option": [
-            "update-ports",
-            "back"
-        ]
+    "ports_list": {
+        "ports_list": {
+            "area": [ 0.0, 0.0, 1.0, 1.0 ],
+            "font": "DejaVuSans.ttf",
+            "font-size": 10,
+            "list": []
+        },
+        "button_bar": {
+            "area": [ 0.0, 8.0, 1.0, 1.0 ],
+            "font": "DejaVuSans.ttf",
+            "font-size": 10,
+            "bar": []
+        }
     }
 ```
-
-The option_list can contain whatever text you feel is most appropriate, the actual option that gets called is the same option in the `option` list.
-
-Currently the supported options for the main menu are as listed, more will be added as necessary.
 
 
 ## Elements

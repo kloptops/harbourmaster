@@ -795,19 +795,74 @@ class HarbourMaster():
 
         return None
 
-    def _fix_permissions(self):
-        path_fs = get_path_fs(self.ports_dir)
+    def _fix_permissions(self, path_check=None):
+        if path_check is None:
+            path_check = self.ports_dir
+
+        path_fs = get_path_fs(path_check)
         logger.debug(f"path_fs={path_fs}")
+
         if path_fs not in ('ext4', 'ext3'):
             return
 
         try:
-            logger.info(f"Fixing permissions for {self.ports_dir}.")
-            subprocess.check_output(['chmod', '-R', '777', str(self.ports_dir)])
+            logger.info(f"Fixing permissions for {path_check}.")
+            subprocess.check_output(['chmod', '-R', '777', str(path_check)])
 
         except subprocess.CalledProcessError as err:
             logger.error(f"Failed to fix permissions: {err}")
             return
+
+    def _install_portmaster(self, download_file):
+        """
+        Installs a new version of PortMaster
+        """
+        logger.debug("Installing PortMaster.zip")
+        # if HM_TESTING:
+        #     logger.error("Unable to install PortMaster.zip in testing environment.")
+        #     return 255
+
+        platform_name = self.device['name']
+        move_bash = False
+
+        if platform_name in ("jelos", "unofficialos"):
+            move_bash = True
+
+        try:
+            with zipfile.ZipFile(download_file, 'r') as zf:
+                self.callback.message(_("Installing {download_name}.").format(download_name="PortMaster"))
+
+                total_files = len(zf.infolist())
+                for file_number, file_info in enumerate(zf.infolist()):
+                    if file_info.file_size == 0:
+                        compress_saving = 100
+                    else:
+                        compress_saving = file_info.compress_size / file_info.file_size * 100
+
+                    self.callback.progress(_("Installing"), file_number+1, total_files, '%')
+                    self.callback.message(f"- {file_info.filename}")
+
+                    dest_file = self.tools_dir / file_info.filename
+
+                    # cprint(f"- <b>{file_info.filename!r}</b> <d>[{nice_size(file_info.file_size)} ({compress_saving:.0f}%)]</d>")
+                    zf.extract(file_info, path=self.tools_dir)
+
+                    if move_bash and dest_file.name.lower().endswith('.sh'):
+                        self.callback.message(f"- moving {dest_file} to {self.cfg_dir / dest_file.name}")
+                        os.replace(dest_file, self.tools_dir / dest_file.name)
+
+            self.callback.message_box(_("Port {download_name!r} installed successfully.").format(download_name="PortMaster"))
+
+            if platform_name in ("jelos", ):
+                ## ADD Special JELOS hooks here.
+                ...
+
+            self._fix_permissions(self.tools_dir)
+
+        finally:
+            ...
+
+        return 0
 
     def _install_port(self, download_info):
         """
@@ -1025,6 +1080,9 @@ class HarbourMaster():
                 return 255
 
             with self.callback.enable_cancellable(False):
+                if name_cleaner(download_info['name']) == 'portmaster.zip':
+                    return self._install_portmaster(download_info['zip_file'])
+
                 return self._install_port(download_info)
 
         # Special case for a local file.
@@ -1046,6 +1104,9 @@ class HarbourMaster():
                 }
 
             with self.callback.enable_cancellable(False):
+                if name_cleaner(port_info['name']) == 'portmaster.zip':
+                    return self._install_portmaster(port_info['zip_file'])
+
                 return self._install_port(port_info)
 
         if '/' in port_name:
@@ -1058,7 +1119,10 @@ class HarbourMaster():
             if not fnmatch.fnmatch(source_prefix, repo):
                 continue
 
-            if source.clean_name(port_name) not in source.ports:
+            if source.clean_name(port_name) not in source.ports and not (
+                    source.name in ("PortMaster", ) and
+                    source.clean_name(port_name) == 'portmaster.zip' and
+                    'portmaster.zip' in source._data):
                 continue
 
             if self.config['offline']:
@@ -1073,6 +1137,9 @@ class HarbourMaster():
 
             # print(f"Download Info: {download_info.to_dict()}")
             with self.callback.enable_cancellable(False):
+                if source.clean_name(port_name) == 'portmaster.zip':
+                    return self._install_portmaster(download_info)
+
                 return self._install_port(download_info)
 
         self.callback.message_box(_("Unable to find a source for {port_name}").format(port_name=port_name))

@@ -151,11 +151,17 @@ def lang_list():
         "de_DE": _("German"),
         "en_US": _("English"),
         "es_ES": _("Spanish"),
+        "fr_FR": _("French"),
         "it_IT": _("Italian"),
         # Add more language codes and translations here
         }
 
-    return common_languages
+    languages = {
+        lang_id: lang_name
+        for lang_id, lang_name in sorted(common_languages.items(), key=lambda item: (item[1]))
+        if (LANG_DIR / lang_id).is_dir()}
+
+    return languages
 
 
 load_lang()
@@ -1201,6 +1207,7 @@ class PortsListScene(BaseScene):
             return True
 
         if events.was_pressed('B'):
+            self.button_activate()
             self.gui.pop_scene()
             return True
 

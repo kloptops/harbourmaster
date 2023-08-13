@@ -64,6 +64,10 @@ class GitHubRawReleaseV1(BaseSource):
         else:
             self.load()
 
+    @property
+    def name(self):
+        return self._config['name']
+
     def auto_update(self):
         if self._wants_update is not None:
             # cprint(f"<b>{self._config['name']}</b>: {self._wants_update}")
@@ -92,6 +96,8 @@ class GitHubRawReleaseV1(BaseSource):
 
     def _load_images(self):
         self.images = {}
+        all_ports = set(self.ports)
+        seen_ports = set()
 
         for file_name in self._images_dir.iterdir():
             if file_name.suffix.casefold() not in ('.jpg', '.png'):
@@ -102,10 +108,16 @@ class GitHubRawReleaseV1(BaseSource):
 
             port_name, image_type, image_suffix = file_name.name.casefold().rsplit('.', 2)
             port_name = self.clean_name(port_name + '.zip')
-            if port_name not in self._data:
+
+            if port_name not in all_ports:
                 logger.warning(f"Port image {port_name} - {image_type} for unknown port.")
+            elif image_type == 'screenshot':
+                seen_ports.add(port_name)
 
             self.images.setdefault(self.clean_name(port_name), {})[image_type] = file_name.name
+
+        for port_name in (all_ports - seen_ports):
+            logger.warning(f"Port image {port_name}: missing.")
 
     def _load(self):
         """

@@ -141,8 +141,8 @@
             "border": 8,
             "font-size": 36,
             "font-color": "general_font",
-            "music": "music.mod",
-            "music-volume": 128
+            "music": "main_menu_stock.ogg",
+            "music-volume": 50
         },
 
         "button_bar": {
