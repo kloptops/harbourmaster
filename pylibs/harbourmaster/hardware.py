@@ -144,7 +144,7 @@ def new_device_info():
     plymouth = safe_cat('/usr/share/plymouth/themes/text.plymouth')
     if plymouth != '':
         for result in re.findall(r'^title=(.*?) \(([^\)]+)\)$', plymouth, re.I | re.M):
-            info['name'] = result[0]
+            info['name'] = result[0].split(' ', 1)[0].lower()
             info['version'] = result[1]
 
     # Works on uOS / JELOS / AmberELEC

@@ -58,6 +58,11 @@ from .hardware import (
     HW_INFO,
     )
 
+from .platform import (
+    PlatformBase,
+    HM_PLATFORMS,
+    )
+
 from .captain import (
     check_port,
     )

@@ -4,6 +4,7 @@ import fnmatch
 import functools
 import datetime
 import json
+import os
 import pathlib
 import shutil
 import subprocess
@@ -24,6 +25,7 @@ from .hardware import *
 from .util import *
 from .info import *
 from .source import *
+from .platform import *
 from .captain import *
 
 ################################################################################
@@ -35,6 +37,7 @@ class HarbourMaster():
     CONFIG_VERSION = 1
     DEFAULT_CONFIG = {
         'version': CONFIG_VERSION,
+        'first-run': True,
         'ports_info_checked': None,
         'porters_checked': None,
         }
@@ -84,6 +87,11 @@ class HarbourMaster():
 
         self.device = device_info()
 
+        if self.device['name'] in HM_PLATFORMS:
+            self.platform = HM_PLATFORMS[self.device['name']](self)
+        else:
+            self.platform = HM_PLATFORMS['default'](self)
+
         self.callback = callback
         self.ports = []
         self.utils = []
@@ -103,6 +111,11 @@ class HarbourMaster():
             else:
                 with open(self.cfg_file, 'r') as fh:
                     self.cfg_data = json.load(fh)
+
+            if self.cfg_data.get('first-run', True):
+                self.platform.first_run()
+
+                self.cfg_data['first-run'] = False
 
             if 'theme' not in self.cfg_data:
                 self.cfg_data['theme'] = 'default_theme'
@@ -823,10 +836,7 @@ class HarbourMaster():
         #     return 255
 
         platform_name = self.device['name']
-        move_bash = False
-
-        if platform_name in ("jelos", "unofficialos"):
-            move_bash = True
+        move_bash = self.platform.MOVE_PM_BASH
 
         try:
             with zipfile.ZipFile(download_file, 'r') as zf:
@@ -853,9 +863,7 @@ class HarbourMaster():
 
             self.callback.message_box(_("Port {download_name!r} installed successfully.").format(download_name="PortMaster"))
 
-            if platform_name in ("jelos", ):
-                ## ADD Special JELOS hooks here.
-                ...
+            self.platform.portmaster_install()
 
             self._fix_permissions(self.tools_dir)
 
@@ -950,7 +958,10 @@ class HarbourMaster():
             with open(port_info_file, 'w') as fh:
                 json.dump(port_info, fh, indent=4)
 
+
             is_successs = True
+
+            self.platform.port_install(port_info['name'], port_info, undo_data)
 
         except HarbourException as err:
             is_successs = False
@@ -1011,6 +1022,7 @@ class HarbourMaster():
 
             runtime_file = (self.libs_dir / runtime)
             if not runtime_file.is_file():
+                runtime_name = runtime_nicename(port_info['attr']['runtime'])
 
                 if self.config['offline']:
                     cprint(f"Unable to download {runtime} when offline")
@@ -1023,13 +1035,15 @@ class HarbourMaster():
 
                     # cprint(f"Downloading required runtime <b>{runtime}</b>.")
 
-                    self.callback.message(_("Downloading runtime {runtime}.").format(runtime=runtime))
+                    self.callback.message(_("Downloading runtime {runtime}.").format(runtime=runtime_name))
 
                     download_successfull = False
                     try:
                         with self.callback.enable_cancellable(True):
                             runtime_download = source.download(runtime, temp_dir=self.libs_dir)
                             download_successfull = True
+
+                            self.platform.runtime_install(port_name, runtime, [runtime_download])
 
                         if self.callback.was_cancelled or not download_successfull:
                             if runtime_file.is_file():
@@ -1198,12 +1212,15 @@ class HarbourMaster():
         if not ports_dir.is_absolute():
             ports_dir = ports_dir.resolve()
 
-        for item in all_port_items:
+        uninstall_items = [
+            item
+            for item in all_port_items
             # Only delete files/scripts with only 1 owner.
-            item_owners = get_dict_list(all_items, item)
-            if len(item_owners) > 1:
-                continue
+            if len(get_dict_list(all_items, item)) == 1]
 
+        self.platform.port_uninstall(port_name, port_info, all_port_items)
+
+        for item in uninstall_items:
             item_path = self.ports_dir / item
 
             if item_path.exists():

@@ -53,6 +53,7 @@ If not, see <http://www.gnu.org/licenses/>.
 """
 
 import collections
+import contextlib
 import fnmatch
 import functools
 import json
@@ -60,6 +61,7 @@ import os
 import pathlib
 import random
 import sys
+import weakref
 
 from collections.abc import Mapping
 from ctypes import c_int, c_ubyte, byref
@@ -619,6 +621,29 @@ class NamedRects:
 
         return value
 
+class GarbageLand:
+    def __init__(self):
+        self.all_objects = weakref.WeakValueDictionary()
+        self.new_objects = 0
+
+    def add_object(self, new_object):
+        object_id = id(new_object)
+        if object_id not in self.all_objects:
+            self.new_objects += 1
+            self.all_objects[object_id] = new_object
+
+    def count_objects(self):
+        for key, value in self.all_objects.items():
+            pass
+
+        return len(self.all_objects)
+
+    def check_new(self):
+        new_count = self.new_objects
+        self.new_objects = 0
+        return new_count
+
+garbage = GarbageLand()
 
 class Texture:
     '''
@@ -669,6 +694,8 @@ class Texture:
         else:
             raise GUIValueError('srcrect not a supported type')
 
+        garbage.add_object(self)
+
     def __del__(self):
         if self.__in_delete:
             return
@@ -689,6 +716,17 @@ class Texture:
             del child
 
         self.texture.destroy()
+
+    @contextlib.contextmanager
+    def with_color_mod(self, color):
+        old_color = self.color_mod
+        try:
+
+            self.color_mod = color[:3]
+            yield
+
+        finally:
+            self.color_mod = old_color
 
     def set_color_mod(self, color):
         self.color_mod = color[:3]
@@ -823,6 +861,8 @@ class Image:
         self.dstrect = Rect.from_sdl(self.srcrect).fitted(
             Rect(0, 0, *self.renderer.logical_size)).sdl()
 
+        garbage.add_object(self)
+
     def set_color_mod(self, color):
         self.color_mod = color[:3]
 
@@ -900,7 +940,7 @@ class ImageManager():
     '''
     The ImageManager class loads images into Textures and caches them for later use
     '''
-    MAX_IMAGES = 100 # maximum number of images to cache
+    MAX_IMAGES = 30 # maximum number of images to cache
     def __init__(self, gui, max_images=None):
         '''
         Create a new Image manager that can load images into textures
@@ -1118,23 +1158,23 @@ class FontTTF(sdl2.ext.FontTTF):
     """
     Adds quick_render to sdl2.ext.FontTTF
     """
-    def line_height(self, size, color=(0, 0, 0)):
-        style_key = f"{size},{color}"
+    def line_height(self, size):
+        style_key = f"{size}"
         if style_key not in self._styles:
-            self.add_style(style_key, size, color)
+            self.add_style(style_key, size, (255, 255, 255))
 
         return self._get_line_size("", style_key)[1]
 
-    def quick_render(self, text, size, color, width=None, align='left'):
+    def quick_render(self, text, size, width=None, align='left'):
         """Renders a string of text to a new surface.
 
         Uses render_text to render text to a new surface.
 
         It adds a style that matches what we need if it doesnt exist,
         """
-        style_key = f"{size},{color}"
+        style_key = f"{size}"
         if style_key not in self._styles:
-            self.add_style(style_key, size, color)
+            self.add_style(style_key, size, (255, 255, 255))
 
         if text == "":
             text = " "
@@ -1143,7 +1183,7 @@ class FontTTF(sdl2.ext.FontTTF):
 
 
 class TextManager:
-    MAX_TEXTURES = 100
+    MAX_TEXTURES = 50
 
     def __init__(self, gui):
         self.gui = gui
@@ -1154,7 +1194,7 @@ class TextManager:
 
     def add_font(self, font_name, font_file):
         if font_name not in self.fonts:
-            self.fonts[font_name] = FontTTF(str(font_file), 22, (0, 0, 0, 255))
+            self.fonts[font_name] = FontTTF(str(font_file), 22, (255, 255, 255, 255))
 
     def clean(self):
         """
@@ -1177,7 +1217,7 @@ class TextManager:
 
         return font.line_height(size)
 
-    def render_text(self, text, font_name, size, color, *, width=None, align="left"):
+    def render_text(self, text, font_name, size, *, width=None, align="left"):
         if font_name not in self.fonts:
             font_file = self.gui.resources.find(font_name)
             if font_file is None:
@@ -1190,9 +1230,9 @@ class TextManager:
         if text == "":
             text = " "
 
-        key = f"{font.family_name}:{size!r}:{color!r}:{width}:{align}:{text}"
+        key = f"{font.family_name}:{size!r}:{width}:{align}:{text}"
         if key not in self._textures:
-            surface = font.quick_render(text, size, color, width=width, align=align)
+            surface = font.quick_render(text, size, width=width, align=align)
             texture = self._textures[key] = Texture(
                 self.gui,
                 sdl2.ext.Texture(self.renderer, surface))
@@ -1462,12 +1502,19 @@ class SoundManager():
                 self.init_failed = True
                 return
 
+            if (sdl2.sdlmixer.Mix_Linked_Version()[0].minor < 6):
+                print(f'SDL Mixer is too old.')
+                self.init_failed = True
+                return
+
             if sdl2.sdlmixer.Mix_OpenAudio(44100, sdl2.sdlmixer.MIX_DEFAULT_FORMAT, 2, 1024):
                 print(f'Cannot open mixed audio: {sdlmixer.Mix_GetError()}')
                 self.init_failed = True
                 return
 
             self.is_init = True
+
+            print(f"SoundManager: Current Volume {self.volume}")
 
     def load(self, filename, name=None, volume=128):
         '''
@@ -1496,13 +1543,13 @@ class SoundManager():
             return None
             # raise GUIRuntimeError(f'Cannot open audio file: {sdl2.Mix_GetError()}')
 
-        sdl2.sdlmixer.Mix_VolumeChunk(sample, (int(max(0, min(volume, 128)))))
+        sdl2.sdlmixer.Mix_VolumeChunk(sample, (int(max(0, min(volume, 64)))))
         self.sounds[name] = sample
         return name
 
     def easy_music(self, filename, loops=-1, volume=128):
         if filename == self.filename:
-            sdl2.sdlmixer.Mix_VolumeMusic(int(max(0, min(volume, 128))))
+            sdl2.sdlmixer.Mix_VolumeMusic(int(max(0, min(volume, 64))))
             return
 
         if filename is None:
@@ -1511,7 +1558,7 @@ class SoundManager():
 
         self.music(filename, loops, volume)
 
-    def music(self, filename, loops=-1, volume=128):
+    def music(self, filename, loops=-1, volume=64):
         '''
         Loads a music file and plays immediately plays it
 
@@ -1528,7 +1575,7 @@ class SoundManager():
             print(f"MUSIC: unable to find {filename}")
             return None
 
-        sdl2.sdlmixer.Mix_VolumeMusic(int(max(0, min(volume, 128))))
+        sdl2.sdlmixer.Mix_VolumeMusic(int(max(0, min(volume, 64))))
         music = sdl2.sdlmixer.Mix_LoadMUS(
                     sdl2.ext.compat.byteify(str(res_filename), 'utf-8'))
 
@@ -1556,15 +1603,15 @@ class SoundManager():
         if not self.is_init:
             return
 
-        return sdl2.sdlmixer.Mix_MasterVolume(-1) / 128
+        return sdl2.sdlmixer.Mix_MasterVolume(-1)
 
     @volume.setter
     def volume(self, v):
-        'Set master volume level between 0.0 and 1.0'
+        'Set master volume level between 0 and 128'
         if not self.is_init:
             return
 
-        sdl2.sdlmixer.Mix_MasterVolume(int(v * 128))
+        sdl2.sdlmixer.Mix_MasterVolume(int(max(0, min(volume, 64))))
 
     def play(self, name, volume=1):
         '''
@@ -1592,14 +1639,16 @@ class SoundManager():
         if not self.is_init:
             return
 
-        for s in self.sounds.values():
+        for i, s in enumerate(self.sounds.values()):
+            print(f"self.sounds[{i}]: {s}")
             sdl2.sdlmixer.Mix_FreeChunk(s)
 
         if self.song:
+            print(f"self.song: {self.song}")
             sdl2.sdlmixer.Mix_FreeMusic(self.song)
 
         sdl2.sdlmixer.Mix_CloseAudio()
-        sdl2.SDL_Quit(sdl2.SDL_INIT_AUDIO)
+        # sdl2.sdlmixer.Mix_Quit()
         print('SoundManager closed')
 
 
@@ -2014,12 +2063,13 @@ class Region:
                 if self.textwrap:
                     texture = self.texts.render_text(
                         self._text,
-                        self.font, self.fontsize, self.font_color,
+                        self.font, self.fontsize,
                         width=text_area.width, align=align_to_textalign[self.align])
+
                 else:
                     texture = self.texts.render_text(
                         self._text,
-                        self.font, self.fontsize, self.font_color, align=align_to_textalign[self.align])
+                        self.font, self.fontsize, align=align_to_textalign[self.align])
 
                 # x, y = getattr(text_area, self.align, text_area.topleft)
                 x, y, self.scroll_max = autoscroll_text(
@@ -2041,10 +2091,11 @@ class Region:
                             self.scroll_state = self.SCROLL_FSM[self.autoscroll][self.scroll_state]
                             self.scroll_last_update = sdl2.SDL_GetTicks64()
 
-                if self.textclip:
-                    texture.draw_in(text_area, clip=True)
-                else:
-                    texture.draw_in(text_area, fit=True)
+                with texture.with_color_mod(self.font_color):
+                    if self.textclip:
+                        texture.draw_in(text_area, clip=True)
+                    else:
+                        texture.draw_in(text_area, fit=True)
 
             # pos = self.scroll_pos % len(self._text)
 
@@ -2110,7 +2161,7 @@ class Region:
 
                     texture = self.texts.render_text(
                         t,
-                        self.font, self.fontsize, self.select_color, align=align_to_textalign[self.align])
+                        self.font, self.fontsize, align=align_to_textalign[self.align])
 
                     x, y, self.scroll_max = autoscroll_text(
                         texture.size,
@@ -2131,10 +2182,12 @@ class Region:
                                 self.scroll_state = self.SCROLL_FSM[self.autoscroll][self.scroll_state]
                                 self.scroll_last_update = sdl2.SDL_GetTicks64()
 
-                    if self.textclip:
-                        drawn_rect = texture.draw_in(irect, clip=True)
-                    else:
-                        drawn_rect = texture.draw_in(irect, fit=True)
+                    
+                    with texture.with_color_mod(self.select_color):
+                        if self.textclip:
+                            drawn_rect = texture.draw_in(irect, clip=True)
+                        else:
+                            drawn_rect = texture.draw_in(irect, fit=True)
 
                     if self.pointer is not None:
                         if self.pointer_size is not None:
@@ -2190,15 +2243,16 @@ class Region:
 
                     texture = self.texts.render_text(
                         t,
-                        self.font, self.fontsize, fontcolor, align=align_to_textalign[self.align])
+                        self.font, self.fontsize, align=align_to_textalign[self.align])
 
                     x, y = getattr(irect, self.align, irect.topleft)
                     setattr(texture.size, self.align, (x, y))
 
-                    if self.textclip:
-                        texture.draw_in(irect, clip=True)
-                    else:
-                        texture.draw_in(irect, fit=True)
+                    with texture.with_color_mod(fontcolor):
+                        if self.textclip:
+                            texture.draw_in(irect, clip=True)
+                        else:
+                            texture.draw_in(irect, fit=True)
 
                 irect.y += itemsize + self.item_spacer
                 i += 1
@@ -2521,7 +2575,7 @@ class Region:
             elif isinstance(v, str):
                 texture = self.texts.render_text(
                     v,
-                    self.font, self.fontsize, self.font_color, align='left')
+                    self.font, self.fontsize, align='left')
 
                 dest = Rect(x, y, max(texture.size.width, self.barwidth), texture.size.width)
                 dest.centery = area.centery
@@ -2577,11 +2631,12 @@ class Region:
 
                 texture = self.texts.render_text(
                     item,
-                    self.font, self.fontsize, select, align='left')
+                    self.font, self.fontsize, align='left')
 
                 setattr(texture.size, 'center', dest.center)
 
-                texture.draw_in(dest, fit=True)
+                with texture.with_color_mod(select):
+                    texture.draw_in(dest, fit=True)
 
             else:
                 if self.bar_select_mode == 'full':
@@ -2596,11 +2651,12 @@ class Region:
 
                 texture = self.texts.render_text(
                     item,
-                    self.font, self.fontsize, select, align='left')
+                    self.font, self.fontsize, align='left')
 
                 setattr(texture.size, 'center', dest.center)
 
-                texture.draw_in(dest, fit=True)
+                with texture.with_color_mod(select):
+                    texture.draw_in(dest, fit=True)
         #self.renderer.blendmode = mode
 
     def _verify_outline(self, name, default, optional):

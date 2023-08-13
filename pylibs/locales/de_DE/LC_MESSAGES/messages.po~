@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-08-13 11:57+0800\n"
+"POT-Creation-Date: 2023-08-13 16:32+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -36,69 +36,69 @@ msgstr ""
 msgid "Italian"
 msgstr ""
 
-#: pugwash:243
+#: pugwash:248
 msgid "Unknown IP"
 msgstr "Unbekannte IP"
 
-#: pugwash:753
+#: pugwash:758
 msgid "All Ports"
 msgstr "Alle Ports"
 
-#: pugwash:754
+#: pugwash:759
 msgid "Ready to Run Ports"
 msgstr "Ready to Run Ports"
 
-#: pugwash:755
+#: pugwash:760
 msgid "Uninstall Ports"
 msgstr "Ports deinstallieren"
 
-#: pugwash:757
+#: pugwash:762
 msgid "Options"
 msgstr "Optionen"
 
-#: pugwash:758
+#: pugwash:763
 msgid "Exit"
 msgstr "Beenden"
 
-#: pugwash:759 pugwash:805 pugwash:1035 pugwash:1043
+#: pugwash:764 pugwash:810 pugwash:1040 pugwash:1048
 msgid "Enter"
 msgstr "Eingabe"
 
-#: pugwash:759
+#: pugwash:764
 msgid "Quit"
 msgstr "Verlassen"
 
-#: pugwash:794
+#: pugwash:799
 msgid "Update Ports"
 msgstr "Ports aktualisieren"
 
-#: pugwash:796
+#: pugwash:801
 msgid "Choose Language"
 msgstr ""
 
-#: pugwash:798
+#: pugwash:803
 msgid "Select Theme"
 msgstr "Theme auswählen"
 
-#: pugwash:801
+#: pugwash:806
 msgid "Select Color Scheme"
 msgstr ""
 
-#: pugwash:804 pugwash:805 pugwash:864 pugwash:865 pugwash:922 pugwash:923
-#: pugwash:975 pugwash:976 pugwash:1106 pugwash:1108 pugwash:1237 pugwash:1239
+#: pugwash:809 pugwash:810 pugwash:869 pugwash:870 pugwash:927 pugwash:928
+#: pugwash:980 pugwash:981 pugwash:1111 pugwash:1113 pugwash:1243 pugwash:1245
 msgid "Back"
 msgstr "Zurück"
 
-#: pugwash:859
+#: pugwash:864
 #, python-brace-format
 msgid "{theme_name} (Selected)"
 msgstr "{theme_name} (Ausgewählt)"
 
-#: pugwash:865 pugwash:923 pugwash:976 pugwash:1035 pugwash:1043
+#: pugwash:870 pugwash:928 pugwash:981 pugwash:1040 pugwash:1048
 msgid "Select"
 msgstr "Auswählen"
 
-#: pugwash:882
+#: pugwash:887
 msgid ""
 "Do you want to change theme?\n"
 "\n"
@@ -108,191 +108,195 @@ msgstr ""
 "\n"
 "Neustart erforderlich, damit Änderungen wirksam werden."
 
-#: pugwash:917
+#: pugwash:922
 #, fuzzy, python-brace-format
 msgid "{item_name} (Selected)"
 msgstr "{item_name} (Ausgewählt)"
 
-#: pugwash:940
+#: pugwash:945
 msgid ""
 "Do you want to change the themes color scheme?\n"
 "\n"
 "You will have to restart for it to take affect."
 msgstr ""
 
-#: pugwash:970
+#: pugwash:975
 #, python-brace-format
 msgid "{lang_name} (Selected)"
 msgstr ""
 
-#: pugwash:993
+#: pugwash:998
 msgid ""
 "Do you want to change language?\n"
 "\n"
 "You will have to restart for it to take affect."
 msgstr ""
 
-#: pugwash:1035 pugwash:1043
+#: pugwash:1040 pugwash:1048
 msgid "Delete"
 msgstr "Löschen"
 
-#: pugwash:1035
+#: pugwash:1040
 msgid "Upper Case"
 msgstr "Großbuchstaben"
 
-#: pugwash:1035 pugwash:1043
+#: pugwash:1040 pugwash:1048
 msgid "Space"
 msgstr "Leerzeichen"
 
-#: pugwash:1035 pugwash:1043 pugwash:1465 pugwash:1496 pugwash:1913
+#: pugwash:1040 pugwash:1048 pugwash:1471 pugwash:1502 pugwash:1925
 msgid "Cancel"
 msgstr "Abbrechen"
 
-#: pugwash:1043
+#: pugwash:1048
 msgid "Lower Case"
 msgstr "Kleinbuchstaben"
 
-#: pugwash:1106 pugwash:1108
+#: pugwash:1111 pugwash:1113
 msgid "Show Info"
 msgstr "Info anzeigen"
 
-#: pugwash:1106
+#: pugwash:1111
 msgid "Filters"
 msgstr "Filter"
 
-#: pugwash:1129
+#: pugwash:1134
 msgid "NO PORTS"
 msgstr "KEINE PORTS"
 
-#: pugwash:1134
+#: pugwash:1139
 msgid "** NO PORTS FOUND **"
 msgstr "** KEINE PORTS GEFUNDEN **"
 
-#: pugwash:1137
+#: pugwash:1142
 msgid "Download ports first."
 msgstr "Zuerst Ports herunterladen."
 
-#: pugwash:1139
+#: pugwash:1144
 msgid "Try removing some filters."
 msgstr ""
 
-#: pugwash:1237
+#: pugwash:1243
 msgid "Install"
 msgstr ""
 
-#: pugwash:1239
+#: pugwash:1245
 msgid "Uninstall"
 msgstr ""
 
-#: pugwash:1343
+#: pugwash:1349
 msgid "Genres:"
 msgstr "Genres:"
 
-#: pugwash:1371
+#: pugwash:1377
 msgid "Attributes:"
 msgstr "Attribute:"
 
-#: pugwash:1398
+#: pugwash:1404
 msgid "Porters:"
 msgstr "Porters:"
 
-#: pugwash:1483
+#: pugwash:1489
 msgid "Are you sure you want to cancel?"
 msgstr "Wirklich abbrechen?"
 
-#: pugwash:1493 pugwash:1910
+#: pugwash:1499 pugwash:1922
 msgid "Okay"
 msgstr "Okay"
 
-#: pugwash:1782 pugwash:1856
+#: pugwash:1794 pugwash:1868
 msgid "N/A"
 msgstr "N/V"
 
-#: pugwash:1829
+#: pugwash:1841
 msgid "** NO PORT **"
 msgstr "** KEIN PORT **"
 
-#: pugwash:1844
+#: pugwash:1856
 msgid "Ready to Run"
 msgstr "Ready to Run"
 
-#: pugwash:1844
+#: pugwash:1856
 msgid "Requires Files"
 msgstr "Benötigt Dateien"
 
-#: pugwash:1850
+#: pugwash:1862
 msgid "Installed"
 msgstr "Installiert"
 
-#: pugwash:1852
+#: pugwash:1864
 msgid "Missing"
 msgstr "Fehlt"
 
-#: pugwash:1855
+#: pugwash:1867
 msgid "None"
 msgstr "Keine"
 
-#: pugwash:2105
+#: pugwash:2117
 #, python-brace-format
 msgid "Installing {port_name}"
 msgstr "Installation von {port_name}"
 
-#: pugwash:2115
+#: pugwash:2127
 #, python-brace-format
 msgid "Uninstalling {port_name}"
 msgstr "Deinstallation von {port_name}"
 
-#: pugwash:2125
+#: pugwash:2137
 msgid "Updating all port sources:"
 msgstr "Aktualisieren aller Port-Quellen:"
 
-#: pylibs/harbourmaster/harbour.py:92
+#: pylibs/harbourmaster/harbour.py:100
 msgid "Loading..."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:137
+#: pylibs/harbourmaster/harbour.py:150
 msgid "- Loading Info."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:155 pylibs/harbourmaster/harbour.py:171
+#: pylibs/harbourmaster/harbour.py:168 pylibs/harbourmaster/harbour.py:184
 msgid "  - Fetching latest info."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:183
+#: pylibs/harbourmaster/harbour.py:196
 msgid "  - Fetching latest porters."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:195
+#: pylibs/harbourmaster/harbour.py:208
 msgid "  - Loading Sources."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:351
+#: pylibs/harbourmaster/harbour.py:364
 msgid "  - Loading Ports."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:835
+#: pylibs/harbourmaster/harbour.py:843 pylibs/harbourmaster/harbour.py:898
 #, python-brace-format
 msgid "Installing {download_name}."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:844
+#: pylibs/harbourmaster/harbour.py:852 pylibs/harbourmaster/harbour.py:907
 msgid "Installing"
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:907
+#: pylibs/harbourmaster/harbour.py:864 pylibs/harbourmaster/harbour.py:1006
+msgid "Port {download_name!r} installed successfully."
+msgstr ""
+
+#: pylibs/harbourmaster/harbour.py:973
 msgid "Installation failed, removing files..."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:919
+#: pylibs/harbourmaster/harbour.py:985
 #, python-brace-format
 msgid "Port {download_name} installed failed."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:930
+#: pylibs/harbourmaster/harbour.py:996
 msgid "Port {download_name!r} and {runtime_name!r} installed successfully."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:935
+#: pylibs/harbourmaster/harbour.py:1001
 msgid ""
 "Port {download_name!r} installed sucessfully, but {runtime_name!r} failed to "
 "install!!\n"
@@ -300,59 +304,55 @@ msgid ""
 "Either reinstall to try again, or check the wiki for help."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:940
-msgid "Port {download_name!r} installed successfully."
-msgstr ""
-
-#: pylibs/harbourmaster/harbour.py:948
+#: pylibs/harbourmaster/harbour.py:1014
 #, python-brace-format
 msgid "Port {runtime} contains a bad runtime, game may not run correctly."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:962
+#: pylibs/harbourmaster/harbour.py:1029
 msgid "Unable do download a runtime when in offline mode."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:971
+#: pylibs/harbourmaster/harbour.py:1038
 #, python-brace-format
 msgid "Downloading runtime {runtime}."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:984 pylibs/harbourmaster/harbour.py:994
+#: pylibs/harbourmaster/harbour.py:1053 pylibs/harbourmaster/harbour.py:1063
 #, python-brace-format
 msgid "Unable to download {runtime}, game may not run correctly."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:1003
+#: pylibs/harbourmaster/harbour.py:1072
 #, python-brace-format
 msgid "Successfully downloaded {runtime}."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:1009
+#: pylibs/harbourmaster/harbour.py:1078
 #, python-brace-format
 msgid "Unable to find a download for {runtime}."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:1019 pylibs/harbourmaster/harbour.py:1066
+#: pylibs/harbourmaster/harbour.py:1088 pylibs/harbourmaster/harbour.py:1144
 msgid "Unable do download a port when in offline mode."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:1078
+#: pylibs/harbourmaster/harbour.py:1159
 #, python-brace-format
 msgid "Unable to find a source for {port_name}"
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:1092
+#: pylibs/harbourmaster/harbour.py:1173
 #, python-brace-format
 msgid "Unknown port {port_name}"
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:1123
+#: pylibs/harbourmaster/harbour.py:1204
 #, python-brace-format
 msgid "Removing {port_name}"
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:1152
+#: pylibs/harbourmaster/harbour.py:1236
 #, python-brace-format
 msgid "Successfully uninstalled {port_name}"
 msgstr ""
@@ -369,59 +369,59 @@ msgstr ""
 msgid "Auto Update."
 msgstr ""
 
-#: pylibs/harbourmaster/source.py:131
+#: pylibs/harbourmaster/source.py:143
 msgid "  - Updating"
 msgstr ""
 
-#: pylibs/harbourmaster/source.py:142
+#: pylibs/harbourmaster/source.py:154
 msgid "  - Up to date already"
 msgstr ""
 
-#: pylibs/harbourmaster/source.py:147
+#: pylibs/harbourmaster/source.py:159
 msgid "  - Fetching latest ports"
 msgstr ""
 
-#: pylibs/harbourmaster/source.py:192
+#: pylibs/harbourmaster/source.py:204
 msgid "  - Done."
 msgstr ""
 
-#: pylibs/harbourmaster/source.py:200
+#: pylibs/harbourmaster/source.py:212
 #, python-brace-format
 msgid "Unable to find {port_name}."
 msgstr ""
 
-#: pylibs/harbourmaster/source.py:211
+#: pylibs/harbourmaster/source.py:223
 #, python-brace-format
 msgid "Unable to find verification info for {port_name}."
 msgstr ""
 
-#: pylibs/harbourmaster/source.py:218
+#: pylibs/harbourmaster/source.py:230
 #, python-brace-format
 msgid "Unable to download verification info for {port_name}."
 msgstr ""
 
-#: pylibs/harbourmaster/source.py:228
+#: pylibs/harbourmaster/source.py:240
 msgid "  - Success!"
 msgstr ""
 
-#: pylibs/harbourmaster/source.py:283
+#: pylibs/harbourmaster/source.py:295
 msgid "  - Fetching info"
 msgstr ""
 
-#: pylibs/harbourmaster/source.py:463
+#: pylibs/harbourmaster/source.py:475
 #, python-brace-format
 msgid "  - {source_name}: Fetching latest ports"
 msgstr ""
 
-#: pylibs/harbourmaster/source.py:502
+#: pylibs/harbourmaster/source.py:514
 msgid "  - Fetching info."
 msgstr ""
 
-#: pylibs/harbourmaster/source.py:574
+#: pylibs/harbourmaster/source.py:586
 msgid "Unable to download verification file."
 msgstr ""
 
-#: pylibs/harbourmaster/source.py:587
+#: pylibs/harbourmaster/source.py:599
 msgid "Unable to download non zip files."
 msgstr ""
 

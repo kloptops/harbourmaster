@@ -1523,6 +1523,17 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         sdl2.ext.init(
             joystick=True)
 
+        def nice_version(v):
+            return f"{v.major}.{v.minor}.{v.patch}"
+
+        version = sdl2.SDL_version()
+        sdl2.SDL_GetVersion(version)
+
+        logger.debug(f"SDL VERSION: {nice_version(version)}")
+        logger.debug(f"TTF VERSION: {nice_version(sdl2.sdlttf.TTF_Linked_Version()[0])}")
+        logger.debug(f"IMG VERSION: {nice_version(sdl2.sdlimage.IMG_Linked_Version()[0])}")
+        logger.debug(f"MIX VERSION: {nice_version(sdl2.sdlmixer.Mix_Linked_Version()[0])}")
+
         # Define window dimensions
         self.display_width = 640
         self.display_height = 480
@@ -1630,6 +1641,8 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.set_data('ports_list.total_ports', "")
         self.set_data('ports_list.filter_ports', "")
 
+        self.garbage_check = sdl2.SDL_GetTicks64()        
+
     def init_theme(self):
         ## This has to run before harbourmaster is initialised, so we gotta work it out ourself.
         theme_name = self.get_current_theme()
@@ -1707,7 +1720,6 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
         themes = {
             "default_theme": self.get_theme_info("default_theme"),
-            "default_theme_dark": self.get_theme_info("default_theme_dark"),
             }
 
         for theme_file in (cfg_dir / "themes").glob("*/theme.json"):
@@ -1766,6 +1778,10 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         ## TODO: fix it, 30 is approximately 30fps (1000 // 30)
         if not no_delay:
             sdl2.SDL_Delay(30)
+
+        if (sdl2.SDL_GetTicks64() - self.garbage_check) > 1000:
+            print(f"GARBAGE COUNT: {pySDL2gui.garbage.check_new()} -> {pySDL2gui.garbage.count_objects()}")
+            self.garbage_check = sdl2.SDL_GetTicks64()
 
     def do_update(self):
         # Update tags
