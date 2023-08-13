@@ -987,6 +987,9 @@ class ImageManager():
             surf = sdl2.ext.image.load_img(res_filename)
 
             texture = sdl2.ext.renderer.Texture(self.renderer, surf)
+
+            sdl2.SDL_FreeSurface(surf)
+
             self.textures[filename] = texture
             self.images[filename] = Image(texture, renderer=self.renderer)
             self.cache.insert(0, filename)
@@ -1013,6 +1016,7 @@ class ImageManager():
             surf = sdl2.ext.image.load_img(res_filename)
 
         texture = sdl2.ext.renderer.Texture(self.renderer, surf)
+        sdl2.SDL_FreeSurface(surf)
 
         stored_name = data.get("name", file_name)
         image_mod = data.get("image-mod", None)
@@ -1071,6 +1075,8 @@ class ImageManager():
 
         texture = sdl2.ext.renderer.Texture(self.renderer, surf)
 
+        sdl2.SDL_FreeSurface(surf)
+
         for name, item in atlas.items():
             r = item[:4]
             flip_x, flip_y, angle, *_ = list(item[4:] + [0, 0, 0])
@@ -1119,6 +1125,8 @@ class ImageManager():
             surf = sdl2.ext.image.load_img(res_filename)
 
         texture = sdl2.ext.renderer.Texture(self.renderer, surf)
+
+        sdl2.SDL_FreeSurface(surf)
 
         image = Image(texture, renderer=self.renderer)
 
@@ -1543,13 +1551,13 @@ class SoundManager():
             return None
             # raise GUIRuntimeError(f'Cannot open audio file: {sdl2.Mix_GetError()}')
 
-        sdl2.sdlmixer.Mix_VolumeChunk(sample, (int(max(0, min(volume, 64)))))
+        sdl2.sdlmixer.Mix_VolumeChunk(sample, (int(max(0, min(volume, 128)))))
         self.sounds[name] = sample
         return name
 
     def easy_music(self, filename, loops=-1, volume=128):
         if filename == self.filename:
-            sdl2.sdlmixer.Mix_VolumeMusic(int(max(0, min(volume, 64))))
+            sdl2.sdlmixer.Mix_VolumeMusic(int(max(0, min(volume, 128))))
             return
 
         if filename is None:
@@ -1558,7 +1566,7 @@ class SoundManager():
 
         self.music(filename, loops, volume)
 
-    def music(self, filename, loops=-1, volume=64):
+    def music(self, filename, loops=-1, volume=128):
         '''
         Loads a music file and plays immediately plays it
 
@@ -1575,7 +1583,7 @@ class SoundManager():
             print(f"MUSIC: unable to find {filename}")
             return None
 
-        sdl2.sdlmixer.Mix_VolumeMusic(int(max(0, min(volume, 64))))
+        sdl2.sdlmixer.Mix_VolumeMusic(int(max(0, min(volume, 128))))
         music = sdl2.sdlmixer.Mix_LoadMUS(
                     sdl2.ext.compat.byteify(str(res_filename), 'utf-8'))
 
@@ -1611,9 +1619,9 @@ class SoundManager():
         if not self.is_init:
             return
 
-        sdl2.sdlmixer.Mix_MasterVolume(int(max(0, min(volume, 64))))
+        sdl2.sdlmixer.Mix_MasterVolume(int(max(0, min(volume, 128))))
 
-    def play(self, name, volume=1):
+    def play(self, name, volume=128):
         '''
         Play a loaded sound with the given name
 
@@ -1633,7 +1641,7 @@ class SoundManager():
         if channel == -1:
             raise GUIRuntimeError(
                 f'Cannot play sample {name}: {sdl2.sdlmixer.Mix_GetError()}')
-        sdl2.sdlmixer.Mix_Volume(channel, int(volume * 128))
+        sdl2.sdlmixer.Mix_Volume(channel, int(max(0, min(volume, 128))))
 
     def __del__(self):
         if not self.is_init:

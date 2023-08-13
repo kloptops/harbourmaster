@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-08-13 16:32+0800\n"
+"POT-Creation-Date: 2023-08-13 17:29+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -142,7 +142,7 @@ msgstr ""
 msgid "Space"
 msgstr ""
 
-#: pugwash:1040 pugwash:1048 pugwash:1471 pugwash:1502 pugwash:1925
+#: pugwash:1040 pugwash:1048 pugwash:1471 pugwash:1502 pugwash:1935
 msgid "Cancel"
 msgstr ""
 
@@ -198,49 +198,49 @@ msgstr ""
 msgid "Are you sure you want to cancel?"
 msgstr ""
 
-#: pugwash:1499 pugwash:1922
+#: pugwash:1499 pugwash:1932
 msgid "Okay"
 msgstr ""
 
-#: pugwash:1794 pugwash:1868
+#: pugwash:1804 pugwash:1878
 msgid "N/A"
 msgstr ""
 
-#: pugwash:1841
+#: pugwash:1851
 msgid "** NO PORT **"
 msgstr ""
 
-#: pugwash:1856
+#: pugwash:1866
 msgid "Ready to Run"
 msgstr ""
 
-#: pugwash:1856
+#: pugwash:1866
 msgid "Requires Files"
 msgstr ""
 
-#: pugwash:1862
+#: pugwash:1872
 msgid "Installed"
 msgstr ""
 
-#: pugwash:1864
+#: pugwash:1874
 msgid "Missing"
 msgstr ""
 
-#: pugwash:1867
+#: pugwash:1877
 msgid "None"
-msgstr ""
-
-#: pugwash:2117
-#, python-brace-format
-msgid "Installing {port_name}"
 msgstr ""
 
 #: pugwash:2127
 #, python-brace-format
-msgid "Uninstalling {port_name}"
+msgid "Installing {port_name}"
 msgstr ""
 
 #: pugwash:2137
+#, python-brace-format
+msgid "Uninstalling {port_name}"
+msgstr ""
+
+#: pugwash:2147
 msgid "Updating all port sources:"
 msgstr ""
 

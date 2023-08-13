@@ -5,6 +5,7 @@ PORTMASTER_VERSION = '8.2.1a'
 import contextlib
 import datetime
 import functools
+import gc
 import gettext
 import hashlib
 import json
@@ -1780,6 +1781,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             sdl2.SDL_Delay(30)
 
         if (sdl2.SDL_GetTicks64() - self.garbage_check) > 1000:
+            gc.collect()
             print(f"GARBAGE COUNT: {pySDL2gui.garbage.check_new()} -> {pySDL2gui.garbage.count_objects()}")
             self.garbage_check = sdl2.SDL_GetTicks64()
 
