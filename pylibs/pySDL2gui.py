@@ -621,29 +621,34 @@ class NamedRects:
 
         return value
 
-class GarbageLand:
+
+class Timer:
     def __init__(self):
-        self.all_objects = weakref.WeakValueDictionary()
-        self.new_objects = 0
+        self._register = {}
 
-    def add_object(self, new_object):
-        object_id = id(new_object)
-        if object_id not in self.all_objects:
-            self.new_objects += 1
-            self.all_objects[object_id] = new_object
+    def elapsed(self, name, millis, *, run_first=False):
+        """
+        check if name was last checked more than millis seconds ago, if so reset the timer and return true, otherwise false and do nothing
+        """
 
-    def count_objects(self):
-        for key, value in self.all_objects.items():
-            pass
+        time = sdl2.SDL_GetTicks64()
+        first_run = name not in self._register
+        did_elapse = (time - self._register.setdefault(name, time)) >= millis
 
-        return len(self.all_objects)
+        if run_first and first_run:
+            return first_run
 
-    def check_new(self):
-        new_count = self.new_objects
-        self.new_objects = 0
-        return new_count
+        if did_elapse:
+            self._register[name] = time
 
-garbage = GarbageLand()
+        return did_elapse
+
+    def clear(self):
+        """
+        Reset all timers
+        """
+        self._register.clear()
+
 
 class Texture:
     '''
@@ -693,8 +698,6 @@ class Texture:
             self.srcrect = sdl2.SDL_Rect(0, 0, *texture.size)
         else:
             raise GUIValueError('srcrect not a supported type')
-
-        garbage.add_object(self)
 
     def __del__(self):
         if self.__in_delete:
@@ -861,8 +864,6 @@ class Image:
         self.dstrect = Rect.from_sdl(self.srcrect).fitted(
             Rect(0, 0, *self.renderer.logical_size)).sdl()
 
-        garbage.add_object(self)
-
     def set_color_mod(self, color):
         self.color_mod = color[:3]
 
@@ -940,7 +941,7 @@ class ImageManager():
     '''
     The ImageManager class loads images into Textures and caches them for later use
     '''
-    MAX_IMAGES = 30 # maximum number of images to cache
+    MAX_IMAGES = 100 # maximum number of images to cache
     def __init__(self, gui, max_images=None):
         '''
         Create a new Image manager that can load images into textures
@@ -993,7 +994,7 @@ class ImageManager():
             self.textures[filename] = texture
             self.images[filename] = Image(texture, renderer=self.renderer)
             self.cache.insert(0, filename)
-            self._clean()
+
             return self.images[filename]
 
     def load_data(self, file_name, data):
@@ -1498,6 +1499,9 @@ class SoundManager():
         self.is_init = False
         self.init_failed = False
 
+        self.sound_is_disabled = False
+        self._music_is_disabled = False
+
         self.init()
 
     def init(self):
@@ -1538,7 +1542,7 @@ class SoundManager():
         res_filename = self.gui.resources.find(filename)
 
         if res_filename is None:
-            print(f"SOUND: unable to find {res_filename}")
+            print(f"SOUND: unable to find {filename}")
             return None
 
         sample = sdl2.sdlmixer.Mix_LoadWAV(
@@ -1577,6 +1581,9 @@ class SoundManager():
         if not self.is_init:
             return None
 
+        if self.music_is_disabled:
+            return None
+
         res_filename = self.gui.resources.find(filename)
 
         if res_filename is None:
@@ -1607,6 +1614,19 @@ class SoundManager():
             self.filename = None
 
     @property
+    def music_is_disabled(self):
+        return self._music_is_disabled
+
+    @music_is_disabled.setter
+    def music_is_disabled(self, value):
+        if bool(value):
+            self._music_is_disabled = True
+            self.stop()
+
+        else:
+            self._music_is_disabled = False
+
+    @property
     def volume(self):
         if not self.is_init:
             return
@@ -1630,6 +1650,9 @@ class SoundManager():
         :param volume: volume to play sound at, from 0.0 to 1.
         '''
         if not self.is_init:
+            return
+
+        if self.sound_is_disabled:
             return
 
         sample = self.sounds.get(name)

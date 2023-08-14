@@ -31,7 +31,23 @@
                         "_DOWN":      [900, 450, 180,  90]
                     }
                 },
-                "pointenfedde.png": {}
+
+                "no-image.jpg": {
+                    "name": "NO_IMAGE"
+                },
+
+                "pointenfedde.png": {},
+
+                "hearts.png": {
+                    "atlas": {
+                        "hearts_0":   [ 69, 0, 69, 13 ],
+                        "hearts_20":  [ 56, 0, 69, 13 ],
+                        "hearts_40":  [ 42, 0, 69, 13 ],
+                        "hearts_60":  [ 28, 0, 69, 13 ],
+                        "hearts_80":  [ 14, 0, 69, 13 ],
+                        "hearts_100": [  0, 0, 69, 13 ]
+                    }
+                }
             }            
         },
         "Light Mode": {
@@ -470,6 +486,11 @@
             "font-color": "download_font",
             "thickness": 1,
             "border": 2
+        },
+
+        "progress_bar_hearts": {
+            "area": [ 5, 5, 69, 13 ],
+            "image": "hearts_{system.progress_perc_20_or_spinner}"
         },
 
         "#element:button_bar": {}

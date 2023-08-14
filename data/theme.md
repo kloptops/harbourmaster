@@ -433,6 +433,11 @@ The format is:
 - system.progress_text
 - system.progress_amount
 
+- system.progress_perc
+- system.progress_perc_5
+- system.progress_perc_10
+- system.progress_perc_25
+
 ### Port info tags
 
 - port_info.title

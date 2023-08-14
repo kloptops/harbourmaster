@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-08-13 19:07+0800\n"
+"POT-Creation-Date: 2023-08-14 20:06+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -40,65 +40,82 @@ msgstr ""
 msgid "Unknown IP"
 msgstr "Unbekannte IP"
 
-#: pugwash:759
+#: pugwash:774
 msgid "All Ports"
 msgstr "Alle Ports"
 
-#: pugwash:760
+#: pugwash:775
 msgid "Ready to Run Ports"
 msgstr "Ready to Run Ports"
 
-#: pugwash:761
+#: pugwash:776
 msgid "Uninstall Ports"
 msgstr "Ports deinstallieren"
 
-#: pugwash:763
+#: pugwash:778
 msgid "Options"
 msgstr "Optionen"
 
-#: pugwash:764
+#: pugwash:779
 msgid "Exit"
 msgstr "Beenden"
 
-#: pugwash:765 pugwash:811 pugwash:1041 pugwash:1049
+#: pugwash:780 pugwash:835 pugwash:1083 pugwash:1091
 msgid "Enter"
 msgstr "Eingabe"
 
-#: pugwash:765
+#: pugwash:780
 msgid "Quit"
 msgstr "Verlassen"
 
-#: pugwash:800
+#: pugwash:815
 msgid "Update Ports"
 msgstr "Ports aktualisieren"
 
-#: pugwash:802
+#: pugwash:820 pugwash:857
+msgid "Music: "
+msgstr ""
+
+#: pugwash:820 pugwash:823 pugwash:857 pugwash:866
+msgid "Disabled"
+msgstr ""
+
+#: pugwash:820 pugwash:823 pugwash:857 pugwash:866
+msgid "Enabled"
+msgstr ""
+
+#: pugwash:823 pugwash:866
+msgid "Sound FX: "
+msgstr ""
+
+#: pugwash:826
 msgid "Choose Language"
 msgstr ""
 
-#: pugwash:804
+#: pugwash:828
 msgid "Select Theme"
 msgstr "Theme auswählen"
 
-#: pugwash:807
+#: pugwash:831
 msgid "Select Color Scheme"
 msgstr ""
 
-#: pugwash:810 pugwash:811 pugwash:870 pugwash:871 pugwash:928 pugwash:929
-#: pugwash:981 pugwash:982 pugwash:1112 pugwash:1114 pugwash:1244 pugwash:1246
+#: pugwash:834 pugwash:835 pugwash:912 pugwash:913 pugwash:970 pugwash:971
+#: pugwash:1023 pugwash:1024 pugwash:1154 pugwash:1156 pugwash:1286
+#: pugwash:1288
 msgid "Back"
 msgstr "Zurück"
 
-#: pugwash:865
+#: pugwash:907
 #, python-brace-format
 msgid "{theme_name} (Selected)"
 msgstr "{theme_name} (Ausgewählt)"
 
-#: pugwash:871 pugwash:929 pugwash:982 pugwash:1041 pugwash:1049
+#: pugwash:913 pugwash:971 pugwash:1024 pugwash:1083 pugwash:1091
 msgid "Select"
 msgstr "Auswählen"
 
-#: pugwash:888
+#: pugwash:930
 msgid ""
 "Do you want to change theme?\n"
 "\n"
@@ -108,141 +125,141 @@ msgstr ""
 "\n"
 "Neustart erforderlich, damit Änderungen wirksam werden."
 
-#: pugwash:923
+#: pugwash:965
 #, fuzzy, python-brace-format
 msgid "{item_name} (Selected)"
 msgstr "{item_name} (Ausgewählt)"
 
-#: pugwash:946
+#: pugwash:988
 msgid ""
 "Do you want to change the themes color scheme?\n"
 "\n"
 "You will have to restart for it to take affect."
 msgstr ""
 
-#: pugwash:976
+#: pugwash:1018
 #, python-brace-format
 msgid "{lang_name} (Selected)"
 msgstr ""
 
-#: pugwash:999
+#: pugwash:1041
 msgid ""
 "Do you want to change language?\n"
 "\n"
 "You will have to restart for it to take affect."
 msgstr ""
 
-#: pugwash:1041 pugwash:1049
+#: pugwash:1083 pugwash:1091
 msgid "Delete"
 msgstr "Löschen"
 
-#: pugwash:1041
+#: pugwash:1083
 msgid "Upper Case"
 msgstr "Großbuchstaben"
 
-#: pugwash:1041 pugwash:1049
+#: pugwash:1083 pugwash:1091
 msgid "Space"
 msgstr "Leerzeichen"
 
-#: pugwash:1041 pugwash:1049 pugwash:1472 pugwash:1503 pugwash:1937
+#: pugwash:1083 pugwash:1091 pugwash:1514 pugwash:1545 pugwash:2020
 msgid "Cancel"
 msgstr "Abbrechen"
 
-#: pugwash:1049
+#: pugwash:1091
 msgid "Lower Case"
 msgstr "Kleinbuchstaben"
 
-#: pugwash:1112 pugwash:1114
+#: pugwash:1154 pugwash:1156
 msgid "Show Info"
 msgstr "Info anzeigen"
 
-#: pugwash:1112
+#: pugwash:1154
 msgid "Filters"
 msgstr "Filter"
 
-#: pugwash:1135
+#: pugwash:1177
 msgid "NO PORTS"
 msgstr "KEINE PORTS"
 
-#: pugwash:1140
+#: pugwash:1182
 msgid "** NO PORTS FOUND **"
 msgstr "** KEINE PORTS GEFUNDEN **"
 
-#: pugwash:1143
+#: pugwash:1185
 msgid "Download ports first."
 msgstr "Zuerst Ports herunterladen."
 
-#: pugwash:1145
+#: pugwash:1187
 msgid "Try removing some filters."
 msgstr ""
 
-#: pugwash:1244
+#: pugwash:1286
 msgid "Install"
 msgstr ""
 
-#: pugwash:1246
+#: pugwash:1288
 msgid "Uninstall"
 msgstr ""
 
-#: pugwash:1350
+#: pugwash:1392
 msgid "Genres:"
 msgstr "Genres:"
 
-#: pugwash:1378
+#: pugwash:1420
 msgid "Attributes:"
 msgstr "Attribute:"
 
-#: pugwash:1405
+#: pugwash:1447
 msgid "Porters:"
 msgstr "Porters:"
 
-#: pugwash:1490
+#: pugwash:1532
 msgid "Are you sure you want to cancel?"
 msgstr "Wirklich abbrechen?"
 
-#: pugwash:1500 pugwash:1934
+#: pugwash:1542 pugwash:2017
 msgid "Okay"
 msgstr "Okay"
 
-#: pugwash:1806 pugwash:1880
+#: pugwash:1848 pugwash:1922
 msgid "N/A"
 msgstr "N/V"
 
-#: pugwash:1853
+#: pugwash:1893
 msgid "** NO PORT **"
 msgstr "** KEIN PORT **"
 
-#: pugwash:1868
+#: pugwash:1909
 msgid "Ready to Run"
 msgstr "Ready to Run"
 
-#: pugwash:1868
+#: pugwash:1909
 msgid "Requires Files"
 msgstr "Benötigt Dateien"
 
-#: pugwash:1874
+#: pugwash:1916
 msgid "Installed"
 msgstr "Installiert"
 
-#: pugwash:1876
+#: pugwash:1918
 msgid "Missing"
 msgstr "Fehlt"
 
-#: pugwash:1879
+#: pugwash:1921
 msgid "None"
 msgstr "Keine"
 
-#: pugwash:2129
+#: pugwash:2212
 #, python-brace-format
 msgid "Installing {port_name}"
 msgstr "Installation von {port_name}"
 
-#: pugwash:2139
+#: pugwash:2222
 #, python-brace-format
 msgid "Uninstalling {port_name}"
 msgstr "Deinstallation von {port_name}"
 
-#: pugwash:2149
+#: pugwash:2232
 msgid "Updating all port sources:"
 msgstr "Aktualisieren aller Port-Quellen:"
 

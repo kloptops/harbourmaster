@@ -601,6 +601,7 @@ class BaseScene:
         self.regions = []
         self.text_regions = {}
         self.bar_regions = {}
+        self.image_regions = {}
         self.update_regions = {}
         self.music = None
         self.music_volume = 128
@@ -625,6 +626,14 @@ class BaseScene:
 
             # print(f"Loading region {region_name}: {region_data}")
             region = pySDL2gui.Region(self.gui, region_data, region_name, number, rects)
+
+            if "image" in region_data and "{" in region_data["image"]:
+                image_keys = []
+                region.image = self.gui.images.load(self.gui.format_data(region_data["image"], image_keys))
+
+                self.image_regions[region_name] = (region, region_data["image"])
+                for key in image_keys:
+                    self.update_regions.setdefault(key, []).append(region_name)
 
             if "text" in region_data and "{" in region_data["text"]:
                 text_keys = []
@@ -674,6 +683,12 @@ class BaseScene:
                 regions.update(self.update_regions[key])
 
         for region_name in regions:
+            if region_name in self.image_regions:
+                region, text = self.image_regions[region_name]
+                new_image = self.gui.format_data(text)
+                print(f"Loading image {region} -> {text} -> {new_image}")
+                region.image = self.gui.images.load(new_image)
+
             if region_name in self.text_regions:
                 region, text = self.text_regions[region_name]
                 region.text = self.gui.format_data(text)
@@ -799,6 +814,15 @@ class OptionScene(BaseScene):
         self.tags['option_list'].reset_options()
         self.tags['option_list'].add_option('update-ports', _("Update Ports"))
         self.tags['option_list'].add_option(None, "")
+
+        self.tags['option_list'].add_option(
+            'toggle-music',
+            _("Music: ") + (self.gui.sounds.music_is_disabled and _("Disabled") or _("Enabled")))
+        self.tags['option_list'].add_option(
+            'toggle-sfx',
+            _("Sound FX: ") + (self.gui.sounds.sound_is_disabled and _("Disabled") or _("Enabled")))
+
+        self.tags['option_list'].add_option(None, "")
         self.tags['option_list'].add_option('select-language', _("Choose Language"))
         self.tags['option_list'].add_option(None, "")
         self.tags['option_list'].add_option('select-theme', _("Select Theme"))
@@ -822,6 +846,24 @@ class OptionScene(BaseScene):
 
             if selected_option == 'update-ports':
                 self.gui.do_update_ports()
+                return True
+
+            if selected_option == 'toggle-music':
+                self.gui.hm.cfg_data['music-disabled'] = self.gui.sounds.music_is_disabled = not self.gui.sounds.music_is_disabled
+                self.gui.hm.save_config()
+
+                item = self.tags['option_list'].list_selected()
+                self.tags['option_list'].list[item] = (
+                    _("Music: ") + (self.gui.sounds.music_is_disabled and _("Disabled") or _("Enabled")))
+                return True
+
+            if selected_option == 'toggle-sfx':
+                self.gui.hm.cfg_data['sfx-disabled'] = self.gui.sounds.sound_is_disabled = not self.gui.sounds.sound_is_disabled
+                self.gui.hm.save_config()
+
+                item = self.tags['option_list'].list_selected()
+                self.tags['option_list'].list[item] = (
+                    _("Sound FX: ") + (self.gui.sounds.sound_is_disabled and _("Disabled") or _("Enabled")))
                 return True
 
             if selected_option == 'keyboard':
@@ -1539,6 +1581,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.display_width = 640
         self.display_height = 480
         self.hm = None
+        self.timers = pySDL2gui.Timer()
 
         # Get the current display mode
         display_mode = sdl2.video.SDL_DisplayMode()
@@ -1597,6 +1640,10 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
         super().__init__(renderer)
 
+        cfg_data = self.get_config()
+        self.sounds.sound_is_disabled = cfg_data.setdefault('sfx-disabled', False)
+        self.sounds.music_is_disabled = cfg_data.setdefault('music-disabled', False)
+
         self.cancellable = True
 
         self.init_theme()
@@ -1609,11 +1656,11 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             raise RuntimeError("Unable to load theme.")
 
         self.text_data = {}
-        self.text_data_updated = sdl2.SDL_GetTicks64() - self.TEXT_DATA_FREQ - 1
         self.changed_keys = set()
         self.formatter = StringFormatter(self.text_data)
 
         self.theme_data = theme_load(self, theme_file, self.get_current_theme_scheme())
+        self.spinner = 0
 
         self.scenes = [
             ('root', [MainMenuScene(self)]),
@@ -1637,12 +1684,13 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.set_data('system.ip_address', get_ip_address())
         self.set_data('system.progress_text', "")
         self.set_data('system.progress_amount', "")
+        self.set_data('system.progress_perc_5', "0")
+        self.set_data('system.progress_perc_10', "0")
+        self.set_data('system.progress_perc_25', "0")
 
         self.set_data('ports_list.filters', "")
         self.set_data('ports_list.total_ports', "")
         self.set_data('ports_list.filter_ports', "")
-
-        self.garbage_check = sdl2.SDL_GetTicks64()        
 
     def init_theme(self):
         ## This has to run before harbourmaster is initialised, so we gotta work it out ourself.
@@ -1780,15 +1828,9 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         if not no_delay:
             sdl2.SDL_Delay(30)
 
-        if (sdl2.SDL_GetTicks64() - self.garbage_check) > 1000:
-            gc.collect()
-            print(f"GARBAGE COUNT: {pySDL2gui.garbage.check_new()} -> {pySDL2gui.garbage.count_objects()}")
-            self.garbage_check = sdl2.SDL_GetTicks64()
-
     def do_update(self):
         # Update tags
-        time = sdl2.SDL_GetTicks64()
-        if (time - self.text_data_updated) > self.TEXT_DATA_FREQ:
+        if self.timers.elapsed('text_data_update', self.TEXT_DATA_FREQ, run_first=True):
             self.set_data("system.time_24hr", datetime.datetime.now().strftime("%H:%M"))
             self.set_data("system.time_12hr", datetime.datetime.now().strftime("%I:%M %p"))
 
@@ -1804,8 +1846,6 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
             else:
                 self.set_data("system.battery_level", _("N/A"))
-
-            self.text_data_updated = time
 
         # Events get handled in reversed order.
         for scene in reversed(self.scenes[-1][1]):
@@ -1858,6 +1898,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             self.set_data("port_info.ready_to_run", "")
             self.set_data("port_info.runtime", "")
             self.set_data("port_info.download_size", "")
+            # self.set_data("port_info.image", "no-image")
             return
 
         self.set_data("port_info.title", port_info['attr']['title'])
@@ -1866,6 +1907,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.set_data("port_info.genres", ', '.join(port_info['attr']['genres']))
         self.set_data("port_info.porter", harbourmaster.oc_join(port_info['attr']['porter']))
         self.set_data("port_info.ready_to_run", port_info['attr']['rtr'] and _("Ready to Run") or _("Requires Files"))
+        # self.set_data("port_info.image", port_image)
 
         runtime = port_info['attr']['runtime']
         if runtime is not None:
@@ -1907,13 +1949,54 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         if message is None:
             self.callback_progress = None
             self.callback_amount = 0
+            self.spinner = 0
             self.set_data("system.progress_text", "")
             self.set_data("system.progress_amount", "")
 
+            self.set_data('system.progress_perc_5', "0")
+            self.set_data('system.progress_perc_10', "0")
+            self.set_data('system.progress_perc_20', "0")
+            self.set_data('system.progress_perc_25', "0")
+            self.set_data('system.progress_spinner_5',  "0")
+            self.set_data('system.progress_spinner_10', "0")
+            self.set_data('system.progress_spinner_20', "0")
+            self.set_data('system.progress_spinner_25', "0")
+            self.set_data('system.progress_perc_5_or_spinner',  "0")
+            self.set_data('system.progress_perc_10_or_spinner', "0")
+            self.set_data('system.progress_perc_20_or_spinner', "0")
+            self.set_data('system.progress_perc_25_or_spinner', "0")
+
         else:
+            self.spinner += 1
+            self.set_data('system.progress_perc', "0")
+            self.set_data('system.progress_spinner_5',  f"{(((self.spinner % 20) + 1) *  5)}")
+            self.set_data('system.progress_spinner_10', f"{(((self.spinner % 10) + 1) * 10)}")
+            self.set_data('system.progress_spinner_20', f"{(((self.spinner %  5) + 1) * 20)}")
+            self.set_data('system.progress_spinner_25', f"{(((self.spinner %  4) + 1) * 25)}")
+
             if total is not None:
-                self.callback_amount = int(amount / total * 100)
+                percent = amount / total * 100
+                self.set_data('system.progress_perc',    f"{int(percent)}")
+                self.set_data('system.progress_perc_5',  f"{int(percent //  5 *  5)}")
+                self.set_data('system.progress_perc_10', f"{int(percent // 10 * 10)}")
+                self.set_data('system.progress_perc_20', f"{int(percent // 20 * 20)}")
+                self.set_data('system.progress_perc_25', f"{int(percent // 25 * 25)}")
+                self.set_data('system.progress_perc_5_or_spinner', f"{int(percent //  5 *  5)}")
+                self.set_data('system.progress_perc_10_or_spinner', f"{int(percent // 10 * 10)}")
+                self.set_data('system.progress_perc_20_or_spinner', f"{int(percent // 20 * 20)}")
+                self.set_data('system.progress_perc_25_or_spinner', f"{int(percent // 25 * 25)}")
+                self.callback_amount = int(percent)
+
             else:
+                self.set_data('system.progress_perc', "0")
+                self.set_data('system.progress_perc_5', "0")
+                self.set_data('system.progress_perc_10', "0")
+                self.set_data('system.progress_perc_20', "0")
+                self.set_data('system.progress_perc_25', "0")
+                self.set_data('system.progress_perc_5_or_spinner',  f"{(((self.spinner % 20) + 1) *  5)}")
+                self.set_data('system.progress_perc_10_or_spinner', f"{(((self.spinner % 10) + 1) * 10)}")
+                self.set_data('system.progress_perc_20_or_spinner', f"{(((self.spinner %  5) + 1) * 20)}")
+                self.set_data('system.progress_perc_25_or_spinner', f"{(((self.spinner %  4) + 1) * 25)}")
                 self.callback_amount = 0
 
             self.set_data("system.progress_text", message)
@@ -2211,9 +2294,7 @@ def main(argv):
         pm.hm = None
 
         with pm.enable_cancellable(False):
-            hm = HarbourMaster(config, temp_dir=temp_dir, callback=pm)
-
-        pm.hm = hm
+            pm.hm = HarbourMaster(config, temp_dir=temp_dir, callback=pm)
 
         with pm.enable_cancellable(True):
             pm.run()
