@@ -87,8 +87,8 @@ class HarbourMaster():
 
         self.device = device_info()
 
-        if self.device['name'] in HM_PLATFORMS:
-            self.platform = HM_PLATFORMS[self.device['name']](self)
+        if self.device['name'].lower() in HM_PLATFORMS:
+            self.platform = HM_PLATFORMS[self.device['name'].lower()](self)
         else:
             self.platform = HM_PLATFORMS['default'](self)
 
@@ -147,7 +147,7 @@ class HarbourMaster():
         return self.__PORTERS
 
     def load_info(self):
-        self.callback.message(_("- Loading Info."))
+        self.callback.message("- {}".format(_("Loading Info.")))
         info_file = self.cfg_dir / "ports_info.json"
         info_file_md5 = self.cfg_dir / "ports_info.md5"
 
@@ -165,7 +165,7 @@ class HarbourMaster():
             return
 
         if not info_file.is_file():
-            self.callback.message(_("  - Fetching latest info."))
+            self.callback.message("  - {}".format(_("Fetching latest info.")))
             info_md5 = fetch_text(self.PORTS_INFO_URL + '.md5')
             info_data = fetch_text(self.PORTS_INFO_URL)
 
@@ -181,7 +181,7 @@ class HarbourMaster():
 
             info_md5 = fetch_text(self.PORTS_INFO_URL + '.md5')
             if not info_file_md5.is_file() or info_md5 != info_file_md5.read_text().strip():
-                self.callback.message(_("  - Fetching latest info."))
+                self.callback.message("  - {}".format(_("Fetching latest info.")))
                 info_data = fetch_text(self.PORTS_INFO_URL)
 
                 with open(info_file, 'w') as fh:
@@ -193,7 +193,7 @@ class HarbourMaster():
             self.cfg_data['ports_info_checked'] = datetime.datetime.now().isoformat()
 
         if not porters_file.is_file() or self.cfg_data.get('porters_checked') is None or datetime_compare(self.cfg_data['porters_checked']) >= self.INFO_CHECK_INTERVAL:
-            self.callback.message(_("  - Fetching latest porters."))
+            self.callback.message("  - {}".format(_("Fetching latest porters.")))
             porters_data = fetch_text(self.PORTERS_URL)
 
             with open(porters_file, 'w') as fh:
@@ -205,7 +205,7 @@ class HarbourMaster():
         source_files = list(self.cfg_dir.glob('*.source.json'))
         source_files.sort()
 
-        self.callback.message(_("  - Loading Sources."))
+        self.callback.message("  - {}".format(_("Loading Sources.")))
 
         check_keys = {'version': None, 'prefix': None, 'api': HM_SOURCE_APIS, 'name': None, 'last_checked': None, 'data': None}
         for source_file in source_files:
@@ -361,7 +361,7 @@ class HarbourMaster():
 
         ports_info = self.ports_info()
 
-        self.callback.message(_("  - Loading Ports."))
+        self.callback.message("  - {}".format(_("Loading Ports.")))
 
         """
         This is a bit of a heavy function but it does the following.
@@ -826,6 +826,14 @@ class HarbourMaster():
             logger.error(f"Failed to fix permissions: {err}")
             return
 
+    def _install_theme(self, download_file):
+        """
+        Installs a theme file.
+        """
+        logger.debug(f"Installing theme: {download_file.name}")
+
+        return 0
+
     def _install_portmaster(self, download_file):
         """
         Installs a new version of PortMaster
@@ -835,7 +843,6 @@ class HarbourMaster():
         #     logger.error("Unable to install PortMaster.zip in testing environment.")
         #     return 255
 
-        platform_name = self.device['name']
         move_bash = self.platform.MOVE_PM_BASH
 
         try:
@@ -1022,7 +1029,7 @@ class HarbourMaster():
 
             runtime_file = (self.libs_dir / runtime)
             if not runtime_file.is_file():
-                runtime_name = runtime_nicename(port_info['attr']['runtime'])
+                runtime_name = runtime_nicename(runtime)
 
                 if self.config['offline']:
                     cprint(f"Unable to download {runtime} when offline")
@@ -1094,10 +1101,14 @@ class HarbourMaster():
                 return 255
 
             with self.callback.enable_cancellable(False):
-                if name_cleaner(download_info['name']) == 'portmaster.zip':
+                if name_cleaner(download_info['name']).endswith('.theme.zip'):
+                    return self._install_theme(download_info['zip_file'])
+
+                elif name_cleaner(download_info['name']) == 'portmaster.zip':
                     return self._install_portmaster(download_info['zip_file'])
 
-                return self._install_port(download_info)
+                else:
+                    return self._install_port(download_info)
 
         # Special case for a local file.
         if port_name.startswith('./') or port_name.startswith('../') or port_name.startswith('/'):
@@ -1118,7 +1129,10 @@ class HarbourMaster():
                 }
 
             with self.callback.enable_cancellable(False):
-                if name_cleaner(port_info['name']) == 'portmaster.zip':
+                if name_cleaner(port_info['name']).endswith('.theme.zip'):
+                    return self._install_theme(port_info['zip_file'])
+
+                elif name_cleaner(port_info['name']) == 'portmaster.zip':
                     return self._install_portmaster(port_info['zip_file'])
 
                 return self._install_port(port_info)
@@ -1133,10 +1147,26 @@ class HarbourMaster():
             if not fnmatch.fnmatch(source_prefix, repo):
                 continue
 
-            if source.clean_name(port_name) not in source.ports and not (
+            check_okay = False
+            # is it a valid port?
+            if not check_okay and (
+                    source.clean_name(port_name) in source.ports):
+                check_okay = True
+
+            # is it PortMaster.zip from the Official PortMaster repo?
+            if not check_okay and (
                     source.name in ("PortMaster", ) and
                     source.clean_name(port_name) == 'portmaster.zip' and
-                    'portmaster.zip' in source._data):
+                    source.clean_name(port_name) in source._data):
+                check_okay = True
+
+            # is it a theme?
+            if not check_okay and (
+                    source.clean_name(port_name).endswith('.theme.zip') and
+                    source.clean_name(port_name) in source._data):
+                check_okay = True
+
+            if not check_okay:
                 continue
 
             if self.config['offline']:
@@ -1151,7 +1181,10 @@ class HarbourMaster():
 
             # print(f"Download Info: {download_info.to_dict()}")
             with self.callback.enable_cancellable(False):
-                if source.clean_name(port_name) == 'portmaster.zip':
+                if source.clean_name(port_name).endswith('.theme.zip'):
+                    return self._install_theme(download_info)
+
+                elif source.clean_name(port_name) == 'portmaster.zip':
                     return self._install_portmaster(download_info)
 
                 return self._install_port(download_info)
@@ -1173,6 +1206,8 @@ class HarbourMaster():
                 self.callback.message_box(_("Unknown port {port_name}").format(port_name=port_name))
                 logger.error(f"Unknown port {port_name}")
                 return 255
+
+        port_info_name = port_info.get("attr", {}).get("title", port_name)
 
         all_items = {}
 
@@ -1200,8 +1235,8 @@ class HarbourMaster():
         # pprint(all_items)
 
         # cprint(f"{all_items}")
-        cprint(f"Uninstalling <b>{port_name}</b>")
-        self.callback.message(_("Removing {port_name}").format(port_name=port_name))
+        cprint(f"Uninstalling <b>{port_info_name}</b>")
+        self.callback.message(_("Removing {port_name}").format(port_name=port_info_name))
 
         all_port_items = []
         for port_file in port_info['files']:
@@ -1233,7 +1268,7 @@ class HarbourMaster():
                 elif item_path.is_file():
                     item_path.unlink()
 
-        self.callback.message_box(_("Successfully uninstalled {port_name}").format(port_name=port_name))
+        self.callback.message_box(_("Successfully uninstalled {port_name}").format(port_name=port_info_name))
 
         del port_loc[port_name.casefold()]
         return 0

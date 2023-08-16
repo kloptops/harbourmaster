@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-08-14 20:06+0800\n"
+"POT-Creation-Date: 2023-08-16 19:14+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,23 +18,23 @@ msgstr ""
 
 #: pugwash:152
 msgid "German"
-msgstr ""
+msgstr "Deutsch"
 
 #: pugwash:153
 msgid "English"
-msgstr ""
+msgstr "Englisch"
 
 #: pugwash:154
 msgid "Spanish"
-msgstr ""
+msgstr "Spanisch"
 
 #: pugwash:155
 msgid "French"
-msgstr ""
+msgstr "Französisch"
 
 #: pugwash:156
 msgid "Italian"
-msgstr ""
+msgstr "Italienisch"
 
 #: pugwash:249
 msgid "Unknown IP"
@@ -268,52 +268,52 @@ msgid "Loading..."
 msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:150
-msgid "- Loading Info."
+msgid "Loading Info."
 msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:168 pylibs/harbourmaster/harbour.py:184
-msgid "  - Fetching latest info."
+msgid "Fetching latest info."
 msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:196
-msgid "  - Fetching latest porters."
+msgid "Fetching latest porters."
 msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:208
-msgid "  - Loading Sources."
+msgid "Loading Sources."
 msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:364
-msgid "  - Loading Ports."
+msgid "Loading Ports."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:843 pylibs/harbourmaster/harbour.py:898
+#: pylibs/harbourmaster/harbour.py:850 pylibs/harbourmaster/harbour.py:905
 #, python-brace-format
 msgid "Installing {download_name}."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:852 pylibs/harbourmaster/harbour.py:907
+#: pylibs/harbourmaster/harbour.py:859 pylibs/harbourmaster/harbour.py:914
 msgid "Installing"
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:864 pylibs/harbourmaster/harbour.py:1006
+#: pylibs/harbourmaster/harbour.py:871 pylibs/harbourmaster/harbour.py:1013
 msgid "Port {download_name!r} installed successfully."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:973
+#: pylibs/harbourmaster/harbour.py:980
 msgid "Installation failed, removing files..."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:985
+#: pylibs/harbourmaster/harbour.py:992
 #, python-brace-format
 msgid "Port {download_name} installed failed."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:996
+#: pylibs/harbourmaster/harbour.py:1003
 msgid "Port {download_name!r} and {runtime_name!r} installed successfully."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:1001
+#: pylibs/harbourmaster/harbour.py:1008
 msgid ""
 "Port {download_name!r} installed sucessfully, but {runtime_name!r} failed to "
 "install!!\n"
@@ -321,55 +321,55 @@ msgid ""
 "Either reinstall to try again, or check the wiki for help."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:1014
+#: pylibs/harbourmaster/harbour.py:1021
 #, python-brace-format
 msgid "Port {runtime} contains a bad runtime, game may not run correctly."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:1029
+#: pylibs/harbourmaster/harbour.py:1036
 msgid "Unable do download a runtime when in offline mode."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:1038
+#: pylibs/harbourmaster/harbour.py:1045
 #, python-brace-format
 msgid "Downloading runtime {runtime}."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:1053 pylibs/harbourmaster/harbour.py:1063
+#: pylibs/harbourmaster/harbour.py:1060 pylibs/harbourmaster/harbour.py:1070
 #, python-brace-format
 msgid "Unable to download {runtime}, game may not run correctly."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:1072
+#: pylibs/harbourmaster/harbour.py:1079
 #, python-brace-format
 msgid "Successfully downloaded {runtime}."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:1078
+#: pylibs/harbourmaster/harbour.py:1085
 #, python-brace-format
 msgid "Unable to find a download for {runtime}."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:1088 pylibs/harbourmaster/harbour.py:1144
+#: pylibs/harbourmaster/harbour.py:1095 pylibs/harbourmaster/harbour.py:1174
 msgid "Unable do download a port when in offline mode."
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:1159
+#: pylibs/harbourmaster/harbour.py:1192
 #, python-brace-format
 msgid "Unable to find a source for {port_name}"
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:1173
+#: pylibs/harbourmaster/harbour.py:1206
 #, python-brace-format
 msgid "Unknown port {port_name}"
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:1204
+#: pylibs/harbourmaster/harbour.py:1239
 #, python-brace-format
 msgid "Removing {port_name}"
 msgstr ""
 
-#: pylibs/harbourmaster/harbour.py:1236
+#: pylibs/harbourmaster/harbour.py:1271
 #, python-brace-format
 msgid "Successfully uninstalled {port_name}"
 msgstr ""
@@ -387,19 +387,19 @@ msgid "Auto Update."
 msgstr ""
 
 #: pylibs/harbourmaster/source.py:143
-msgid "  - Updating"
+msgid "Updating"
 msgstr ""
 
 #: pylibs/harbourmaster/source.py:154
-msgid "  - Up to date already"
+msgid "Up to date already"
 msgstr ""
 
 #: pylibs/harbourmaster/source.py:159
-msgid "  - Fetching latest ports"
+msgid "Fetching latest ports"
 msgstr ""
 
 #: pylibs/harbourmaster/source.py:204
-msgid "  - Done."
+msgid "Done."
 msgstr ""
 
 #: pylibs/harbourmaster/source.py:212
@@ -418,20 +418,20 @@ msgid "Unable to download verification info for {port_name}."
 msgstr ""
 
 #: pylibs/harbourmaster/source.py:240
-msgid "  - Success!"
+msgid "Success!"
 msgstr ""
 
 #: pylibs/harbourmaster/source.py:295
-msgid "  - Fetching info"
+msgid "Fetching info"
 msgstr ""
 
 #: pylibs/harbourmaster/source.py:475
 #, python-brace-format
-msgid "  - {source_name}: Fetching latest ports"
+msgid "{source_name}: Fetching latest ports"
 msgstr ""
 
 #: pylibs/harbourmaster/source.py:514
-msgid "  - Fetching info."
+msgid "Fetching info."
 msgstr ""
 
 #: pylibs/harbourmaster/source.py:586
@@ -467,15 +467,3 @@ msgstr ""
 #: pylibs/harbourmaster/util.py:321
 msgid "Unable to validate download."
 msgstr ""
-
-#, python-brace-format
-#~ msgid "Godot/FRT {version}"
-#~ msgstr "Godot/FRT {version}"
-
-#, python-brace-format
-#~ msgid "Mono {version}"
-#~ msgstr "Mono {version}"
-
-#, python-brace-format
-#~ msgid "JDK {vesion}"
-#~ msgstr "JDK {vesion}"
