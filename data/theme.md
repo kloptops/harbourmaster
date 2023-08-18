@@ -88,6 +88,7 @@ Currently the capabilities are:
 - `960x544`: screen resolution of 960x544
 - `1280x720`: screen resolution of 1280x720
 - `1920x1152`: screen resolution of 1920x1152
+- `language`: the current language
 
 
 You can combine them like so:
@@ -352,9 +353,79 @@ The list system is quite adequate
     }
 ```
 
+
+## Special Words
+
+Within the templating system we have special words for things like button bindings and checkboxes. They are used for showing buttons and actions, and checkboxes.
+
+It is possible to either override these special words with text, or replace them with an image.
+
+| Special Word | Description               |
+|--------------|---------------------------|
+| `_A`         | Button A                  |
+| `_B`         | Button B                  |
+| `_X`         | Button X                  |
+| `_Y`         | Button Y                  |
+| `_UP`        | Button UP                 |
+| `_DOWN`      | Button DOWN               |
+| `_LEFT`      | Button LEFT               |
+| `_RIGHT`     | Button RIGHT              |
+| `_START`     | Button START              |
+| `_SELECT`    | Button SELECT             |
+| `_L`         | Button L                  |
+| `_R`         | Button R                  |
+| `_CHECKED`   | Checked item in a list    |
+| `_UNCHECKED` | Unchecked item in a list  |
+
+To replace the words with text you can simply add the following to your theme, like used in the `basic_theme`:
+
+```json
+    "#override": {
+        "_A":         "A:",
+        "_B":         "B:",
+        "_X":         "X:",
+        "_Y":         "Y:",
+        "_UP":        "UP:",
+        "_DOWN":      "DOWN:",
+        "_LEFT":      "LEFT:",
+        "_RIGHT":     "RIGHT:",
+        "_START":     "START:",
+        "_SELECT":    "SELECT:",
+        "_L":         "L",
+        "_R":         "R",
+        "_CHECKED":   "[x]",
+        "_UNCHECKED": "[  ]",
+    }
+```
+
+To replace them with images you will need to load either images and use name to override the image name, or use an image atlas like in the `default_theme`.
+
+```json
+    "#resources": {
+        "buttons.png": {
+            "atlas": {
+                "_A":         [  0,   0, 180, 180],
+                "_B":         [180,   0, 180, 180],
+                "_X":         [360,   0, 180, 180],
+                "_Y":         [540,   0, 180, 180],
+                "_UP":        [900, 360, 180,  90],
+                "_DOWN":      [900, 450, 180,  90],
+                "_LEFT":      [900, 180,  90, 180],
+                "_RIGHT":     [990, 180,  90, 180],
+                "_START":     [  0, 180, 360, 180],
+                "_SELECT":    [360, 180, 360, 180],
+                "_L":         [  0, 360, 270, 180],
+                "_R":         [270, 360, 270, 180],
+                "_CHECKED":   [900,   0, 180, 180],
+                "_UNCHECKED": [720,   0, 180, 180]
+            }
+        }
+    }
+```
+
 ## Text Template System
 
-Portmaster has a simple text templating engine, it supports tags and if/then/else statements.
+PortMaster has a simple text templating engine, it supports tags and if/then/else statements.
 
 You can use the tags in text areas and they will automatically update as their value changes.
 

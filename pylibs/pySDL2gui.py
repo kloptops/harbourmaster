@@ -112,6 +112,7 @@ class GUI:
         self.images = ImageManager(self)
         self.sounds = SoundManager(self)
         self.events = EventManager(self)
+        self.override = {}
         self.pallet = {}
         self.default_rects = NamedRects([0, 0, *self.renderer.logical_size])
 
@@ -605,13 +606,17 @@ class NamedRects:
 
             elif i > 1:
                 if p < 0:
-                    value[i] = root.bottomright[i % 2] + int(p)
+                    value[i] = max(0, root.bottomright[i % 2] + int(p))
 
                 else:
                     value[i] = int(p)
 
             else:
-                value[i] = root.topleft[i % 2] + int(p)
+                if p < 0:
+                    value[i] = max(0, root.bottomright[i % 2] + int(p))
+
+                else:
+                    value[i] = root.topleft[i % 2] + int(p)
 
         value = Rect.from_corners(*value)
 
@@ -1584,6 +1589,9 @@ class SoundManager():
         if self.music_is_disabled:
             return None
 
+        if filename is None:
+            return None
+
         res_filename = self.gui.resources.find(filename)
 
         if res_filename is None:
@@ -1654,6 +1662,9 @@ class SoundManager():
 
         if self.sound_is_disabled:
             return
+
+        if name is None:
+            return None
 
         sample = self.sounds.get(name)
         if not sample:
@@ -2596,6 +2607,9 @@ class Region:
 
         for i, v in enumerate(vals):
             im = v if isinstance(v, Image) else self.images.load(v)
+            if not im and v in self.gui.override:
+                v = self.gui.override[v]
+
             if im:
                 dest = Rect.from_sdl(im.srcrect).fitted(area)
                 dest.x = x
@@ -2790,8 +2804,14 @@ class Region:
         val = self._dict.get(name, default)
         if val is None and optional: return None
 
+        if isinstance(val, str) and val in self.pallet:
+            val = self.pallet.get(val)
+
+        if isinstance(val, str) and val.startswith("#"):
+            val = hex_color_decode(val)
+
         if isinstance(val, str):
-            val = self.pallet.get(val, [0, 0, 0, 255])
+            raise GUIThemeError(f'color {val} invalid type')
 
         try:
             if len(val) == 3:
@@ -3077,6 +3097,24 @@ def autoscroll_text(text_rect, area_rect, alignment, scroll_amount, is_vertical=
 
     return x, y, max_scroll
 
+
+@functools.lru_cache(512)
+def hex_color_decode(hex_code):
+    if hex_code.startswith('#'):
+        hex_code = hex_code[1:]
+
+    if len(hex_code) in (3, 4):
+        hex_code = ''.join(
+            c + c
+            for c in hex_code)
+
+    if len(hex_code) not in (6, 8):
+        print(f'bad hex_code: {hex_code}')
+        return [255, 255, 255]
+
+    return [
+        int(hex_code[i:i+2], 16)
+        for i in range(0, len(hex_code), 2)]
 
 '''
 ## Not used.

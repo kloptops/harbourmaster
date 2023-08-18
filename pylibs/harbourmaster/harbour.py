@@ -70,12 +70,13 @@ class HarbourMaster():
         if callback is None:
             callback = Callback()
 
-        self.temp_dir  = temp_dir
-        self.tools_dir = tools_dir
-        self.cfg_dir   = tools_dir / "PortMaster" / "config"
-        self.libs_dir  = tools_dir / "PortMaster" / "libs"
-        self.ports_dir = ports_dir
-        self.cfg_file = self.cfg_dir / "config.json"
+        self.temp_dir   = temp_dir
+        self.tools_dir  = tools_dir
+        self.cfg_dir    = tools_dir / "PortMaster" / "config"
+        self.libs_dir   = tools_dir / "PortMaster" / "libs"
+        self.themes_dir = tools_dir / "PortMaster" / "themes"
+        self.ports_dir  = ports_dir
+        self.cfg_file   = self.cfg_dir / "config.json"
 
         self.sources = {}
         self.config = {
@@ -832,6 +833,30 @@ class HarbourMaster():
         """
         logger.debug(f"Installing theme: {download_file.name}")
 
+        if not self.themes_dir.is_dir():
+            self.themes_dir.mkdir(0o755)
+
+        theme_dir = self.themes_dir / download_file.name.rsplit('.', 2)[0]
+        if not theme_dir.is_dir():
+            theme_dir.mkdir(0o755)
+
+        with zipfile.ZipFile(download_file, 'r') as zf:
+            self.callback.message(_("Installing Theme {download_name}.").format(download_name=download_file.name))
+
+            total_files = len(zf.infolist())
+            for file_number, file_info in enumerate(zf.infolist()):
+                if file_info.filename.endswith('/'):
+                    continue
+
+                self.callback.progress(_("Installing"), file_number+1, total_files, '%')
+                self.callback.message(f"- {file_info.filename}")
+
+                file_name = theme_dir / file_info.filename.rsplit('/', 1)[-1]
+                with open(file_name, 'wb') as fh:
+                    fh.write(zf.read(file_info.filename))
+
+        self.callback.message_box(_("Theme {download_name!r} installed successfully.").format(download_name=download_file.name))
+
         return 0
 
     def _install_portmaster(self, download_file):
@@ -868,9 +893,9 @@ class HarbourMaster():
                         self.callback.message(f"- moving {dest_file} to {self.cfg_dir / dest_file.name}")
                         os.replace(dest_file, self.tools_dir / dest_file.name)
 
-            self.callback.message_box(_("Port {download_name!r} installed successfully.").format(download_name="PortMaster"))
-
             self.platform.portmaster_install()
+
+            self.callback.message_box(_("Port {download_name!r} installed successfully.").format(download_name="PortMaster"))
 
             self._fix_permissions(self.tools_dir)
 

@@ -96,6 +96,7 @@ if LOG_FILE.parent.is_dir():
 ## Translations
 LANG_DIR = PYLIB_PATH / "locales"
 DEFAULT_LANG = None
+CURRENT_LANG = None
 
 def lang_opts(lang):
     yield lang
@@ -133,17 +134,33 @@ def load_lang():
     else:
         config_lang = None
 
-    environ_lang = os.environ.get('LANG')
-    DEFAULT_LANG = environ_lang
+
+    environ_key = None
+    environ_lang = None
+    for key in ('LANG', 'LANGUAGE', 'LC_ALL', 'LC_MESSAGES'):
+        if key in os.environ:
+            if environ_key is not None:
+                del os.environ[key]
+
+            else:
+                environ_key = key
+                environ_lang = os.environ[key]
+
+    if environ_key is None:
+        environ_key = 'LANG'
+
+    DEFAULT_LANG = check_lang(environ_lang)
 
     if config_lang and check_lang(config_lang):
-        os.environ['LANG'] = check_lang(config_lang)
+        os.environ[environ_key] = check_lang(config_lang)
 
-    elif config_lang and check_lang(environ_lang):
-        os.environ['LANG'] = check_lang(environ_lang)
+    elif environ_lang and check_lang(environ_lang):
+        os.environ[environ_key] = check_lang(environ_lang)
 
     else:
-        os.environ['LANG'] = 'en_US'
+        os.environ[environ_key] = 'en_US'
+
+    CURRENT_LANG = os.environ[environ_key]
 
 
 def lang_list():
@@ -459,6 +476,11 @@ def theme_load(gui, theme_file, color_scheme=None):
                 for pallet_name, pallet_value in section_data.items():
                     gui.pallet[pallet_name] = pallet_value
 
+            elif section_name == "#override":
+                print("- loading override:")
+                for override_name, override_value in section_data.items():
+                    gui.override[override_name] = override_value
+
         else:
             section_name, requirements = extract_requirements(section_name, strict=True)
             if requirements is not None:
@@ -722,10 +744,10 @@ class BaseScene:
 
     def set_buttons(self, key_map):
         key_to_image = {
-            'A': '_A',
-            'B': '_B',
-            'X': '_X',
-            'Y': '_Y',
+            'A':     '_A',
+            'B':     '_B',
+            'X':     '_X',
+            'Y':     '_Y',
             'UP':    '_UP',
             'DOWN':  '_DOWN',
             'LEFT':  '_LEFT',
@@ -1144,7 +1166,6 @@ class PortsListScene(BaseScene):
 
         self.load_regions("ports_list", [
             'ports_list',
-            'port_image',
             ])
 
         self.ready = False
@@ -1176,7 +1197,9 @@ class PortsListScene(BaseScene):
             self.tags['ports_list'].list = [
                 _('NO PORTS')]
 
-            self.tags['port_image'].image = self.gui.get_port_image("no-image")
+            if 'port_image' in self.tags:
+                self.tags['port_image'].image = self.gui.get_port_image("no-image")
+
             self.gui.set_port_info(None, {})
 
             self.gui.set_data("port_info.title", _("** NO PORTS FOUND **"))
@@ -1239,7 +1262,8 @@ class PortsListScene(BaseScene):
 
             self.gui.set_port_info(port_name, port_info)
 
-            self.tags['port_image'].image = self.gui.get_port_image(port_name)
+            if 'port_image' in self.tags:
+                self.tags['port_image'].image = self.gui.get_port_image(port_name)
 
         if self.options['mode'] == 'install' and events.was_pressed('X'):
             self.button_activate()
@@ -1275,7 +1299,7 @@ class PortInfoScene(BaseScene):
     def __init__(self, gui, port_name, action):
         super().__init__(gui)
 
-        self.load_regions("port_info", ['port_image', 'button_bar'])
+        self.load_regions("port_info", [])
 
         self.port_name = port_name
         self.action = action
@@ -1305,7 +1329,9 @@ class PortInfoScene(BaseScene):
 
         logger.debug(f"{self.action}: {self.port_name} -> {self.port_info}")
 
-        self.tags['port_image'].image = self.gui.get_port_image(self.port_name)
+        if 'port_image' in self.tags:
+            self.tags['port_image'].image = self.gui.get_port_image(self.port_name)
+
         self.gui.set_port_info(self.port_name, self.port_info)
 
         self.ready = True
@@ -1496,10 +1522,7 @@ class MessageWindowScene(BaseScene):
         super().__init__(gui)
 
         self.load_regions("message_window", [
-            'message_text',
-            'progress_bar',
-            'button_bar',
-            ])
+            'message_text'            ])
 
         self.cancellable = not self.gui.cancellable
         self.update_buttons()
@@ -1521,10 +1544,11 @@ class MessageWindowScene(BaseScene):
 
         self.update_buttons()
 
-        if self.gui.callback_amount is not None:
-            self.tags['progress_bar'].progress_amount = self.gui.callback_amount
-        else:
-            self.tags['progress_bar'].progress_amount = 0
+        if 'progress_bar' in self.tags:
+            if self.gui.callback_amount is not None:
+                self.tags['progress_bar'].progress_amount = self.gui.callback_amount
+            else:
+                self.tags['progress_bar'].progress_amount = 0
 
         if events.was_pressed('B'):
             if self.gui.cancellable:
@@ -1628,6 +1652,8 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             logger.debug(f"FOUND: {device}")
             if device != 'default':
                 capabilities = harbourmaster.device_info(device)
+
+        capabilities['capabilities'].append(CURRENT_LANG)
 
         # Create the window
         self.window = sdl2.ext.Window("PortMaster", size=(self.display_width, self.display_height))
