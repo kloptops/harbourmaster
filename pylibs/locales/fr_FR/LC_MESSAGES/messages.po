@@ -75,19 +75,19 @@ msgstr "Mettre à Jour les Ports"
 
 #: pugwash:842 pugwash:879
 msgid "Music: "
-msgstr ""
+msgstr "Musique : "
 
 #: pugwash:842 pugwash:845 pugwash:879 pugwash:888
 msgid "Disabled"
-msgstr ""
+msgstr "Désactivé"
 
 #: pugwash:842 pugwash:845 pugwash:879 pugwash:888
 msgid "Enabled"
-msgstr ""
+msgstr "Activé"
 
 #: pugwash:845 pugwash:888
 msgid "Sound FX: "
-msgstr ""
+msgstr "Effets sonores : "
 
 #: pugwash:848
 msgid "Choose Language"
@@ -299,7 +299,7 @@ msgstr "Chargement des Ports."
 #: pylibs/harbourmaster/harbour.py:844
 #, python-brace-format
 msgid "Installing Theme {download_name}."
-msgstr ""
+msgstr "Installation du thème {download_name}."
 
 #: pylibs/harbourmaster/harbour.py:851 pylibs/harbourmaster/harbour.py:884
 #: pylibs/harbourmaster/harbour.py:939
@@ -308,7 +308,7 @@ msgstr "Installation en cours"
 
 #: pylibs/harbourmaster/harbour.py:858
 msgid "Theme {download_name!r} installed successfully."
-msgstr ""
+msgstr "Le thème {download_name!r} a été installé avec succès."
 
 #: pylibs/harbourmaster/harbour.py:875 pylibs/harbourmaster/harbour.py:930
 #, python-brace-format

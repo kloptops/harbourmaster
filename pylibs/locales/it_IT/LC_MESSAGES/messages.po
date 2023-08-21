@@ -75,19 +75,19 @@ msgstr "Aggiorna Port"
 
 #: pugwash:842 pugwash:879
 msgid "Music: "
-msgstr ""
+msgstr "Musica: "
 
 #: pugwash:842 pugwash:845 pugwash:879 pugwash:888
 msgid "Disabled"
-msgstr ""
+msgstr "Disattiva"
 
 #: pugwash:842 pugwash:845 pugwash:879 pugwash:888
 msgid "Enabled"
-msgstr ""
+msgstr "Attiva"
 
 #: pugwash:845 pugwash:888
 msgid "Sound FX: "
-msgstr ""
+msgstr "Effetti Sonori: "
 
 #: pugwash:848
 msgid "Choose Language"
@@ -99,7 +99,7 @@ msgstr "Seleziona Tema"
 
 #: pugwash:853
 msgid "Select Color Scheme"
-msgstr ""
+msgstr "Seleziona Modalità Tema"
 
 #: pugwash:856 pugwash:857 pugwash:934 pugwash:935 pugwash:992 pugwash:993
 #: pugwash:1045 pugwash:1046 pugwash:1175 pugwash:1177 pugwash:1310
@@ -199,11 +199,11 @@ msgstr "Rimuovi qualche filtro"
 
 #: pugwash:1310
 msgid "Install"
-msgstr ""
+msgstr "Installa"
 
 #: pugwash:1312
 msgid "Uninstall"
-msgstr ""
+msgstr "Disinstalla"
 
 #: pugwash:1418
 msgid "Genres:"
@@ -294,7 +294,7 @@ msgstr "Caricamento Ports."
 #: pylibs/harbourmaster/harbour.py:844
 #, python-brace-format
 msgid "Installing Theme {download_name}."
-msgstr ""
+msgstr "Installo Tema {download_name}."
 
 #: pylibs/harbourmaster/harbour.py:851 pylibs/harbourmaster/harbour.py:884
 #: pylibs/harbourmaster/harbour.py:939
@@ -303,7 +303,7 @@ msgstr "Installo"
 
 #: pylibs/harbourmaster/harbour.py:858
 msgid "Theme {download_name!r} installed successfully."
-msgstr ""
+msgstr "Tema {download_name!r} installato con successo."
 
 #: pylibs/harbourmaster/harbour.py:875 pylibs/harbourmaster/harbour.py:930
 #, python-brace-format
@@ -312,7 +312,7 @@ msgstr "Installo {download_name}."
 
 #: pylibs/harbourmaster/harbour.py:898 pylibs/harbourmaster/harbour.py:1038
 msgid "Port {download_name!r} installed successfully."
-msgstr ""
+msgstr "Port {download_name!r} installato con successo."
 
 #: pylibs/harbourmaster/harbour.py:1005
 msgid "Installation failed, removing files..."
@@ -398,7 +398,7 @@ msgstr "{port_name} disinstallato con successo."
 
 #: pylibs/harbourmaster/source.py:52
 msgid "Cache out of date."
-msgstr ""
+msgstr "Cache Obsoleta."
 
 #: pylibs/harbourmaster/source.py:57
 msgid "First check."
@@ -410,7 +410,7 @@ msgstr ""
 
 #: pylibs/harbourmaster/source.py:143
 msgid "Updating"
-msgstr ""
+msgstr "Aggiorno"
 
 #: pylibs/harbourmaster/source.py:154
 msgid "Up to date already"
