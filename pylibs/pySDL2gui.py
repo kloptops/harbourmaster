@@ -904,6 +904,29 @@ class Image:
             center=center,
             )
 
+    def draw_fit(self, source, dest, orientation='vertical', align='center'):
+        if orientation is None:
+            orientation = 'vertical'
+
+        if align is None:
+            align = 'center'
+
+        new_coords = Rect(0, 0, 0, 0)
+        if 'horizontal' in orientation:
+            new_coords.width = dest.width
+            new_coords.height = int(dest.height * (source.height / source.width))
+
+        else:
+            new_coords.width = int(dest.width * (source.width / source.height))
+            new_coords.height = dest.height
+
+        w = getattr(dest, align)
+        setattr(new_coords, align, w)
+
+        print(f"{list(new_coords)} {w}")
+
+        self.draw_in(new_coords, fit=True)
+
     def draw_in(self, dest, angle=0, flip_x=None, flip_y=None,
                 center=None, fit=False, color=None):
         '''
@@ -922,6 +945,7 @@ class Image:
 
         if fit:
             dest = Rect.from_sdl(self.srcrect).fitted(dest).sdl()
+
         if flip_x is None and flip_y is None:
             flip = 1 * bool(self.flip_x) | 2 * bool(self.flip_y)
         else:
@@ -1834,7 +1858,7 @@ class Region:
         self.image_mod = self._verify_color('image-mod', optional=True)
         self.imagesize = self._verify_ints('image-size', 2, None, optional=True)
         self.imagemode = self._verify_option('image-mode',
-                ('fit', 'stretch', 'repeat', None), 'fit')
+                ('fit', 'fit-horizontal', 'fit-vertical', 'stretch', 'repeat', None), 'fit')
         self.imagealign = self._verify_option('image-align', Rect.POINTS, None)
         self.patch = self._verify_ints('patch', 4, optional=True)
         self.pimage = self.images.load(self._dict.get('pimage'))
@@ -2045,6 +2069,14 @@ class Region:
                     setattr(dest, self.imagealign, w)
 
                 image.draw_in(dest.tuple())
+
+            elif self.imagemode.startswith('fit-'):
+                image.draw_fit(
+                    dest,
+                    area,
+                    ('horizontal' in self.imagemode and 'horizontal' or 'vertical'),
+                    (self.imagealign or 'center')
+                    )
 
             elif self.imagemode == 'stretch':
                 image.draw_in(area.tuple())
