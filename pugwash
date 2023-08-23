@@ -27,6 +27,9 @@ PYLIB_ZIP     = Path(__file__).parent / 'pylibs.zip'
 PYLIB_ZIP_MD5 = Path(__file__).parent / 'pylibs.zip.md5'
 PYLIB_PATH    = Path(__file__).parent / 'pylibs'
 
+## HACK D:
+__builtins__.PYLIB_PATH = PYLIB_PATH
+
 if (Path(__file__).parent / 'exlibs').is_dir():
     EXLIB_PATH = Path(__file__).parent / 'exlibs'
     sys.path.insert(0, str(EXLIB_PATH))
@@ -81,7 +84,7 @@ import pugtheme
 
 from utility import cprint, do_cprint_output
 from loguru import logger
-from pugtheme import theme_load
+from pugtheme import theme_load, ThemeEngine
 from pugscene import *
 
 from harbourmaster import (
@@ -391,20 +394,14 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
         self.cancellable = True
 
-        self.init_theme()
-        # self.gui.resources.add_path(harbourmaster.HM_TOOLS_DIR / "PortMaster" / "pylibs")
-
-        theme_file = self.resources.find("theme.json")
-        if theme_file is None:
-            print(self.resources._paths)
-            ## TODO: fix this and display a simple messagebox.
-            raise RuntimeError("Unable to load theme.")
+        self.themes = ThemeEngine(self)
 
         self.text_data = {}
         self.changed_keys = set()
         self.formatter = StringFormatter(self.text_data)
 
-        self.theme_data = theme_load(self, theme_file, self.get_current_theme_scheme())
+        self.theme_data = self.themes.gui_init()
+
         self.spinner = 0
 
         self.scenes = [
@@ -438,6 +435,8 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.set_data('ports_list.total_ports', "")
         self.set_data('ports_list.filter_ports', "")
 
+        self.lang_list = lang_list()
+
     def init_theme(self):
         ## This has to run before harbourmaster is initialised, so we gotta work it out ourself.
         theme_name = self.get_current_theme()
@@ -457,96 +456,6 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             cfg_data = self.hm.cfg_data
 
         return cfg_data
-
-    def get_current_theme(self):
-        cfg_data = self.get_config()
-
-        cfg_data.setdefault("theme", "default_theme")
-        if not self.get_theme_dir(cfg_data["theme"]).is_dir():
-            logger.error(f"Unable to find theme '{cfg_data['theme']}', setting to 'default_theme'")
-            cfg_data["theme"] = "default_theme"
-
-        elif not (self.get_theme_dir(cfg_data["theme"]) / "theme.json").is_file():
-            logger.error(f"Unable to find theme '{cfg_data['theme']}', setting to 'default_theme'")
-            cfg_data["theme"] = "default_theme"
-
-        return cfg_data["theme"]
-
-    def get_current_theme_scheme(self):
-        cfg_data = self.get_config()
-        return cfg_data.setdefault("theme-scheme", None)
-
-    def get_theme_dir(self, theme_name):
-        cfg_dir = harbourmaster.HM_TOOLS_DIR / "PortMaster"
-
-        if theme_name in ("default_theme", "default_theme_dark"):
-            return PYLIB_PATH / theme_name
-
-        else:
-            return cfg_dir / "themes" / theme_name
-
-    def get_theme_data(self, theme_name):
-        theme_file = (self.get_theme_dir(theme_name) / "theme.json")
-        if not theme_file.is_file():
-            logger.error(f"Unknown file {theme_file}")
-            return None
-
-        theme_data = harbourmaster.json_safe_loads(theme_file.read_text())
-
-        if theme_data is None:
-            logger.error(f"Unable to load {theme_file}")
-            return None
-
-        return theme_data
-
-    def get_theme_info(self, theme_name):
-        theme_data = self.get_theme_data(theme_name)
-        if theme_data is None:
-            return None
-
-        if "#info" not in theme_data:
-            print(f"Bad theme info {theme_name}")
-            return None
-
-        return theme_data["#info"]
-
-    def get_themes_list(self):
-        cfg_dir = harbourmaster.HM_TOOLS_DIR / "PortMaster"
-
-        themes = {
-            "default_theme": self.get_theme_info("default_theme"),
-            }
-
-        for theme_file in (cfg_dir / "themes").glob("*/theme.json"):
-            theme_name = theme_file.parent.name
-            theme_info = self.get_theme_info(theme_name)
-            if theme_info is None:
-                logger.error(f"THEME {theme_file} isn't a valid theme.")
-                continue
-
-            if theme_info.get("version", 0) < self.MIN_THEME_VERSION:
-                logger.error(f"THEME {theme_file} does not meet the minimum version requirement: {theme_info.get('version', 0)}")
-                continue
-
-            themes[theme_name] = theme_info
-
-        return themes
-
-    def get_theme_schemes_list(self, theme_name=None):
-        if theme_name is None:
-            theme_name = self.hm.cfg_data.get("theme", "default_theme")
-
-        theme_data = self.get_theme_data(theme_name)
-        if theme_data is None:
-            return []
-
-        if "#schemes" not in theme_data:
-            return []
-
-        return [
-            scheme_name
-            for scheme_name in theme_data.get("#schemes", {})
-            if scheme_name not in ("#base", )]
 
     ## Loop stuff.
     def run(self):
@@ -621,7 +530,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             self.renderer.present()
 
         self.clean()
-            # self.window.refresh()
+        # self.window.refresh()
 
         # self.updated = False
 

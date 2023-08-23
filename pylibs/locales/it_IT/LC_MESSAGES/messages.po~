@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-08-18 18:34+0800\n"
+"POT-Creation-Date: 2023-08-23 18:08+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,253 +17,78 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: pugwash:169
+#: pugwash:174
 msgid "German"
 msgstr "Tedesco"
 
-#: pugwash:170
+#: pugwash:175
 msgid "English"
 msgstr "Inglese"
 
-#: pugwash:171
+#: pugwash:176
 msgid "Spanish"
 msgstr "Spagnolo"
 
-#: pugwash:172
+#: pugwash:177
 msgid "French"
 msgstr "Francese"
 
-#: pugwash:173
+#: pugwash:178
 msgid "Italian"
 msgstr "Italiano"
 
-#: pugwash:266
+#: pugwash:271
 msgid "Unknown IP"
 msgstr "IP Ignoto"
 
-#: pugwash:796
-msgid "All Ports"
-msgstr "Tutti i Port"
-
-#: pugwash:797
-msgid "Ready to Run Ports"
-msgstr "Ready to Run Ports"
-
-#: pugwash:798
-msgid "Uninstall Ports"
-msgstr "Disinstalla Port"
-
-#: pugwash:800
-msgid "Options"
-msgstr "Opzioni"
-
-#: pugwash:801
-msgid "Exit"
-msgstr "Esci"
-
-#: pugwash:802 pugwash:857 pugwash:1105 pugwash:1113
-msgid "Enter"
-msgstr "Accetta"
-
-#: pugwash:802
-msgid "Quit"
-msgstr "Indietro"
-
-#: pugwash:837
-msgid "Update Ports"
-msgstr "Aggiorna Port"
-
-#: pugwash:842 pugwash:879
-msgid "Music: "
-msgstr "Musica: "
-
-#: pugwash:842 pugwash:845 pugwash:879 pugwash:888
-msgid "Disabled"
-msgstr "Disattiva"
-
-#: pugwash:842 pugwash:845 pugwash:879 pugwash:888
-msgid "Enabled"
-msgstr "Attiva"
-
-#: pugwash:845 pugwash:888
-msgid "Sound FX: "
-msgstr "Effetti Sonori: "
-
-#: pugwash:848
-msgid "Choose Language"
-msgstr "Lingua"
-
-#: pugwash:850
-msgid "Select Theme"
-msgstr "Seleziona Tema"
-
-#: pugwash:853
-msgid "Select Color Scheme"
-msgstr "Seleziona Modalità Tema"
-
-#: pugwash:856 pugwash:857 pugwash:934 pugwash:935 pugwash:992 pugwash:993
-#: pugwash:1045 pugwash:1046 pugwash:1175 pugwash:1177 pugwash:1310
-#: pugwash:1312
-msgid "Back"
-msgstr "Indietro"
-
-#: pugwash:929
-#, python-brace-format
-msgid "{theme_name} (Selected)"
-msgstr "{theme_name} (Attuale)"
-
-#: pugwash:935 pugwash:993 pugwash:1046 pugwash:1105 pugwash:1113
-msgid "Select"
-msgstr "Seleziona"
-
-#: pugwash:952
-msgid ""
-"Do you want to change theme?\n"
-"\n"
-"You will have to restart for it to take affect."
-msgstr ""
-"Vuoi cambiare Tema?\n"
-"\n"
-"Riavvia per applicare le modifiche."
-
-#: pugwash:987
-#, python-brace-format
-msgid "{item_name} (Selected)"
-msgstr "{item_name} (Attuale)"
-
-#: pugwash:1010
-msgid ""
-"Do you want to change the themes color scheme?\n"
-"\n"
-"You will have to restart for it to take affect."
-msgstr ""
-
-#: pugwash:1040
-#, python-brace-format
-msgid "{lang_name} (Selected)"
-msgstr "{lang_name} (Attuale)"
-
-#: pugwash:1063
-msgid ""
-"Do you want to change language?\n"
-"\n"
-"You will have to restart for it to take affect."
-msgstr ""
-"Vuoi cambiare lingua?\n"
-"\n"
-"Riavvia per applicare le modifiche."
-
-#: pugwash:1105 pugwash:1113
-msgid "Delete"
-msgstr ""
-
-#: pugwash:1105
-msgid "Upper Case"
-msgstr ""
-
-#: pugwash:1105 pugwash:1113
-msgid "Space"
-msgstr ""
-
-#: pugwash:1105 pugwash:1113 pugwash:1537 pugwash:1569 pugwash:2046
-msgid "Cancel"
-msgstr ""
-
-#: pugwash:1113
-msgid "Lower Case"
-msgstr ""
-
-#: pugwash:1175 pugwash:1177
-msgid "Show Info"
-msgstr "Mostra info"
-
-#: pugwash:1175
-msgid "Filters"
-msgstr "Filtri"
-
-#: pugwash:1198
-msgid "NO PORTS"
-msgstr "Nessun Risultato"
-
-#: pugwash:1205
-msgid "** NO PORTS FOUND **"
-msgstr "** Nessun Risultato **"
-
-#: pugwash:1208
-msgid "Download ports first."
-msgstr "Scarica qualcosa prima"
-
-#: pugwash:1210
-msgid "Try removing some filters."
-msgstr "Rimuovi qualche filtro"
-
-#: pugwash:1310
-msgid "Install"
-msgstr "Installa"
-
-#: pugwash:1312
-msgid "Uninstall"
-msgstr "Disinstalla"
-
-#: pugwash:1418
-msgid "Genres:"
-msgstr "Genere"
-
-#: pugwash:1446
-msgid "Attributes:"
-msgstr "Runtime"
-
-#: pugwash:1473
-msgid "Porters:"
-msgstr "Porter"
-
-#: pugwash:1556
-msgid "Are you sure you want to cancel?"
-msgstr "Sicuro di voler annullare?"
-
-#: pugwash:1566 pugwash:2043
-msgid "Okay"
-msgstr ""
-
-#: pugwash:1874 pugwash:1948
+#: pugwash:597 pugwash:719
 msgid "N/A"
 msgstr "N/A"
 
-#: pugwash:1919
+#: pugwash:690
 msgid "** NO PORT **"
 msgstr "** Nessun Risultato **"
 
-#: pugwash:1935
+#: pugwash:706
 msgid "Ready to Run"
 msgstr "Port già Pronti"
 
-#: pugwash:1935
+#: pugwash:706
 msgid "Requires Files"
 msgstr "File richiesti"
 
-#: pugwash:1942
+#: pugwash:713
 msgid "Installed"
 msgstr "Installato"
 
-#: pugwash:1944
+#: pugwash:715
 msgid "Missing"
 msgstr "Mancante"
 
-#: pugwash:1947
+#: pugwash:718
 msgid "None"
 msgstr ""
 
-#: pugwash:2238
+#: pugwash:814 pylibs/pugscene.py:1070
+msgid "Okay"
+msgstr ""
+
+#: pugwash:817 pylibs/pugscene.py:614 pylibs/pugscene.py:622
+#: pylibs/pugscene.py:1041 pylibs/pugscene.py:1073
+msgid "Cancel"
+msgstr ""
+
+#: pugwash:1009
 #, python-brace-format
 msgid "Installing {port_name}"
 msgstr "Installo {port_name}"
 
-#: pugwash:2248
+#: pugwash:1019
 #, python-brace-format
 msgid "Uninstalling {port_name}"
 msgstr "Disinstallo {port_name}"
 
-#: pugwash:2258
+#: pugwash:1029
 msgid "Updating all port sources:"
 msgstr "Aggiorno le fonti..."
 
@@ -489,3 +314,184 @@ msgstr "File Validati"
 #: pylibs/harbourmaster/util.py:321
 msgid "Unable to validate download."
 msgstr "Impossibile validare il download."
+
+#: pylibs/pugscene.py:305
+msgid "All Ports"
+msgstr "Tutti i Port"
+
+#: pylibs/pugscene.py:306
+msgid "Ready to Run Ports"
+msgstr "Ready to Run Ports"
+
+#: pylibs/pugscene.py:307
+msgid "Uninstall Ports"
+msgstr "Disinstalla Port"
+
+#: pylibs/pugscene.py:309
+msgid "Options"
+msgstr "Opzioni"
+
+#: pylibs/pugscene.py:310
+msgid "Exit"
+msgstr "Esci"
+
+#: pylibs/pugscene.py:311 pylibs/pugscene.py:366 pylibs/pugscene.py:614
+#: pylibs/pugscene.py:622
+msgid "Enter"
+msgstr "Accetta"
+
+#: pylibs/pugscene.py:311
+msgid "Quit"
+msgstr "Indietro"
+
+#: pylibs/pugscene.py:346
+msgid "Update Ports"
+msgstr "Aggiorna Port"
+
+#: pylibs/pugscene.py:351 pylibs/pugscene.py:388
+msgid "Music: "
+msgstr "Musica: "
+
+#: pylibs/pugscene.py:351 pylibs/pugscene.py:354 pylibs/pugscene.py:388
+#: pylibs/pugscene.py:397
+msgid "Disabled"
+msgstr "Disattiva"
+
+#: pylibs/pugscene.py:351 pylibs/pugscene.py:354 pylibs/pugscene.py:388
+#: pylibs/pugscene.py:397
+msgid "Enabled"
+msgstr "Attiva"
+
+#: pylibs/pugscene.py:354 pylibs/pugscene.py:397
+msgid "Sound FX: "
+msgstr "Effetti Sonori: "
+
+#: pylibs/pugscene.py:357
+msgid "Choose Language"
+msgstr "Lingua"
+
+#: pylibs/pugscene.py:359
+msgid "Select Theme"
+msgstr "Seleziona Tema"
+
+#: pylibs/pugscene.py:362
+msgid "Select Color Scheme"
+msgstr "Seleziona Modalità Tema"
+
+#: pylibs/pugscene.py:365 pylibs/pugscene.py:366 pylibs/pugscene.py:443
+#: pylibs/pugscene.py:444 pylibs/pugscene.py:501 pylibs/pugscene.py:502
+#: pylibs/pugscene.py:554 pylibs/pugscene.py:555 pylibs/pugscene.py:679
+#: pylibs/pugscene.py:681 pylibs/pugscene.py:814 pylibs/pugscene.py:816
+msgid "Back"
+msgstr "Indietro"
+
+#: pylibs/pugscene.py:438
+#, python-brace-format
+msgid "{theme_name} (Selected)"
+msgstr "{theme_name} (Attuale)"
+
+#: pylibs/pugscene.py:444 pylibs/pugscene.py:502 pylibs/pugscene.py:555
+#: pylibs/pugscene.py:614 pylibs/pugscene.py:622
+msgid "Select"
+msgstr "Seleziona"
+
+#: pylibs/pugscene.py:461
+msgid ""
+"Do you want to change theme?\n"
+"\n"
+"You will have to restart for it to take affect."
+msgstr ""
+"Vuoi cambiare Tema?\n"
+"\n"
+"Riavvia per applicare le modifiche."
+
+#: pylibs/pugscene.py:496
+#, python-brace-format
+msgid "{item_name} (Selected)"
+msgstr "{item_name} (Attuale)"
+
+#: pylibs/pugscene.py:519
+msgid ""
+"Do you want to change the themes color scheme?\n"
+"\n"
+"You will have to restart for it to take affect."
+msgstr ""
+
+#: pylibs/pugscene.py:549
+#, python-brace-format
+msgid "{lang_name} (Selected)"
+msgstr "{lang_name} (Attuale)"
+
+#: pylibs/pugscene.py:572
+msgid ""
+"Do you want to change language?\n"
+"\n"
+"You will have to restart for it to take affect."
+msgstr ""
+"Vuoi cambiare lingua?\n"
+"\n"
+"Riavvia per applicare le modifiche."
+
+#: pylibs/pugscene.py:614 pylibs/pugscene.py:622
+msgid "Delete"
+msgstr ""
+
+#: pylibs/pugscene.py:614
+msgid "Upper Case"
+msgstr ""
+
+#: pylibs/pugscene.py:614 pylibs/pugscene.py:622
+msgid "Space"
+msgstr ""
+
+#: pylibs/pugscene.py:622
+msgid "Lower Case"
+msgstr ""
+
+#: pylibs/pugscene.py:679 pylibs/pugscene.py:681
+msgid "Show Info"
+msgstr "Mostra info"
+
+#: pylibs/pugscene.py:679
+msgid "Filters"
+msgstr "Filtri"
+
+#: pylibs/pugscene.py:702
+msgid "NO PORTS"
+msgstr "Nessun Risultato"
+
+#: pylibs/pugscene.py:709
+msgid "** NO PORTS FOUND **"
+msgstr "** Nessun Risultato **"
+
+#: pylibs/pugscene.py:712
+msgid "Download ports first."
+msgstr "Scarica qualcosa prima"
+
+#: pylibs/pugscene.py:714
+msgid "Try removing some filters."
+msgstr "Rimuovi qualche filtro"
+
+#: pylibs/pugscene.py:814
+msgid "Install"
+msgstr "Installa"
+
+#: pylibs/pugscene.py:816
+msgid "Uninstall"
+msgstr "Disinstalla"
+
+#: pylibs/pugscene.py:922
+msgid "Genres:"
+msgstr "Genere"
+
+#: pylibs/pugscene.py:950
+msgid "Attributes:"
+msgstr "Runtime"
+
+#: pylibs/pugscene.py:977
+msgid "Porters:"
+msgstr "Porter"
+
+#: pylibs/pugscene.py:1060
+msgid "Are you sure you want to cancel?"
+msgstr "Sicuro di voler annullare?"

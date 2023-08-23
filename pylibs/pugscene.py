@@ -1,6 +1,7 @@
 import functools
 import gettext
 import json
+import os
 
 import sdl2
 import sdl2.ext
@@ -340,7 +341,7 @@ class OptionScene(BaseScene):
     def __init__(self, gui):
         super().__init__(gui)
 
-        self.load_regions("option_menu", ['option_list', 'button_bar'])
+        self.load_regions("option_menu", ['option_list'])
 
         self.tags['option_list'].reset_options()
         self.tags['option_list'].add_option('update-ports', _("Update Ports"))
@@ -357,7 +358,7 @@ class OptionScene(BaseScene):
         self.tags['option_list'].add_option('select-language', _("Choose Language"))
         self.tags['option_list'].add_option(None, "")
         self.tags['option_list'].add_option('select-theme', _("Select Theme"))
-        schemes = self.gui.get_theme_schemes_list()
+        schemes = self.gui.themes.get_theme_schemes_list()
         if len(schemes) > 0:
             self.tags['option_list'].add_option('select-scheme', _("Select Color Scheme"))
 
@@ -429,15 +430,15 @@ class ThemesScene(BaseScene):
 
         self.load_regions("option_menu", ['option_list', ])
 
-        themes = self.gui.get_themes_list()
+        themes = self.gui.themes.get_themes_list()
         selected_theme = self.gui.hm.cfg_data['theme']
 
         self.tags['option_list'].reset_options()
         for theme_name, theme_data in themes.items():
             if theme_name == selected_theme:
-                self.tags['option_list'].add_option((None, ''), _("{theme_name} (Selected)").format(theme_name=theme_data['name']))
+                self.tags['option_list'].add_option((None, ''), _("{theme_name} (Selected)").format(theme_name=theme_data.name))
             else:
-                self.tags['option_list'].add_option(('select-theme', theme_name), theme_data['name'])
+                self.tags['option_list'].add_option(('select-theme', theme_name), theme_data.name)
 
         self.tags['option_list'].add_option(None, "")
         self.tags['option_list'].add_option(('back', None), _("Back"))
@@ -483,10 +484,10 @@ class ThemeSchemeScene(BaseScene):
 
         self.load_regions("option_menu", ['option_list', ])
 
-        theme_name = self.gui.get_current_theme()
-        schemes = self.gui.get_theme_schemes_list()
+        theme_name = self.gui.themes.get_current_theme()
+        schemes = self.gui.themes.get_theme_schemes_list()
 
-        default_scheme = self.gui.get_theme_data(theme_name).get("#info", {}).get("default-scheme", None)
+        default_scheme = self.gui.themes.get_theme(theme_name).theme_data.get("#info", {}).get("default-scheme", None)
         selected_scheme = self.gui.hm.cfg_data.get('theme-scheme', default_scheme)
 
         self.tags['option_list'].reset_options()
@@ -540,7 +541,7 @@ class LanguageScene(BaseScene):
 
         self.load_regions("option_menu", ['option_list', ])
 
-        languages = lang_list()
+        languages = gui.lang_list
         selected_lang = os.environ['LANG']
 
         self.tags['option_list'].reset_options()

@@ -6,6 +6,7 @@ import sdl2
 import sdl2.ext
 
 import harbourmaster
+import harbourmaster.source
 import pySDL2gui
 
 from loguru import logger
@@ -210,10 +211,10 @@ def theme_load(gui, theme_file, color_scheme=None):
                     continue
 
                 if section_name not in sections:
-                    logger.error(f"{section_name} not yet defined, skipping. ({requirement})")
+                    logger.error(f"{section_name} not yet defined, skipping.")
                     continue
 
-                print(f"  - loading section {section_name} ({requirement})")
+                print(f"  - loading section {section_name}")
                 sections[section_name] = theme_apply(gui, section_data, sections[section_name], elements)
             else:
                 print(f"  - loading section {section_name}")
@@ -225,3 +226,160 @@ def theme_load(gui, theme_file, color_scheme=None):
 
     return sections
 
+
+class Theme:
+    def __init__(self, theme_dir):
+        self.theme_dir = theme_dir
+
+        self.theme_file = theme_dir / "theme.json"
+
+        if not self.theme_file.is_file():
+            raise ValueError(f"{self.theme_file} not found.")
+
+        with open(self.theme_file, 'r') as fh:
+            self.theme_data = json.load(fh)
+
+        self.__screenshot = None
+
+    @property
+    def name(self):
+        return self.theme_data.get("#info", {}).get("name", None)
+
+    @property
+    def creator(self):
+        return self.theme_data.get("#info", {}).get("creator", None)
+
+    @property
+    def screenshot(self):
+        if self.__screenshot is not None:
+            return self.__screenshot
+
+        for screenshot_name in ("screenshot.png", "screenshot.jpg"):
+            screenshot_file = self.theme_dir / screenshot_name
+            if screenshot_file.is_file():
+                self.__screenshot = screenshot_file
+                return screenshot_file
+
+        return None
+
+    @property
+    def schemes(self):
+        return [
+            scheme_name
+            for scheme_name in self.theme_data.get("#schemes", {})
+            if not scheme_name.startswith('#')]
+
+
+    def gui_init(self, gui, color_scheme=None):
+        gui.resources.add_path(self.theme_dir)
+        return theme_load(gui, self.theme_file, color_scheme)
+
+
+class ThemeDownloader(harbourmaster.source.GitHubRawReleaseV1):
+    DEFAULT_DATA = {
+        "prefix": "thm",
+        "api": "GitHubRawReleaseV1",
+        "name": "PortMaster Themes",
+        "url": "https://api.github.com/repos/PortsMaster/PortMaster-Themes/releases/latest",
+        "last_checked": None,
+        "version": 1,
+        "data": {}
+        }
+
+    def __init__(self, gui):
+        ## BROKEN :D
+        self.gui = gui
+        config_file = self.gui.hm.cfg_dir / "themes.json"
+        if config_file.is_file():
+            with open(config_file, 'r') as fh:
+                config_data = json.load(fh)
+
+        else:
+            config_data = self.DEFAULT_DATA.copy()
+
+        super().__init__(self.gui.hm, config_file, config_data)
+
+
+class ThemeEngine:
+    def __init__(self, gui):
+        self.gui = gui
+
+    def get_pm_config(self):
+        cfg_dir = harbourmaster.HM_TOOLS_DIR / "PortMaster"
+        cfg_file = cfg_dir / "config" / "config.json"
+        cfg_data = {}
+
+        if self.gui.hm is None:
+            if cfg_file.is_file():
+                with open(cfg_file, 'r') as fh:
+                    cfg_data = json.load(fh)
+        else:
+            cfg_data = self.gui.hm.cfg_data
+
+        return cfg_data
+
+    def get_current_theme(self):
+        """
+        Returns the name of the current theme
+        """
+
+        cfg_data = self.get_pm_config()
+
+        cfg_data.setdefault("theme", "default_theme")
+        if not self.get_theme_dir(cfg_data["theme"]).is_dir():
+            logger.error(f"Unable to find theme '{cfg_data['theme']}', setting to 'default_theme'")
+            cfg_data["theme"] = "default_theme"
+
+        elif not (self.get_theme_dir(cfg_data["theme"]) / "theme.json").is_file():
+            logger.error(f"Unable to find theme '{cfg_data['theme']}', setting to 'default_theme'")
+            cfg_data["theme"] = "default_theme"
+
+        return cfg_data["theme"]
+
+    def get_current_theme_scheme(self):
+        """
+        Returns the colour scheme of the current theme
+        """
+
+        cfg_data = self.get_pm_config()
+        return cfg_data.setdefault("theme-scheme", None)
+
+    def get_theme_dir(self, theme_name):
+        cfg_dir = harbourmaster.HM_TOOLS_DIR / "PortMaster"
+
+        if theme_name == "default_theme":
+            return PYLIB_PATH / theme_name
+
+        else:
+            return cfg_dir / "themes" / theme_name
+
+    def get_theme(self, theme_name):
+        return Theme(self.get_theme_dir(theme_name))
+
+    def get_themes_list(self):
+        cfg_dir = harbourmaster.HM_TOOLS_DIR / "PortMaster"
+
+        themes = {
+            "default_theme": self.get_theme("default_theme"),
+            }
+
+        for theme_file in (cfg_dir / "themes").glob("*/theme.json"):
+            theme_name = theme_file.parent.name
+            theme_data = self.get_theme(theme_name)
+
+            themes[theme_name] = theme_data
+
+        return themes
+
+    def get_theme_schemes_list(self, theme_name=None):
+        if theme_name is None:
+            theme_name = self.gui.hm.cfg_data.get("theme", "default_theme")
+
+        theme = self.get_theme(theme_name)
+
+        return theme.schemes
+
+    def gui_init(self):
+        theme = self.get_theme(self.get_current_theme())
+        scheme = self.get_current_theme_scheme()
+        return theme.gui_init(self.gui, scheme)
