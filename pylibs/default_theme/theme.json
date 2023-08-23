@@ -11,6 +11,7 @@
                 "click.ogg": {
                     "name": "click"
                 },
+
                 "buttons.png": {
                     "atlas": {
                         "_A":         [  0,   0, 180, 180],
@@ -33,17 +34,8 @@
                 "no-image.jpg": {
                     "name": "NO_IMAGE"
                 },
-                "pointenfedde.png": {},
-                "hearts.png": {
-                    "atlas": {
-                        "hearts_0":   [ 69, 0, 69, 13 ],
-                        "hearts_20":  [ 56, 0, 69, 13 ],
-                        "hearts_40":  [ 42, 0, 69, 13 ],
-                        "hearts_60":  [ 28, 0, 69, 13 ],
-                        "hearts_80":  [ 14, 0, 69, 13 ],
-                        "hearts_100": [  0, 0, 69, 13 ]
-                    }
-                }
+
+                "pointenfedde.png": {}
             }
         },
         "Light Mode": {
@@ -425,6 +417,7 @@
             "align": "bottomleft",
             "text": ""
         },
+
         "progress_bar": {
             "area": [ 0.05, 0.83, 0.95, 0.90 ],
             "fill": "panels",
@@ -436,6 +429,7 @@
             "border": 2,
             "thickness": 1
         },
+
         "progress_bar_amount": {
             "area": [ 0.05, 0.83, 0.95, 0.90 ],
             "text": "{system.progress_amount}",
@@ -445,14 +439,13 @@
             "thickness": 1,
             "border": 2
         },
-        "progress_bar_hearts": {
-            "area": [ 5, 5, 69, 13 ],
-            "image": "hearts_{system.progress_perc_20_or_spinner}"
-        },
+
         "#element:button_bar": {}
     },
+
     "message_box": {
         "#element:background": {},
+
         "message_text": {
             "area": [ 0.05, 0.2, 0.95, 0.8 ],
             "area[3:2]": [ 0.05, 0.2, 0.95, 0.9 ],
@@ -469,6 +462,7 @@
             "text": "",
             "text-wrap": true
         },
+
         "#element:button_bar": {}
     }
 }

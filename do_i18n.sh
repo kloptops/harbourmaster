@@ -5,7 +5,7 @@ POT_DIR="pylibs/locales"
 POT_FILE="messages"
 
 echo "Extracting strings ${POT_FILE}"
-xgettext -v -o "${POT_DIR}/${POT_FILE}.pot" -L Python pugwash pylibs/harbourmaster/*.py
+xgettext -v -o "${POT_DIR}/${POT_FILE}.pot" -L Python pugwash pylibs/harbourmaster/*.py pylibs/pug*.py
 
 # pygettext.py -d libharbourmaster -o pylibs/locales/harbourmaster.pot pylibs/harbourmaster
 # pygettext.py -d harbourmaster -o pylibs/locales/harbourmaster.pot harbourmaster

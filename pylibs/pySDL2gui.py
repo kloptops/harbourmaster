@@ -923,7 +923,7 @@ class Image:
         w = getattr(dest, align)
         setattr(new_coords, align, w)
 
-        print(f"{list(new_coords)} {w}")
+        # print(f"{list(new_coords)} {w}")
 
         self.draw_in(new_coords, fit=True)
 
@@ -1326,6 +1326,7 @@ class EventManager:
         sdl2.SDLK_s:        'Y',
         sdl2.SDLK_q:        'L1',
         sdl2.SDLK_e:        'R1',
+        sdl2.SDLK_p:        'SCRN',
         }
 
     AXIS_MAP = {
@@ -1383,6 +1384,10 @@ class EventManager:
         self.buttons.update({
             key: False
             for key in self.AXIS_TO_BUTTON.keys()})
+
+        self.buttons.update({
+            key: False
+            for key in self.KEY_MAP.keys()})
 
         self.axis = {
             key: 0.0
