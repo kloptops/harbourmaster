@@ -156,7 +156,7 @@ class GitHubRawReleaseV1(BaseSource):
 
         # cprint(f"- <b>{self._config['name']}</b>: Fetching latest ports")
         if self.hm.callback is not None:
-            self.hm.callback.message("  - {}".format(_("Fetching latest ports")))
+            self.hm.callback.message("  - {}".format(_("Fetching latest info")))
 
         data = fetch_json(self._config['url'])
         if data is None:

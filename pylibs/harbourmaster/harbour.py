@@ -855,6 +855,9 @@ class HarbourMaster():
                 with open(file_name, 'wb') as fh:
                     fh.write(zf.read(file_info.filename))
 
+        with open(theme_dir / "theme.md5", 'w') as fh:
+            fh.write(hash_file(download_file))
+
         self.callback.message_box(_("Theme {download_name!r} installed successfully.").format(download_name=download_file.name))
 
         return 0

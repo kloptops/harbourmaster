@@ -109,6 +109,7 @@ Currently there are the following scenes:
 - `message_window`: A scrolling list of messages, used during downloading, installation, and fetching the latest ports information.
 - `message_box`: An alert box
 - `filter_list`: Available filters
+- `themes_list`: List themes / downloader.
 
 ### Scene: main_menu
 
@@ -319,6 +320,10 @@ It also supports text auto-scrolling if it doesnt fit within the area it is disp
 
 ```
 
+### Images
+
+Probably should write something here.
+
 ### Lists
 
 The list system is quite adequate
@@ -504,13 +509,22 @@ The format is:
 - system.progress_text
 - system.progress_amount
 
-- system.progress_perc
 - system.progress_perc_5
 - system.progress_perc_10
+- system.progress_perc_20
 - system.progress_perc_25
+- system.progress_spinner_5
+- system.progress_spinner_10
+- system.progress_spinner_20
+- system.progress_spinner_25
+- system.progress_perc_5_or_spinner
+- system.progress_perc_10_or_spinner
+- system.progress_perc_20_or_spinner
+- system.progress_perc_25_or_spinner
 
 ### Port info tags
 
+- port_info.image
 - port_info.title
 - port_info.description
 - port_info.instructions
@@ -521,12 +535,19 @@ The format is:
 - port_info.runtime
 - port_info.runtime_status
 
-
 ## Ports List tags
 
 - ports_list.total_ports
 - ports_list.filter_ports
 - ports_list.filters
+
+## Theme info tags
+
+- theme_info.image
+- theme_info.name
+- theme_info.description
+- theme_info.creator
+- theme_info.status
 
 
 ### Control flow of PortMaster

@@ -402,19 +402,19 @@ class OptionScene(BaseScene):
                 self.gui.push_scene('osk', OnScreenKeyboard(self.gui))
                 return True
 
-            elif selected_option == 'select-theme':
+            if selected_option == 'select-theme':
                 self.gui.push_scene('select-theme', ThemesScene(self.gui))
                 return True
 
-            elif selected_option == 'select-scheme':
+            if selected_option == 'select-scheme':
                 self.gui.push_scene('select-scheme', ThemeSchemeScene(self.gui))
                 return True
 
-            elif selected_option == 'select-language':
+            if selected_option == 'select-language':
                 self.gui.push_scene('select-language', LanguageScene(self.gui))
                 return True
 
-            elif selected_option == 'back':
+            if selected_option == 'back':
                 self.gui.pop_scene()
                 return True
 
@@ -428,49 +428,92 @@ class ThemesScene(BaseScene):
     def __init__(self, gui):
         super().__init__(gui)
 
-        self.load_regions("option_menu", ['option_list', ])
+        self.load_regions("themes_list", ['themes_list', ])
 
-        themes = self.gui.themes.get_themes_list()
+        if self.gui.theme_downloader is None:
+            import pugtheme
+            with self.gui.enable_cancellable(False):
+                with self.gui.enable_messages():
+                    self.gui.theme_downloader = pugtheme.ThemeDownloader(self.gui, self.gui.themes)
+
+        self.themes = self.gui.themes.get_themes_list(
+            self.gui.theme_downloader.get_theme_list())
+
         selected_theme = self.gui.hm.cfg_data['theme']
 
-        self.tags['option_list'].reset_options()
-        for theme_name, theme_data in themes.items():
+        self.tags['themes_list'].reset_options()
+        for theme_name, theme_data in self.themes.items():
             if theme_name == selected_theme:
-                self.tags['option_list'].add_option((None, ''), _("{theme_name} (Selected)").format(theme_name=theme_data.name))
-            else:
-                self.tags['option_list'].add_option(('select-theme', theme_name), theme_data.name)
+                self.tags['themes_list'].add_option(theme_name, _("{theme_name} (Selected)").format(theme_name=theme_data['name']))
 
-        self.tags['option_list'].add_option(None, "")
-        self.tags['option_list'].add_option(('back', None), _("Back"))
-        self.set_buttons({'A': _('Select'), 'B': _('Back')})
+            else:
+                self.tags['themes_list'].add_option(theme_name, theme_data['name'])
+
+        self.last_select = self.tags['themes_list'].selected_option()
+        self.update_selection()
+
+    def update_selection(self):
+        theme_info = self.themes[self.last_select]
+        self.gui.set_theme_info(self.last_select, theme_info)
+
+        keys = {}
+        if theme_info['status'] in ("Installed", "Update Available"):
+            keys['A'] = _('Select')
+
+        keys['B'] = _('Back')
+
+        if theme_info['url'] is not None:
+            keys['X'] = _('Download')
+
+        self.set_buttons(keys)
 
     def do_update(self, events):
         super().do_update(events)
 
+        if self.tags['themes_list'].selected_option() != self.last_select:
+            self.last_select = self.tags['themes_list'].selected_option()
+            self.update_selection()
+
         if events.was_pressed('A'):
-            selected_option, selected_parameter = self.tags['option_list'].selected_option()
+            theme_info = self.themes[self.last_select]
+
+            if theme_info['status'] not in ("Installed", "Update Available"):
+                return True
 
             self.button_activate()
 
-            print(f"Selected {selected_option} -> {selected_parameter}")
+            if self.gui.message_box(_("Do you want to change theme?\n\nYou will have to restart for it to take affect."), want_cancel=True):
+                self.gui.hm.cfg_data['theme'] = self.last_select
+                self.gui.hm.cfg_data['theme-scheme'] = None
+                self.gui.hm.save_config()
+                self.gui.events.running = False
 
-            if selected_option == 'back':
-                self.gui.pop_scene()
+                if not harbourmaster.HM_TESTING:
+                    reboot_file = (harbourmaster.HM_TOOLS_DIR / "PortMaster" / ".pugwash-reboot")
+                    if not reboot_file.is_file():
+                        reboot_file.touch(0o644)
+
                 return True
 
-            elif selected_option == 'select-theme':
-                if self.gui.message_box(_("Do you want to change theme?\n\nYou will have to restart for it to take affect."), want_cancel=True):
-                    self.gui.hm.cfg_data['theme'] = selected_parameter
-                    self.gui.hm.cfg_data['theme-scheme'] = None
-                    self.gui.hm.save_config()
-                    self.gui.events.running = False
+        if events.was_pressed('X'):
+            theme_info = self.themes[self.last_select]
 
-                    if not harbourmaster.HM_TESTING:
-                        reboot_file = (harbourmaster.HM_TOOLS_DIR / "PortMaster" / ".pugwash-reboot")
-                        if not reboot_file.is_file():
-                            reboot_file.touch(0o644)
+            if theme_info['url'] is None:
+                return True
 
-                    return True
+            self.button_activate()
+
+            with self.gui.enable_cancellable(True):
+                with self.gui.enable_messages():
+                    self.gui.message(_("Downloading {theme_name}").format(theme_name=theme_info['name']))
+                    self.gui.hm.install_port(theme_info['url'] + ".md5")
+
+                    self.themes = self.gui.themes.get_themes_list(
+                        self.gui.theme_downloader.get_theme_list())
+
+                    self.update_selection()
+
+            return True
 
         elif events.was_pressed('B'):
             self.button_activate()
@@ -702,8 +745,8 @@ class PortsListScene(BaseScene):
             self.tags['ports_list'].list = [
                 _('NO PORTS')]
 
-            if 'port_image' in self.tags:
-                self.tags['port_image'].image = self.gui.get_port_image("no-image")
+            # if 'port_image' in self.tags:
+            #     self.tags['port_image'].image = self.gui.get_port_image("no-image")
 
             self.gui.set_port_info(None, {})
 
@@ -767,8 +810,8 @@ class PortsListScene(BaseScene):
 
             self.gui.set_port_info(port_name, port_info)
 
-            if 'port_image' in self.tags:
-                self.tags['port_image'].image = self.gui.get_port_image(port_name)
+            # if 'port_image' in self.tags:
+            #     self.tags['port_image'].image = self.gui.get_port_image(port_name)
 
         if self.options['mode'] == 'install' and events.was_pressed('X'):
             self.button_activate()
@@ -834,8 +877,8 @@ class PortInfoScene(BaseScene):
 
         logger.debug(f"{self.action}: {self.port_name} -> {self.port_info}")
 
-        if 'port_image' in self.tags:
-            self.tags['port_image'].image = self.gui.get_port_image(self.port_name)
+        # if 'port_image' in self.tags:
+        #     self.tags['port_image'].image = self.gui.get_port_image(self.port_name)
 
         self.gui.set_port_info(self.port_name, self.port_info)
 

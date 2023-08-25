@@ -84,7 +84,7 @@ import pugtheme
 
 from utility import cprint, do_cprint_output
 from loguru import logger
-from pugtheme import theme_load, ThemeEngine
+from pugtheme import theme_load, ThemeEngine, ThemeDownloader
 from pugscene import *
 
 from harbourmaster import (
@@ -132,6 +132,11 @@ def check_lang(lang):
 
 
 def load_lang():
+    """
+
+    Load the desired language, we check for an override in our config.json, otherwise use the environment variables.
+
+    """
     config = harbourmaster.HM_TOOLS_DIR / "PortMaster" / "config" / "config.json"
     if config.is_file():
         with open(config, 'r') as fh:
@@ -141,7 +146,6 @@ def load_lang():
 
     else:
         config_lang = None
-
 
     environ_key = None
     environ_lang = None
@@ -318,10 +322,10 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         version = sdl2.SDL_version()
         sdl2.SDL_GetVersion(version)
 
-        logger.debug(f"SDL VERSION: {nice_version(version)}")
-        logger.debug(f"TTF VERSION: {nice_version(sdl2.sdlttf.TTF_Linked_Version()[0])}")
-        logger.debug(f"IMG VERSION: {nice_version(sdl2.sdlimage.IMG_Linked_Version()[0])}")
-        logger.debug(f"MIX VERSION: {nice_version(sdl2.sdlmixer.Mix_Linked_Version()[0])}")
+        logger.debug(f"SDL DLL: {sdl2.dll.get_dll_file()},  {nice_version(version)}")
+        logger.debug(f"TTF DLL: {sdl2.sdlttf.get_dll_file()}, {nice_version(sdl2.sdlttf.TTF_Linked_Version()[0])}")
+        logger.debug(f"IMG DLL: {sdl2.sdlimage.get_dll_file()}, {nice_version(sdl2.sdlimage.IMG_Linked_Version()[0])}")
+        logger.debug(f"MIX DLL: {sdl2.sdlmixer.get_dll_file()}, {nice_version(sdl2.sdlmixer.Mix_Linked_Version()[0])}")
 
         # Define window dimensions
         self.display_width = 640
@@ -401,6 +405,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.formatter = StringFormatter(self.text_data)
 
         self.theme_data = self.themes.gui_init()
+        self.theme_downloader = None
 
         self.spinner = 0
 
@@ -434,6 +439,8 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.set_data('ports_list.filters', "")
         self.set_data('ports_list.total_ports', "")
         self.set_data('ports_list.filter_ports', "")
+
+        self.set_port_info(None, {})
 
         self.lang_list = lang_list()
 
@@ -473,7 +480,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         if events.buttons['START'] and self.events.buttons['BACK']:
             events.running = False
 
-        if events.was_pressed('SCRN'):
+        if events.was_pressed('SCRN') or (events.buttons['BACK'] and events.was_pressed('Y')):
             self.create_screenshot()
 
         if not events.running:
@@ -589,13 +596,14 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
                 image = image.get('screenshot', None)
 
         if image is None:
-            image = self.resources.find("no-image.jpg")
+            image = "NO_IMAGE"
 
-        return self.images.load(image)
+        return image
 
     def set_port_info(self, port_name, port_info):
         ## TODO: make this better :D
         if port_name is None:
+            self.set_data("port_info.image", "NO_IMAGE")
             self.set_data("port_info.title", _("** NO PORT **"))
             self.set_data("port_info.description", "")
             self.set_data("port_info.instructions", "")
@@ -607,6 +615,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             # self.set_data("port_info.image", "no-image")
             return
 
+        self.set_data("port_info.image", str(self.get_port_image(port_name)))
         self.set_data("port_info.title", port_info['attr']['title'])
         self.set_data("port_info.description", port_info['attr']['desc'])
         self.set_data("port_info.instructions", port_info['attr']['inst'])
@@ -629,13 +638,35 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
         self.set_data("port_info.download_size", harbourmaster.nice_size(self.hm.port_download_size(port_name)))
 
+    def set_theme_info(self, theme_name, theme_info):
+        ## TODO: make this better :D
+        if theme_name is None:
+            self.set_data("theme_info.image", "NO_IMAGE")
+            self.set_data("theme_info.name", "")
+            self.set_data("theme_info.description", "")
+            self.set_data("theme_info.creator", "")
+            self.set_data("theme_info.status", "")
+            return
+
+        status_to_lang = {
+            "Installed": _("Installed"),
+            "Update Available": _("Update Available"),
+            "Not Installed": _("Not Installed"),
+            }
+
+        self.set_data("theme_info.image", str(theme_info['image'] or "NO_IMAGE"))
+        self.set_data("theme_info.name", theme_info['name'])
+        self.set_data("theme_info.description", theme_info['description'])
+        self.set_data("theme_info.creator", theme_info['creator'])
+        self.set_data("theme_info.status", theme_info['status'])
+
     def set_data(self, key, value):
         if self.text_data.get(key, None) == value:
             return
 
         self.text_data[key] = value
         self.changed_keys.add(key)
-        # logger.debug(f"{key}: {value}")
+        logger.debug(f"{key}: {value}")
 
     def format_data(self, input_string, used_keys=None):
         return self.formatter.format_string(input_string, used_keys)
@@ -913,7 +944,6 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
     ## HarbourMaster Commands.
     def do_install(self, port_name):
-
         with self.enable_messages():
             self.message(_("Installing {port_name}").format(port_name=port_name))
             self.do_loop(no_delay=True)
@@ -923,7 +953,6 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
                 self.hm.load_ports()
 
     def do_uninstall(self, port_name):
-
         with self.enable_messages():
             self.message(_("Uninstalling {port_name}").format(port_name=port_name))
             self.do_loop(no_delay=True)

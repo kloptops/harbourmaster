@@ -1,6 +1,8 @@
+import copy
 import functools
 import gettext
 import json
+import zipfile
 
 import sdl2
 import sdl2.ext
@@ -224,6 +226,12 @@ def theme_load(gui, theme_file, color_scheme=None):
         with open('debug.json', 'w') as fh:
             json.dump(sections, fh, indent=4)
 
+    if 'themes_list' not in sections:
+        ## Temporary Hack
+        sections['themes_list'] = copy.deepcopy(sections['option_menu'])
+        sections['themes_list']['themes_list'] = sections['themes_list']['option_list']
+        del sections['themes_list']['option_list']
+
     return sections
 
 
@@ -243,11 +251,15 @@ class Theme:
 
     @property
     def name(self):
-        return self.theme_data.get("#info", {}).get("name", None)
+        return self.theme_data.get("#info", {}).get("name", '')
 
     @property
     def creator(self):
-        return self.theme_data.get("#info", {}).get("creator", None)
+        return self.theme_data.get("#info", {}).get("creator", '')
+
+    @property
+    def description(self):
+        return self.theme_data.get("#info", {}).get("description", '')
 
     @property
     def screenshot(self):
@@ -277,7 +289,7 @@ class Theme:
 
 class ThemeDownloader(harbourmaster.source.GitHubRawReleaseV1):
     DEFAULT_DATA = {
-        "prefix": "thm",
+        "prefix": "theme",
         "api": "GitHubRawReleaseV1",
         "name": "PortMaster Themes",
         "url": "https://api.github.com/repos/PortsMaster/PortMaster-Themes/releases/latest",
@@ -286,9 +298,11 @@ class ThemeDownloader(harbourmaster.source.GitHubRawReleaseV1):
         "data": {}
         }
 
-    def __init__(self, gui):
+    def __init__(self, gui, engine):
         ## BROKEN :D
         self.gui = gui
+        self.engine = engine
+
         config_file = self.gui.hm.cfg_dir / "themes.json"
         if config_file.is_file():
             with open(config_file, 'r') as fh:
@@ -297,7 +311,98 @@ class ThemeDownloader(harbourmaster.source.GitHubRawReleaseV1):
         else:
             config_data = self.DEFAULT_DATA.copy()
 
+        self._themes = None
+
         super().__init__(self.gui.hm, config_file, config_data)
+
+    def _load(self):
+        self._info = self._config.setdefault('data', {}).setdefault('info', {})
+
+    def _clear(self):
+        self._info = {}
+        self._themes = None
+
+    def _update(self):
+
+        # cprint(f"- <b>{self._config['name']}</b>: Fetching info")
+        self.hm.callback.message("  - {}".format(_("Fetching info")))
+
+        # portsmd_url = "https://raw.githubusercontent.com/kloptops/PortMaster/main/ports.md"
+        self._config['data']['info'] = harbourmaster.fetch_json(self._data['themes.json']['url']).get("themes", {})
+        self._info = self._config['data']['info']
+
+        ## Download latest images.zip if needed.
+        if 'images.zip' not in self._data:
+            return
+
+        images_url_md5 = self._data['images.zip.md5']['url']
+        images_url_zip = self._data['images.zip']['url']
+
+        images_md5 = harbourmaster.fetch_text(images_url_md5).strip()
+        if self._images_md5 is None or images_md5 != self._images_md5:
+            logger.debug(f"images_md5={images_md5}, self.images_md5={self._images_md5}")
+            images_zip = harbourmaster.download(self.hm.temp_dir / "images.zip", images_url_zip, images_md5, callback=self.hm.callback)
+            if images_zip is None:
+                logger.debug(f"Unable to download {images_url_zip}")
+                return
+
+            images_to_delete = [
+                file_name
+                for file_name in self._images_dir.iterdir()
+                if file_name.suffix in ('.png', '.jpg')]
+
+            with zipfile.ZipFile(images_zip, 'r') as zf:
+                for zip_name in zf.namelist():
+                    if zip_name.casefold().rsplit('.')[-1] not in ('jpg', 'png'):
+                        continue
+
+                    file_name = self._images_dir / self.clean_name(zip_name.rsplit('/', 1)[-1])
+                    if file_name not in images_to_delete:
+                        logger.debug(f"adding {file_name}")
+
+                    with open(file_name, 'wb') as fh:
+                        fh.write(zf.read(zip_name))
+
+                    if file_name in images_to_delete:
+                        images_to_delete.remove(file_name)
+
+            for image_to_delete in images_to_delete:
+                logger.debug(f"removing {image_to_delete}")
+                image_to_delete.unlink()
+
+            self._images_md5_file.write_text(images_md5)
+            self._images_md5 = images_md5
+
+    def get_theme_list(self):
+        if self._themes is not None:
+            return self._themes
+
+        themes = {}
+        for theme_name, theme_info in self._info.items():
+            if theme_name == 'default_theme':
+                continue
+
+            new_info = {
+                'name': theme_info['name'],
+                'creator': theme_info['creator'],
+                'description': theme_info.get('description', ''),
+                'image': None,
+                'theme': None,
+                'directory': self.engine.get_theme_dir(theme_name),
+                'url': self._data[self.clean_name(theme_info['file'])]['url'],
+                'md5': theme_info['md5'],
+                'selected': False,
+                }
+
+            if theme_info['image'] is not None:
+                image_file = self._images_dir / theme_info['image']
+                if image_file.is_file():
+                    new_info['image'] = image_file
+
+            themes[theme_name] = new_info
+
+        self._themes = themes
+        return themes
 
 
 class ThemeEngine:
@@ -356,24 +461,73 @@ class ThemeEngine:
     def get_theme(self, theme_name):
         return Theme(self.get_theme_dir(theme_name))
 
-    def get_themes_list(self):
+    def get_theme_info(self, theme_name):
+        theme = self.get_theme(theme_name)
+
+        new_info = {
+            'name': theme.name,
+            'creator': theme.creator,
+            'description': theme.description,
+            'image': None,
+            'theme': theme,
+            'directory': self.get_theme_dir(theme_name),
+            'url': None,
+            'md5': None,
+            'selected': (theme.name == self.get_current_theme()),
+            'status': "Installed",
+            }
+
+        if theme_name == 'default_theme':
+            ## Empty md5sum :D
+            new_info['md5'] = "d41d8cd98f00b204e9800998ecf8427e"
+
+        elif (new_info['directory'] / 'theme.md5').is_file():
+            new_info['md5'] = (new_info['directory'] / 'theme.md5').read_text().strip()
+
+        for image_name in ('screenshot.jpg', 'screenshot.png'):
+            if (new_info['directory'] / image_name).is_file():
+                new_info['image'] = new_info['directory'] / image_name
+                break
+
+        return new_info
+
+    def get_themes_list(self, download_themes=None):
         cfg_dir = harbourmaster.HM_TOOLS_DIR / "PortMaster"
 
         themes = {
-            "default_theme": self.get_theme("default_theme"),
+            "default_theme": self.get_theme_info("default_theme"),
             }
 
         for theme_file in (cfg_dir / "themes").glob("*/theme.json"):
             theme_name = theme_file.parent.name
-            theme_data = self.get_theme(theme_name)
+            theme_info = self.get_theme_info(theme_name)
 
-            themes[theme_name] = theme_data
+            themes[theme_name] = theme_info
+
+        if download_themes is not None:
+            for theme_name, theme_info in download_themes.items():
+                if theme_name in themes:
+                    old_info = themes[theme_name]
+
+                    old_info['url'] = theme_info['url']
+
+                    if old_info['md5'] != theme_info['md5']:
+                        old_info['status'] = "Update Available"
+
+                    if old_info['image'] is None and theme_info['image'] is not None:
+                        old_info['image'] = theme_info['image']
+
+                else:
+                    themes[theme_name] = theme_info.copy()
+                    themes[theme_name]['status'] = "Not Installed"
+
+        print(themes)
 
         return themes
 
     def get_theme_schemes_list(self, theme_name=None):
         if theme_name is None:
-            theme_name = self.gui.hm.cfg_data.get("theme", "default_theme")
+            theme_name = self.get_current_theme()
 
         theme = self.get_theme(theme_name)
 
