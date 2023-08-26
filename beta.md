@@ -64,7 +64,7 @@ Please direct all feedback to the [PortMaster Public Beta](https://discord.com/c
 
 I want to thank everyone on the PortMaster crew who have helped, but a special thanks to:
 
-- @christianhaitian
-- @cebion
-- @christopher-roelofs
-- @tekkenfede
+- [christianhaitian](https://github.com/christianhaitian)
+- [cebion](https://github.com/cebion)
+- [christopher-roelofs](https://github.com/christopher-roelofs)
+- [tekkenfede](https://github.com/tekkenfede)

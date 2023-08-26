@@ -547,7 +547,7 @@ class ThemesScene(BaseScene):
 
             with self.gui.enable_cancellable(True):
                 with self.gui.enable_messages():
-                    self.gui.do_install(self, theme_info['name'], theme_info['url'] + ".md5")
+                    self.gui.do_install(theme_info['name'], theme_info['url'] + ".md5")
 
                     self.themes = self.gui.themes.get_themes_list(
                         self.gui.theme_downloader.get_theme_list())
