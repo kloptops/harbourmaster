@@ -100,18 +100,18 @@ class HarbourMaster():
         with self.callback.enable_messages():
             self.callback.message(_("Loading..."))
 
-            if not self.cfg_dir.is_dir():
-                self.cfg_dir.mkdir(0o755, parents=True)
-
-                for source_name in HM_SOURCE_DEFAULTS:
-                    with (self.cfg_dir / source_name).open('w') as fh:
-                        fh.write(HM_SOURCE_DEFAULTS[source_name])
-
             if not self.cfg_file.is_file():
                 self.cfg_data = self.DEFAULT_CONFIG.copy()
             else:
                 with open(self.cfg_file, 'r') as fh:
                     self.cfg_data = json.load(fh)
+
+            if self.cfg_data.get('first-run', True) or not self.cfg_dir.is_dir():
+                self.cfg_dir.mkdir(0o755, parents=True, exist_ok=True)
+
+                for source_name in HM_SOURCE_DEFAULTS:
+                    with (self.cfg_dir / source_name).open('w') as fh:
+                        fh.write(HM_SOURCE_DEFAULTS[source_name])
 
             if self.cfg_data.get('first-run', True):
                 self.platform.first_run()

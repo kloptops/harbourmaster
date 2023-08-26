@@ -1007,7 +1007,7 @@ def portmaster_check_update(pm, config, temp_dir):
                 config['no-check'] = True
                 pm.hm = HarbourMaster(config, temp_dir=temp_dir, callback=pm)
 
-                pm.hm.do_install("PortMaster", PORTMASTER_VERSION + "PortMaster.zip", allow_cancel=False)
+                pm.do_install("PortMaster", PORTMASTER_UPDATE_URL + "PortMaster.zip", allow_cancel=False)
 
                 reboot_file = (harbourmaster.HM_TOOLS_DIR / "PortMaster" / ".pugwash-reboot")
                 if not reboot_file.is_file():

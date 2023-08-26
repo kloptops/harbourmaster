@@ -129,6 +129,9 @@ class PlatformUOS(PlatformGCD_PortMaster, PlatformBase):
 
 
 class PlatformJELOS(PlatformBase):
+    def first_run(self):
+        self.portmaster_install()
+
     def portmaster_install(self):
         """
         Copy JELOS PortMaster files here.

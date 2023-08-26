@@ -44,6 +44,18 @@ To install the beta download the PortMaster.zip from the link above, unzip it an
 
 If your CFW is not listed above, it will most likely be in one of the above locations.
 
+## JELOS
+
+To get it to work on JELOS:
+
+- Go to `Tools -> Start PortMaster` first then exit.
+- Unzip PortMaster.zip and copy the files into `/roms/ports`.
+- Go to the Ports:
+  - Press `select`
+  - View Customization
+  - Change "SHOW HIDDEN FILES" to "YES"
+- You can now run `PortMaster` in the `PortMaster` directory.
+
 # Things to know
 
 There are a few bugs, which we are looking to fix.
@@ -51,6 +63,8 @@ There are a few bugs, which we are looking to fix.
 - ArkOS has no volume control, so it is disabled for now.
 - Some resolutions of the themes need some work, but for the most part are good.
 - The options menus need a bit of reworking.
+- JELOS controls are flipped
+- In controller mode xbox, the controls dont match the icons.
 
 # Things still to do
 
