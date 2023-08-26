@@ -1548,10 +1548,10 @@ class SoundManager():
                 self.init_failed = True
                 return
 
-            if (sdl2.sdlmixer.Mix_Linked_Version()[0].minor < 6):
-                print(f'SDL Mixer is too old.')
-                self.init_failed = True
-                return
+            # if (sdl2.sdlmixer.Mix_Linked_Version()[0].minor < 6):
+            #     print(f'SDL Mixer is too old.')
+            #     self.init_failed = True
+            #     return
 
             total_audio_devices = sdl2.SDL_GetNumAudioDevices(0)
             print(f"Audio Devices: {total_audio_devices}")
@@ -1565,7 +1565,7 @@ class SoundManager():
 
             self.is_init = True
 
-            print(f"SoundManager: Current Volume {self.volume}")
+            # print(f"SoundManager: Current Volume {self.volume}")
 
     def load(self, filename, name=None, volume=128):
         '''
