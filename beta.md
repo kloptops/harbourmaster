@@ -54,8 +54,9 @@ To get it to work on JELOS:
   - Press `select`
   - View Customization
   - Change "SHOW HIDDEN FILES" to "YES"
+- Restart EmulationStation
 - You can now run `PortMaster` in the `PortMaster` directory.
-- If you do `Tools -> Start PortMaster` it will delete the PortMaster.sh and you will need to extract it from the zip again.
+- **WARNING**: If you do `Tools -> Start PortMaster` it will delete the `PortMaster.sh` and you will need to extract it from the zip again.
 
 # Things to know
 
