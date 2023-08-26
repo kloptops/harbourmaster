@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-PORTMASTER_VERSION = '8.3.2b'
+PORTMASTER_VERSION = '8.3.3b'
 PORTMASTER_UPDATE_URL = 'https://github.com/kloptops/harbourmaster/releases/latest/download/'
 PORTMASTER_UPDATE_FREQUENCY = (60 * 60 * 1)
 
@@ -185,6 +185,7 @@ def lang_list():
         "es_ES": _("Spanish"),
         "fr_FR": _("French"),
         "it_IT": _("Italian"),
+        "pl_PL": _("Polish"),
         # Add more language codes and translations here
         }
 

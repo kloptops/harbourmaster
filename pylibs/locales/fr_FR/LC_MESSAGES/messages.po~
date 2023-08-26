@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-08-26 14:44+0800\n"
+"POT-Creation-Date: 2023-08-26 18:03+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -41,66 +41,66 @@ msgstr "Italien"
 msgid "Unknown IP"
 msgstr "IP Inconnu"
 
-#: pugwash:515 pugwash:639
+#: pugwash:516 pugwash:640
 msgid "N/A"
 msgstr "N/A"
 
-#: pugwash:609
+#: pugwash:610
 msgid "** NO PORT **"
 msgstr "** AUCUN RÉSULTAT **"
 
-#: pugwash:626
+#: pugwash:627
 msgid "Ready to Run"
 msgstr "Prêt à Exécuter"
 
-#: pugwash:626
+#: pugwash:627
 msgid "Requires Files"
 msgstr "Fichiers Requis"
 
-#: pugwash:633 pugwash:654
+#: pugwash:634 pugwash:655
 msgid "Installed"
 msgstr "Installé"
 
-#: pugwash:635
+#: pugwash:636
 msgid "Missing"
 msgstr "Manquant"
 
-#: pugwash:638
+#: pugwash:639
 msgid "None"
 msgstr "Aucun"
 
-#: pugwash:655
+#: pugwash:656
 msgid "Update Available"
 msgstr ""
 
-#: pugwash:656
+#: pugwash:657
 msgid "Not Installed"
 msgstr ""
 
-#: pugwash:756 pylibs/pugscene.py:1155
+#: pugwash:757 pylibs/pugscene.py:1155
 msgid "Okay"
 msgstr "D'accord"
 
-#: pugwash:759 pylibs/pugscene.py:699 pylibs/pugscene.py:707
+#: pugwash:760 pylibs/pugscene.py:699 pylibs/pugscene.py:707
 #: pylibs/pugscene.py:1126 pylibs/pugscene.py:1158
 msgid "Cancel"
 msgstr "Annuler"
 
-#: pugwash:953
+#: pugwash:954
 #, python-brace-format
 msgid "Installing {port_name}"
 msgstr "Installation de {port_name}"
 
-#: pugwash:962
+#: pugwash:963
 #, python-brace-format
 msgid "Uninstalling {port_name}"
 msgstr "Désinstallation de {port_name}"
 
-#: pugwash:972
+#: pugwash:973
 msgid "Updating all port sources:"
 msgstr "Mise à jour de toutes les sources de ports :"
 
-#: pugwash:1003
+#: pugwash:1004
 #, python-brace-format
 msgid ""
 "There is a new version of PortMaster {portmaster_version}\n"
