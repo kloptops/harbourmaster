@@ -809,6 +809,15 @@ class HarbourMaster():
 
         return None
 
+    def set_gcd_mode(self, mode='standard'):
+        self.platform.set_gcd_mode(mode)
+
+    def get_gcd_mode(self):
+        return self.platform.get_gcd_mode()
+
+    def get_gcd_modes(self):
+        return self.platform.get_gcd_modes()
+
     def _fix_permissions(self, path_check=None):
         if path_check is None:
             path_check = self.ports_dir
@@ -874,6 +883,8 @@ class HarbourMaster():
         move_bash = self.platform.MOVE_PM_BASH
 
         try:
+            gcd_mode = self.get_gcd_mode()
+
             with zipfile.ZipFile(download_file, 'r') as zf:
                 self.callback.message(_("Installing {download_name}.").format(download_name="PortMaster"))
 
@@ -895,6 +906,8 @@ class HarbourMaster():
                     if move_bash and dest_file.name.lower().endswith('.sh'):
                         self.callback.message(f"- moving {dest_file} to {self.cfg_dir / dest_file.name}")
                         os.replace(dest_file, self.tools_dir / dest_file.name)
+
+            self.set_gcd_mode(gcd_mode)
 
             self.platform.portmaster_install()
 

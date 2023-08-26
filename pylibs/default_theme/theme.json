@@ -352,7 +352,9 @@
         "#element:option_list": {
             "list": [],
             "options": [],
-            "align": "center",
+            "align": "midleft",
+            "text-clip": true,
+            "font-size": 25,
             "no-select-color": "list_unselectable",
             "inactive-select-color": "list_unselectable"
         },

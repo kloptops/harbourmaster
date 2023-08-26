@@ -344,8 +344,18 @@ class OptionScene(BaseScene):
         self.load_regions("option_menu", ['option_list'])
 
         self.tags['option_list'].reset_options()
+        self.tags['option_list'].add_option(None, _("System"))
+
         self.tags['option_list'].add_option('update-ports', _("Update Ports"))
-        self.tags['option_list'].add_option(None, "")
+        self.tags['option_list'].add_option('update-portmaster', _("Update PortMaster"))
+
+        if len(self.gui.hm.get_gcd_modes()) > 0:
+            gcd_mode = self.gui.hm.get_gcd_mode()
+            self.tags['option_list'].add_option(
+                'toggle-gcd',
+                _("Controller Mode: {controller_mode}").format(controller_mode=gcd_mode))
+
+        self.tags['option_list'].add_option(None, _("Audio"))
 
         self.tags['option_list'].add_option(
             'toggle-music',
@@ -354,16 +364,17 @@ class OptionScene(BaseScene):
             'toggle-sfx',
             _("Sound FX: ") + (self.gui.sounds.sound_is_disabled and _("Disabled") or _("Enabled")))
 
-        self.tags['option_list'].add_option(None, "")
+        self.tags['option_list'].add_option(None, _("Interface"))
+
         self.tags['option_list'].add_option('select-language', _("Choose Language"))
-        self.tags['option_list'].add_option(None, "")
         self.tags['option_list'].add_option('select-theme', _("Select Theme"))
         schemes = self.gui.themes.get_theme_schemes_list()
         if len(schemes) > 0:
             self.tags['option_list'].add_option('select-scheme', _("Select Color Scheme"))
 
-        self.tags['option_list'].add_option(None, "")
-        self.tags['option_list'].add_option('back', _("Back"))
+        # self.tags['option_list'].add_option(None, "")
+        # self.tags['option_list'].add_option('back', _("Back"))
+        self.tags['option_list'].list_select(0)
         self.set_buttons({'A': _('Enter'), 'B': _('Back')})
 
     def do_update(self, events):
@@ -378,6 +389,18 @@ class OptionScene(BaseScene):
 
             if selected_option == 'update-ports':
                 self.gui.do_update_ports()
+                return True
+
+            if selected_option == 'update-portmaster':
+                self.gui.hm.cfg_data['update_checked'] = None
+                self.gui.hm.save_config()
+                self.gui.events.running = False
+
+                if not harbourmaster.HM_TESTING:
+                    reboot_file = (harbourmaster.HM_TOOLS_DIR / "PortMaster" / ".pugwash-reboot")
+                    if not reboot_file.is_file():
+                        reboot_file.touch(0o644)
+
                 return True
 
             if selected_option == 'toggle-music':
@@ -396,6 +419,25 @@ class OptionScene(BaseScene):
                 item = self.tags['option_list'].list_selected()
                 self.tags['option_list'].list[item] = (
                     _("Sound FX: ") + (self.gui.sounds.sound_is_disabled and _("Disabled") or _("Enabled")))
+                return True
+
+            if selected_option == 'toggle-gcd':
+                gcd_modes = self.gui.hm.get_gcd_modes()
+                if len(gcd_modes) == 0:
+                    return True
+
+                gcd_mode = self.gui.hm.get_gcd_mode()
+                if gcd_mode not in gcd_modes:
+                    gcd_mode = gcd_modes[0]
+                else:
+                    gcd_mode = gcd_modes[(gcd_modes.index(gcd_mode) + 1) % len(gcd_modes)]
+
+                self.gui.hm.set_gcd_mode(gcd_mode)
+
+                item = self.tags['option_list'].list_selected()
+                self.tags['option_list'].list[item] = (
+                    _("Controller Mode: {controller_mode}").format(controller_mode=gcd_mode))
+
                 return True
 
             if selected_option == 'keyboard':
@@ -505,8 +547,7 @@ class ThemesScene(BaseScene):
 
             with self.gui.enable_cancellable(True):
                 with self.gui.enable_messages():
-                    self.gui.message(_("Downloading {theme_name}").format(theme_name=theme_info['name']))
-                    self.gui.hm.install_port(theme_info['url'] + ".md5")
+                    self.gui.do_install(self, theme_info['name'], theme_info['url'] + ".md5")
 
                     self.themes = self.gui.themes.get_themes_list(
                         self.gui.theme_downloader.get_theme_list())

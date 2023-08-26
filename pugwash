@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
-PORTMASTER_VERSION = '8.2.1a'
+PORTMASTER_VERSION = '8.3.0b'
+PORTMASTER_UPDATE_URL = 'https://github.com/kloptops/harbourmaster/releases/latest/download/'
+PORTMASTER_UPDATE_FREQUENCY = (60 * 60 * 1)
 
 import contextlib
 import ctypes
@@ -943,13 +945,16 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             self.cancellable = old_cancellable
 
     ## HarbourMaster Commands.
-    def do_install(self, port_name):
+    def do_install(self, port_name, port_url=None, allow_cancel=True):
+        if port_url is None:
+            port_url = port_name
+
         with self.enable_messages():
             self.message(_("Installing {port_name}").format(port_name=port_name))
             self.do_loop(no_delay=True)
 
-            with self.enable_cancellable(True):
-                self.hm.install_port(port_name)
+            with self.enable_cancellable(allow_cancel):
+                self.hm.install_port(port_url)
                 self.hm.load_ports()
 
     def do_uninstall(self, port_name):
@@ -969,6 +974,48 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
                     self.hm.sources[source].update()
 
                 self.hm.load_ports()
+
+
+def portmaster_check_update(pm, config, temp_dir):
+    cfg_dir = harbourmaster.HM_TOOLS_DIR / "PortMaster"
+
+    cfg_file = cfg_dir / "config" / "config.json"
+    cfg_data = {}
+
+    if cfg_file.is_file():
+        with open(cfg_file, 'r') as fh:
+            cfg_data = json.load(fh)
+
+    update_checked = cfg_data.get('update_checked', None)
+    if update_checked is None or harbourmaster.datetime_compare(update_checked) > PORTMASTER_UPDATE_FREQUENCY:
+        latest_version = harbourmaster.fetch_text(PORTMASTER_UPDATE_URL + 'version')
+        logger.debug(f"Checking for updates: {latest_version} vs {PORTMASTER_VERSION}")
+
+        cfg_data['ports_info_checked'] = datetime.datetime.now().isoformat()
+        if not cfg_file.parent.is_dir():
+            cfg_file.parent.mkdir(0o777, parents=True)
+
+        with open(cfg_file, 'w') as fh:
+            json.dump(cfg_data, fh, indent=4)
+
+        if PORTMASTER_VERSION != latest_version:
+            if pm.message_box(
+                    _("There is a new version of PortMaster {portmaster_version}\n\nDo you want to upgrade?").format(
+                        portmaster_version=latest_version),
+                    want_cancel=True):
+
+                config['no-check'] = True
+                pm.hm = HarbourMaster(config, temp_dir=temp_dir, callback=pm)
+
+                pm.hm.do_install("PortMaster", PORTMASTER_VERSION + "PortMaster.zip", allow_cancel=False)
+
+                reboot_file = (harbourmaster.HM_TOOLS_DIR / "PortMaster" / ".pugwash-reboot")
+                if not reboot_file.is_file():
+                    reboot_file.touch(0o644)
+
+                return True
+
+    return False
 
 
 @logger.catch
@@ -1028,6 +1075,11 @@ def main(argv):
         pm = PortMasterGUI()
         pm.hm = None
 
+        if not harbourmaster.HM_TESTING and not config['no-check']:
+            if portmaster_check_update(pm, config, temp_dir):
+                pm.quit()
+                return 0
+
         with pm.enable_cancellable(False):
             pm.hm = HarbourMaster(config, temp_dir=temp_dir, callback=pm)
 
@@ -1035,6 +1087,8 @@ def main(argv):
             pm.run()
 
         pm.quit()
+
+        return 0
 
 
 if __name__ == '__main__':

@@ -1,5 +1,5 @@
 
-HARBOURMASTER_VERSION = '0.4.10'
+HARBOURMASTER_VERSION = '0.4.11'
 
 from .config import (
     HM_DEFAULT_PORTS_DIR,

@@ -1,41 +1,70 @@
-# PortMaster w/ HarbourMaster - Public Beta v0.4.4
+# PortMaster - Public Beta
 
-PortMaster is a convenient script designed to facilitate the downloading and installation of ports for handheld devices. As the number of available ports has increased, the original interface has become progressively cumbersome. However, we have been diligently working on developing an enhanced backend to transform PortMaster into a more advanced frontend, ultimately incorporating a graphical user interface (GUI) which will make showcasing, discovery and installation of ports.
+PortMaster is a convenient script designed to facilitate the downloading and installation of ports for handheld devices. As the number of available ports has increased, the original interface has become progressively cumbersome. For the past few months we have been developing a new GUI.
 
-We are delighted to present the first public beta for a version of PortMaster, which integrates the old PortMaster frontend with the new HarbourMaster backend.
+We are delighted to present the first public beta the new PortMaster GUI.
 
-The updated backend offers several notable advantages, including:
+# Features (it has them)
 
-- **Installation of ports from various repositories**: Users can now access and install ports from multiple different repositories, expanding their options and providing greater flexibility.
-- **Port uninstallation**: The new backend enables the removal of installed ports, allowing users to manage their collection more effectively and free up storage space when needed.
-- **Downloadable Runtimes**: Ports can now use various shared runtimes simplifying the creation and distribution of ports. Godot / Mono / Java are the runtimes we currently have, but we also have plans for more in the future.
-- **Genre-based port listing**: To simplify the process of discovering new ports from the extensive selection, the new backend categorizes ports by genres. This categorization makes it easier for users to navigate and find ports that align with their preferences, avoiding the overwhelming nature of a single comprehensive list.
+- Completely custom GUI using Python SDL2 bindings
+- Small size, only 3.8mb!
+- Port previews, we can really showcase the ports.
+- Cancellable downloads, accidentally started a 300mb download? Get out of here.
+- Filter ports by genre/porter/runtime
+- Localizations (We currently have English, Italian, French, and German), translators welcome!
+- **Themes:**
+  - Since it was possible with the custom GUI, we went for it.
+  - We have a few themes at launch, but contributions are more than welcome.
+    - *Default Theme*: comes in both light mode and dark mode
+    - *Zelda*: LTTP Inspired theme
+    - *FF VII*: A beautifully done FF7 theme
+    - *Basic Theme*: A super barebones theme so you can get started designing your own!
+  - Colour Schemes, themes can support multiple colour schemes for darkmode / lightmode / different colour ways.
+  - Builtin theme downloader!
 
-We are looking forward to your help in testing this version, which represents the initial step in the evolution of PortMaster towards an even more user-friendly and feature-rich experience.
+# Nerdy features
 
+- **Custom Sources**: want to control your own ports repository? no worries!
+- **Platform Hooks**: PortMaster on raspberry pi? Lets gooooo.
 
-[Download](https://github.com/kloptops/harbourmaster/releases/latest)
 
 # Installation
+
+[Download](https://github.com/kloptops/harbourmaster/releases/latest)
 
 To install the beta download the PortMaster.zip from the link above, unzip it and place it in the appropriate folder for your CFW.
 
 | CFW          | Location               |
 |--------------|------------------------|
 | AmberElec    | /storage/roms/ports/   |
-| ArkOS        | /roms(or roms2)/Tools/ |
+| ArkOS        | /roms(or roms2)/tools/ |
 | JELOS        | /storage/roms/ports/   |
 | TheRA        | /opt/tools/            |
 | UnofficialOS | /storage/roms/ports/   |
 
-If your CFW is not listed above, it will be in one of the above locations.
+If your CFW is not listed above, it will most likely be in one of the above locations.
 
 # Things to know
 
-Currently it wont auto update, for now that is disabled. If you decide you'd like to go back you can just delete your PortMaster folder and download the latest version from the PortMaster repo.
+There are a few bugs, which we are looking to fix.
 
-However PortMaster can now update the HarbourMaster backend by going to `Settings -> Upgrade HarbourMaster`
+- ArkOS has no volume control, so it is disabled for now.
+- Some resolutions of the themes need some work, but for the most part are good.
+- The options menus need a bit of reworking.
+
+# Things still to do
+
+We are still using the old `ports.md` file to store information about ports, which is limited. Once the gui is live we will transition to the new `ports.json` format and that will mean reworking most of the port descriptions and adding installation instructions. This will allow PortMaster to know if there is updates available, filter by runtimes, and lots of other quality of life features.
 
 # Feedback
 
-Please direct all feedback to the #portmaster-lounge channel in the [AmberELEC discord server](https://discord.com/invite/R9Er7hkRMe).
+Please direct all feedback to the [PortMaster Public Beta](https://discord.com/channels/1122861252088172575/1144846802701520997) channel in the [PortMaster discord server](https://discord.gg/SbVcUM4qFp).
+
+# Thanks
+
+I want to thank everyone on the PortMaster crew who have helped, but a special thanks to:
+
+- @christianhaitian
+- @cebion
+- @christopher-roelofs
+- @tekkenfede
