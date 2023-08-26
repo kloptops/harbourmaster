@@ -988,7 +988,7 @@ def portmaster_check_update(pm, config, temp_dir):
 
     update_checked = cfg_data.get('update_checked', None)
     if update_checked is None or harbourmaster.datetime_compare(update_checked) > PORTMASTER_UPDATE_FREQUENCY:
-        latest_version = harbourmaster.fetch_text(PORTMASTER_UPDATE_URL + 'version')
+        latest_version = harbourmaster.fetch_text(PORTMASTER_UPDATE_URL + 'version').strip()
         logger.debug(f"Checking for updates: {latest_version} vs {PORTMASTER_VERSION}")
 
         cfg_data['ports_info_checked'] = datetime.datetime.now().isoformat()

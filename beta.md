@@ -49,12 +49,13 @@ If your CFW is not listed above, it will most likely be in one of the above loca
 To get it to work on JELOS:
 
 - Go to `Tools -> Start PortMaster` first then exit.
-- Unzip PortMaster.zip and copy the files into `/roms/ports`.
+- Unzip PortMaster.zip and copy `PortMaster/` directory and all its contents into `/storage/roms/ports`.
 - Go to the Ports:
   - Press `select`
   - View Customization
   - Change "SHOW HIDDEN FILES" to "YES"
 - You can now run `PortMaster` in the `PortMaster` directory.
+- If you do `Tools -> Start PortMaster` it will delete the PortMaster.sh and you will need to extract it from the zip again.
 
 # Things to know
 
