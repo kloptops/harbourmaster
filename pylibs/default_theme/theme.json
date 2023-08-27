@@ -15,21 +15,21 @@
 
                 "buttons.png": {
                     "atlas": {
-                        "_A":         [  0,   0, 180, 180],
-                        "_B":         [180,   0, 180, 180],
-                        "_X":         [360,   0, 180, 180],
-                        "_Y":         [540,   0, 180, 180],
-                        "_START":     [  0, 180, 360, 180],
-                        "_SELECT":    [360, 180, 360, 180],
-                        "_L":         [  0, 360, 270, 180],
-                        "_R":         [270, 360, 270, 180],
-                        "_UNCHECKED": [720,   0, 180, 180],
-                        "_CHECKED":   [900,   0, 180, 180],
-                        "_MORE":      [720, 180, 180, 180],
-                        "_LEFT":      [900, 180,  90, 180],
-                        "_RIGHT":     [990, 180,  90, 180],
-                        "_UP":        [900, 360, 180,  90],
-                        "_DOWN":      [900, 450, 180,  90]
+                        "_A": [ 0, 0, 180, 180 ],
+                        "_B": [ 180, 0, 180, 180 ],
+                        "_X": [ 360, 0, 180, 180 ],
+                        "_Y": [ 540, 0, 180, 180 ],
+                        "_START": [ 0, 180, 360, 180 ],
+                        "_SELECT": [ 360, 180, 360, 180 ],
+                        "_L": [ 0, 360, 270, 180 ],
+                        "_R": [ 270, 360, 270, 180 ],
+                        "_UNCHECKED": [ 720, 0, 180, 180 ],
+                        "_CHECKED": [ 900, 0, 180, 180 ],
+                        "_MORE": [ 720, 180, 180, 180 ],
+                        "_LEFT": [ 900, 180, 90, 180 ],
+                        "_RIGHT": [ 990, 180, 90, 180 ],
+                        "_UP": [ 900, 360, 180, 90 ],
+                        "_DOWN": [ 900, 450, 180, 90 ]
                     }
                 },
                 "no-image.jpg": {
@@ -41,50 +41,98 @@
         },
         "Light Mode": {
             "#pallet": {
-                "background":        [ 200, 200, 200, 255 ],
-                "background_fade":   [  50,  50,  50,  85 ],
-                "list_text":         [   0,   0,   0, 255 ],
-                "list_selected":     [ 200,   0,   0, 255 ],
-                "list_unselectable": [ 128,   0,   0, 255 ],
-                "button":            [ 200, 200, 200, 255 ],
-                "general_font":      [   0,   0,   0 ],
-                "download_font":     [   0,   0,   0 ],
-                "panels":            [ 230, 230, 230 ],
-                "selection-fill":    [ 153, 204, 255 ],
+                "background": [ 200, 200, 200, 255 ],
+                "background_fade": [ 50, 50, 50, 85 ],
+                "list_text": [ 0, 0, 0, 255 ],
+                "list_selected": [ 200, 0, 0, 255 ],
+                "list_unselectable": [ 128, 0, 0, 255 ],
+                "button": [ 200, 200, 200, 255 ],
+                "general_font": [ 0, 0, 0 ],
+                "download_font": [ 0, 0, 0 ],
+                "panels": [ 230, 230, 230 ],
+                "selection-fill": [ 153, 204, 255 ],
                 "secondary-selection-fill": [ 210, 210, 210 ]
             },
             "#resources": {
                 "buttons.png": {
-                    "image-mod": [0, 0, 0]
+                    "image-mod": [ 0, 0, 0 ]
                 },
                 "pointenfedde.png": {
-                    "image-mod": [0, 0, 0]
+                    "image-mod": [ 0, 0, 0 ]
                 }
             }
         },
         "Dark Mode": {
             "#pallet": {
-                "background":        [  85,  85,  85, 255 ],
-                "background_fade":   [  50,  50,  50,  85 ],
-                "list_text":         [ 255, 255, 255, 255 ],
-                "list_selected":     [ 153, 180, 255, 255 ],
-                "list_unselectable": [ 128,   0,   0, 255 ],
-                "button":            [ 200, 200, 200, 255 ],
-                "general_font":      [ 200, 200, 200 ],
-                "download_font":     [   0,   0,   0 ],
-                "panels":            [ 110, 110, 110 ],
-                "selection-fill":    [ 50, 80, 155 ],
+                "background": [ 85, 85, 85, 255 ],
+                "background_fade": [ 50, 50, 50, 85 ],
+                "list_text": [ 255, 255, 255, 255 ],
+                "list_selected": [ 153, 180, 255, 255 ],
+                "list_unselectable": [ 255, 64, 64, 255 ],
+                "button": [ 200, 200, 200, 255 ],
+                "general_font": [ 200, 200, 200 ],
+                "download_font": [ 0, 0, 0 ],
+                "panels": [ 110, 110, 110 ],
+                "selection-fill": [ 50, 80, 155 ],
                 "secondary-selection-fill": [ 53, 53, 53 ]
             },
             "#resources": {
                 "buttons.png": {
-                    "image-mod": [255, 255, 255]
+                    "image-mod": [ 255, 255, 255 ]
                 },
                 "pointenfedde.png": {
-                    "image-mod": [255, 255, 255]
+                    "image-mod": [ 255, 255, 255 ]
+                }
+            }
+        },
+        "Darker Mode": {
+            "#pallet": {
+                "background": [ 0, 0, 0, 255 ],
+                "background_fade": [ 50, 50, 50, 0 ],
+                "list_text": [ 255, 255, 255, 255 ],
+                "list_selected": [ 153, 180, 255, 255 ],
+                "list_unselectable": [ 200, 0, 0, 255 ],
+                "button": [ 200, 200, 200, 255 ],
+                "general_font": [ 200, 200, 200 ],
+                "download_font": [ 255, 255, 255 ],
+                "panels": [ 45, 45, 45 ],
+                "selection-fill": [ 50, 80, 155 ],
+                "secondary-selection-fill": [ 0, 0, 0 ]
+            },
+            "#resources": {
+                "buttons.png": {
+                    "image-mod": [ 255, 255, 255 ]
+                },
+                "pointenfedde.png": {
+                    "image-mod": [ 255, 255, 255 ]
+                }
+            }
+        },
+        "Darkest Mode": {
+            "#pallet": {
+                "background": [ 0, 0, 0, 255 ],
+                "background_fade": [ 50, 50, 50, 0 ],
+                "list_text": [ 255, 255, 255, 255 ],
+                "list_selected": [ 153, 180, 255, 255 ],
+                "list_unselectable": [ 200, 0, 0, 255 ],
+                "button": [ 0, 0, 0, 255 ],
+                "general_font": [ 200, 200, 200 ],
+                "download_font": [ 255, 255, 255 ],
+                "panels": [ 0, 0, 0 ],
+                "selection-fill": [ 50, 80, 155 ],
+                "secondary-selection-fill": [ 0, 0, 0 ]
+            },
+            "#resources": {
+                "buttons.png": {
+                    "image-mod": [ 255, 255, 255 ]
+                },
+                "pointenfedde.png": {
+                    "image-mod": [ 255, 255, 255 ]
                 }
             }
         }
+
+
     },
     "#base": {
         "font": "DejaVuSans.ttf",

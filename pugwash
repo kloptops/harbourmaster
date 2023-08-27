@@ -105,8 +105,8 @@ if LOG_FILE.parent.is_dir():
 ################################################################################
 ## Translations
 LANG_DIR = PYLIB_PATH / "locales"
-DEFAULT_LANG = None
-CURRENT_LANG = None
+__builtins__.DEFAULT_LANG = None
+__builtins__.CURRENT_LANG = None
 
 def lang_opts(lang):
     yield lang
@@ -139,6 +139,7 @@ def load_lang():
     Load the desired language, we check for an override in our config.json, otherwise use the environment variables.
 
     """
+
     config = harbourmaster.HM_TOOLS_DIR / "PortMaster" / "config" / "config.json"
     if config.is_file():
         with open(config, 'r') as fh:
@@ -163,7 +164,7 @@ def load_lang():
     if environ_key is None:
         environ_key = 'LANG'
 
-    DEFAULT_LANG = check_lang(environ_lang)
+    __builtins__.DEFAULT_LANG = check_lang(environ_lang)
 
     if config_lang and check_lang(config_lang):
         os.environ[environ_key] = check_lang(config_lang)
@@ -174,7 +175,7 @@ def load_lang():
     else:
         os.environ[environ_key] = 'en_US'
 
-    CURRENT_LANG = os.environ[environ_key]
+    __builtins__.CURRENT_LANG = os.environ[environ_key]
 
 
 def lang_list():
@@ -383,6 +384,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
                 capabilities = harbourmaster.device_info(device)
 
         capabilities['capabilities'].append(CURRENT_LANG)
+        logger.debug(capabilities)
 
         # Create the window
         self.window = sdl2.ext.Window("PortMaster", size=(self.display_width, self.display_height))

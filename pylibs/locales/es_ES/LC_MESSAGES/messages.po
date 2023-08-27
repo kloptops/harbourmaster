@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-08-26 22:29+0800\n"
+"POT-Creation-Date: 2023-08-27 10:34+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,94 +17,94 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: pugwash:183
+#: pugwash:184
 msgid "German"
 msgstr ""
 
-#: pugwash:184
+#: pugwash:185
 msgid "English"
 msgstr ""
 
-#: pugwash:185
+#: pugwash:186
 msgid "Spanish"
 msgstr ""
 
-#: pugwash:186
+#: pugwash:187
 msgid "French"
 msgstr ""
 
-#: pugwash:187
+#: pugwash:188
 msgid "Italian"
 msgstr ""
 
-#: pugwash:188
+#: pugwash:189
 msgid "Polish"
 msgstr ""
 
-#: pugwash:281
+#: pugwash:282
 msgid "Unknown IP"
 msgstr ""
 
-#: pugwash:517 pugwash:641
+#: pugwash:519 pugwash:643
 msgid "N/A"
 msgstr ""
 
-#: pugwash:611
+#: pugwash:613
 msgid "** NO PORT **"
 msgstr ""
 
-#: pugwash:628
+#: pugwash:630
 msgid "Ready to Run"
 msgstr ""
 
-#: pugwash:628
+#: pugwash:630
 msgid "Requires Files"
 msgstr ""
 
-#: pugwash:635 pugwash:656
+#: pugwash:637 pugwash:658
 msgid "Installed"
 msgstr ""
 
-#: pugwash:637
+#: pugwash:639
 msgid "Missing"
 msgstr ""
 
-#: pugwash:640
+#: pugwash:642
 msgid "None"
 msgstr ""
 
-#: pugwash:657
+#: pugwash:659
 msgid "Update Available"
 msgstr ""
 
-#: pugwash:658
+#: pugwash:660
 msgid "Not Installed"
 msgstr ""
 
-#: pugwash:758 pylibs/pugscene.py:1155
+#: pugwash:760 pylibs/pugscene.py:1155
 msgid "Okay"
 msgstr ""
 
-#: pugwash:761 pylibs/pugscene.py:699 pylibs/pugscene.py:707
+#: pugwash:763 pylibs/pugscene.py:699 pylibs/pugscene.py:707
 #: pylibs/pugscene.py:1126 pylibs/pugscene.py:1158
 msgid "Cancel"
 msgstr ""
 
-#: pugwash:955
+#: pugwash:957
 #, python-brace-format
 msgid "Installing {port_name}"
 msgstr ""
 
-#: pugwash:964
+#: pugwash:966
 #, python-brace-format
 msgid "Uninstalling {port_name}"
 msgstr ""
 
-#: pugwash:974
+#: pugwash:976
 msgid "Updating all port sources:"
 msgstr ""
 
-#: pugwash:1005
+#: pugwash:1007
 #, python-brace-format
 msgid ""
 "There is a new version of PortMaster {portmaster_version}\n"
