@@ -260,7 +260,7 @@ def device_info(override_device=None, override_resolution=None):
         _merge_info(info, CFW_INFO[(info['name'].lower(), info['device'])])
 
     elif (info['name'].lower(), HW_ANY) in CFW_INFO:
-        _merge_info(info, CFW_INFO[(info['name'], HW_ANY)])
+        _merge_info(info, CFW_INFO[(info['name'].lower(), HW_ANY)])
 
     if override_resolution is not None:
         info['resolution'] = override_resolution
