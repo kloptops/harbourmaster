@@ -319,7 +319,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
     def __init__(self):
         # Initialize SDL
         sdl2.ext.init(
-            joystick=True)
+            controller=True)
 
         def nice_version(v):
             return f"{v.major}.{v.minor}.{v.patch}"
@@ -331,6 +331,17 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         logger.debug(f"TTF DLL: {sdl2.sdlttf.get_dll_file()}, {nice_version(sdl2.sdlttf.TTF_Linked_Version()[0])}")
         logger.debug(f"IMG DLL: {sdl2.sdlimage.get_dll_file()}, {nice_version(sdl2.sdlimage.IMG_Linked_Version()[0])}")
         logger.debug(f"MIX DLL: {sdl2.sdlmixer.get_dll_file()}, {nice_version(sdl2.sdlmixer.Mix_Linked_Version()[0])}")
+
+        # Load controller.
+        count = sdl2.SDL_NumJoysticks()
+        for index in range(count):
+            is_game_controller = sdl2.SDL_IsGameController(index)
+            print(f"{index}: {is_game_controller}")
+            if is_game_controller == sdl2.SDL_TRUE:
+                pad = sdl2.SDL_GameControllerOpen(index)
+                if pad != None:
+                    logger.debug(f"Opened GameController {index}: {sdl2.SDL_GameControllerName(pad)}")
+                    logger.debug(f" {sdl2.SDL_GameControllerMapping(pad)}")
 
         # Define window dimensions
         self.display_width = 640

@@ -102,7 +102,7 @@ def theme_apply(gui, section_data, base_data, elements):
 
 
 def theme_load(gui, theme_file, color_scheme=None):
-    print(f"Loading theme {theme_file}")
+    logger.debug(f"Loading theme {theme_file}")
 
     with open(theme_file, 'r') as fh:
         theme_data = json.load(fh)
@@ -133,7 +133,7 @@ def theme_load(gui, theme_file, color_scheme=None):
 
     if color_scheme is not None:
         if color_scheme not in theme_data.get("#schemes", {}):
-            print(f"- Unable to find {color_scheme} in the theme_data.")
+            logger.debug(f"- Unable to find {color_scheme} in the theme_data.")
             return None
 
         else:
@@ -148,11 +148,11 @@ def theme_load(gui, theme_file, color_scheme=None):
     for section_name, section_data in theme_data.items():
         if section_name.startswith('#'):
             if section_name == "#base":
-                print("- loading base_data")
+                logger.debug("- loading base_data")
                 base_data = section_data
 
             elif section_name == "#resources":
-                print("- loading resources:")
+                logger.debug("- loading resources:")
                 for resource_name, resource_data in section_data.items():
                     resource_set_name = resource_data.get("name", resource_name)
 
@@ -160,20 +160,20 @@ def theme_load(gui, theme_file, color_scheme=None):
                         success = gui.images.load_data(resource_name, resource_data) is None and 'FAIL' or 'OKAY'
 
                         if resource_set_name != resource_name:
-                            print(f"  - loading image {resource_name} as {resource_set_name} - [{success}]")
+                            logger.debug(f"  - loading image {resource_name} as {resource_set_name} - [{success}]")
                         else:
-                            print(f"  - loading image {resource_name} - [{success}]")
+                            logger.debug(f"  - loading image {resource_name} - [{success}]")
 
                     elif resource_name.lower().rsplit('.', 1)[-1] in ('ogg', 'wav', 'mp3', 'mod'):
                         success = gui.sounds.load(resource_name, resource_set_name) is None and 'FAIL' or 'OKAY'
 
                         if resource_set_name != resource_name:
-                            print(f"  - loading sound {resource_name} as {resource_set_name} - [{success}]")
+                            logger.debug(f"  - loading sound {resource_name} as {resource_set_name} - [{success}]")
                         else:
-                            print(f"  - loading sound {resource_name} - [{success}]")
+                            logger.debug(f"  - loading sound {resource_name} - [{success}]")
 
             elif section_name == "#elements":
-                print("- loading elements:")
+                logger.debug("- loading elements:")
                 for element_name, element_data in section_data.items():
                     element_name, requirements = extract_requirements(element_name)
                     if not harbourmaster.match_requirements(capabilities, requirements):
@@ -196,12 +196,12 @@ def theme_load(gui, theme_file, color_scheme=None):
                         gui.default_rects.make_rect(element_data.get('parent', 'root'), element_name, last_value)
 
             elif section_name == "#pallet":
-                print("- loading pallet:")
+                logger.debug("- loading pallet:")
                 for pallet_name, pallet_value in section_data.items():
                     gui.pallet[pallet_name] = pallet_value
 
             elif section_name == "#override":
-                print("- loading override:")
+                logger.debug("- loading override:")
                 for override_name, override_value in section_data.items():
                     gui.override[override_name] = override_value
 
@@ -216,10 +216,10 @@ def theme_load(gui, theme_file, color_scheme=None):
                     logger.error(f"{section_name} not yet defined, skipping.")
                     continue
 
-                print(f"  - loading section {section_name}")
+                logger.debug(f"  - loading section {section_name}")
                 sections[section_name] = theme_apply(gui, section_data, sections[section_name], elements)
             else:
-                print(f"  - loading section {section_name}")
+                logger.debug(f"  - loading section {section_name}")
                 sections[section_name] = theme_apply(gui, section_data, base_data, elements)
 
     if harbourmaster.HM_TESTING:
@@ -521,7 +521,7 @@ class ThemeEngine:
                     themes[theme_name] = theme_info.copy()
                     themes[theme_name]['status'] = "Not Installed"
 
-        print(themes)
+        # print(themes)
 
         return themes
 

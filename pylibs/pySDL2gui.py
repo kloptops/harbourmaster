@@ -1505,6 +1505,15 @@ class EventManager:
 
                     self.axis_button[key] = axis_key
 
+            elif event.type == sdl2.SDL_CONTROLLERDEVICEADDED:
+                print(f"Opening {event.cdevice.which}")
+                controller = sdl2.SDL_GameControllerOpen(event.cdevice.which)
+
+            elif event.type == sdl2.SDL_CONTROLLERDEVICEREMOVED:
+                print(f"Closing {event.cdevice.which}")
+                controller = SDL_GameControllerFromInstanceID(event.cdevice.which)
+                SDL_GameControllerClose(controller)
+
         for key in self.repeat.keys():
             next_repeat = self.repeat[key]
             if next_repeat is not None and next_repeat <= ticks_now:
