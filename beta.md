@@ -11,11 +11,11 @@ We are delighted to present the first public beta the new PortMaster GUI.
 - Port previews, we can really showcase the ports.
 - Cancellable downloads, accidentally started a 300mb download? Get out of here.
 - Filter ports by genre/porter/runtime
-- Localizations (We currently have English, Italian, French, and German), translators welcome!
+- Localizations (We currently have English, Italian, French, German, and Polish), [translators welcome!](https://crowdin.com/project/portmaster)
 - **Themes:**
   - Since it was possible with the custom GUI, we went for it.
   - We have a few themes at launch, but contributions are more than welcome.
-    - *Default Theme*: comes in both light mode and dark mode
+    - *Default Theme*: comes in both light mode and dark modes
     - *Zelda*: LTTP Inspired theme
     - *FF VII*: A beautifully done FF7 theme
     - *Basic Theme*: A super barebones theme so you can get started designing your own!
@@ -58,11 +58,18 @@ To get it to work on JELOS:
 - You can now run `PortMaster` in the `PortMaster` directory.
 - **WARNING**: If you do `Tools -> Start PortMaster` it will delete the `PortMaster.sh` and you will need to extract it from the zip again.
 
+## Other CFW
+
+For the other CFW it is as simple as:
+
+- Unzip PortMaster.zip and copy `PortMaster/` directory and all its contents into directory listed above.
+- **If you're using ArkOS**, you will need to move the `/roms(or roms2)/tools/PortMaster/PortMaster.sh` up one directory to `/roms(or roms2)/PortMaster.sh`
+
 # Things to know
 
 There are a few bugs, which we are looking to fix.
 
-- ArkOS has no volume control, so it is disabled for now.
+- ArkOS has volume issues on some devices, so it is disabled for now.
 - Some resolutions of the themes need some work, but for the most part are good.
 - The options menus need a bit of reworking.
 - JELOS controls are flipped

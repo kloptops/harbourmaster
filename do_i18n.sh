@@ -7,6 +7,8 @@ POT_FILE="messages"
 echo "Extracting strings ${POT_FILE}"
 xgettext -v -o "${POT_DIR}/${POT_FILE}.pot" -L Python pugwash pylibs/harbourmaster/*.py pylibs/pug*.py
 
+crowdin upload
+
 # pygettext.py -d libharbourmaster -o pylibs/locales/harbourmaster.pot pylibs/harbourmaster
 # pygettext.py -d harbourmaster -o pylibs/locales/harbourmaster.pot harbourmaster
 
@@ -14,25 +16,34 @@ xgettext -v -o "${POT_DIR}/${POT_FILE}.pot" -L Python pugwash pylibs/harbourmast
 for lang_dir in $POT_DIR/* ; do
     LANG_CODE=$(basename "$lang_dir")
     if [[ "${LANG_CODE}" != "." ]] && [[ "${LANG_CODE}" != ".." ]] && [ -d "$lang_dir" ]; then
-        echo "${LANG_CODE}:"
 
-        PO_FILE="$lang_dir/LC_MESSAGES/${POT_FILE}.po"
+        PO_FILE="$lang_dir/LC_MESSAGES/${POT_FILE}.pot"
         MO_FILE="$lang_dir/LC_MESSAGES/${POT_FILE}.mo"
 
         # Check if the .po file exists
         if [ -f "$PO_FILE" ]; then
-            printf "msgmerge: "
-            # Perform msgmerge
-            msgmerge --no-fuzzy-matching --verbose -U "${PO_FILE}" "${POT_DIR}/${POT_FILE}.pot"
-        else
             mkdir -p "$lang_dir/LC_MESSAGES"
-            printf "copying tempalte: "
             cp -v "${POT_DIR}/${POT_FILE}.pot" "${PO_FILE}"
         fi
+    fi
+done
+
+crowdin download
+
+for lang_dir in $POT_DIR/* ; do
+    LANG_CODE=$(basename "$lang_dir")
+    if [[ "${LANG_CODE}" != "." ]] && [[ "${LANG_CODE}" != ".." ]] && [ -d "$lang_dir" ]; then
+        echo "${LANG_CODE}:"
+
+        LANG_POT_FILE="$lang_dir/LC_MESSAGES/${POT_FILE}.pot"
+        LANG_PO_FILE="$lang_dir/LC_MESSAGES/${POT_FILE}.po"
+        LANG_MO_FILE="$lang_dir/LC_MESSAGES/${POT_FILE}.mo"
+
+        mv -fv "$LANG_POT_FILE" "$LANG_PO_FILE"
 
         # Compile .po file into .mo file
         printf "msgfmt: "
-        msgfmt -v -o "${MO_FILE}" "${PO_FILE}"
+        msgfmt -v -o "${LANG_MO_FILE}" "${LANG_PO_FILE}"
 
         echo ""
     fi

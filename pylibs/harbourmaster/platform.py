@@ -137,7 +137,6 @@ class PlatformJELOS(PlatformBase):
         Copy JELOS PortMaster files here.
         """
         shutil.copy("/storage/.config/PortMaster/control.txt", "/storage/roms/ports/PortMaster/control.txt")
-        shutil.copy("/storage/.config/PortMaster/control.txt", "/storage/roms/ports/PortMaster/control.txt")
         shutil.copy("/storage/.config/PortMaster/gptokeyb", "/storage/roms/ports/PortMaster/gptokeyb")
         shutil.copy("/storage/.config/PortMaster/gamecontrollerdb.txt", "/storage/roms/ports/PortMaster/gamecontrollerdb.txt")
         shutil.copy("/storage/.config/PortMaster/mapper.txt", "/storage/roms/ports/PortMaster/mapper.txt")

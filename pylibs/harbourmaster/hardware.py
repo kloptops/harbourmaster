@@ -1,5 +1,6 @@
 
 # System imports
+import copy
 import datetime
 import fnmatch
 import json
@@ -25,38 +26,38 @@ HW_ANY = object()
 
 HW_INFO = {
     # Anbernic Devices
-    'rg552':   {'resolution': (1920, 1152), 'analogsticks': 2, 'cpu': 'rk3399', 'capabilities': ['5:3', '1920x1152', 'power', 'hires', 'wide']},
-    'rg503':   {'resolution': ( 960,  544), 'analogsticks': 2, 'cpu': 'rk3566', 'capabilities': ['30:17', '960x544', 'power', 'hires', 'wide']},
-    'rg351mp': {'resolution': ( 640,  480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['4:3', '640x480']},
-    'rg351p':  {'resolution': ( 480,  320), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['3:2', '480x320', 'lowres']},
-    'rg353v':  {'resolution': ( 640,  480), 'analogsticks': 2, 'cpu': 'rk3366', 'capabilities': ['4:3', '640x480', 'power']},
-    'rg353p':  {'resolution': ( 640,  480), 'analogsticks': 2, 'cpu': 'rk3366', 'capabilities': ['4:3', '640x480', 'power']},
-    'rg353m':  {'resolution': ( 640,  480), 'analogsticks': 2, 'cpu': 'rk3366', 'capabilities': ['4:3', '640x480', 'power']},
-    'rg351v':  {'resolution': ( 640,  480), 'analogsticks': 1, 'cpu': 'rk3326', 'capabilities': ['4:3', '640x480']},
+    'rg552':   {'resolution': (1920, 1152), 'analogsticks': 2, 'cpu': 'rk3399', 'capabilities': ['power']},
+    'rg503':   {'resolution': ( 960,  544), 'analogsticks': 2, 'cpu': 'rk3566', 'capabilities': ['power']},
+    'rg351mp': {'resolution': ( 640,  480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': []},
+    'rg351p':  {'resolution': ( 480,  320), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': []},
+    'rg353v':  {'resolution': ( 640,  480), 'analogsticks': 2, 'cpu': 'rk3366', 'capabilities': []},
+    'rg353p':  {'resolution': ( 640,  480), 'analogsticks': 2, 'cpu': 'rk3366', 'capabilities': []},
+    'rg353m':  {'resolution': ( 640,  480), 'analogsticks': 2, 'cpu': 'rk3366', 'capabilities': []},
+    'rg351v':  {'resolution': ( 640,  480), 'analogsticks': 1, 'cpu': 'rk3326', 'capabilities': []},
 
     # Hardkernel Devices
-    'oga': {'resolution': (480, 320), 'analogsticks': 1, 'cpu': 'rk3326', 'capabilities': ['3:2', '480x320', 'lowres']},
-    'ogs': {'resolution': (854, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['427:240', '854x480', 'hires', 'wide']},
-    'ogu': {'resolution': (854, 480), 'analogsticks': 2, 'cpu': 's922x',  'capabilities': ['427:240', '854x480', 'power', 'hires', 'wide']},
+    'oga': {'resolution': (480, 320), 'analogsticks': 1, 'cpu': 'rk3326', 'capabilities': []},
+    'ogs': {'resolution': (854, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': []},
+    'ogu': {'resolution': (854, 480), 'analogsticks': 2, 'cpu': 's922x',  'capabilities': ['power']},
 
     # Powkiddy
-    'x55':       {'resolution': (1280, 720), 'analogsticks': 2, 'cpu': 'rk3566', 'capabilities': ['16:9', '1280x720', 'power', 'hires', 'wide']},
-    'rgb10max3': {'resolution': ( 854, 480), 'analogsticks': 2, 'cpu': 's922x',  'capabilities': ['427:240', '854x480', 'power', 'hires', 'wide']},
-    'rgb10max2': {'resolution': ( 854, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['427:240', '854x480', 'hires', 'wide']},
-    'rgb10max':  {'resolution': ( 854, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['427:240', '854x480', 'hires', 'wide']},
-    'rgb10s':    {'resolution': ( 480, 320), 'analogsticks': 1, 'cpu': 'rk3326', 'capabilities': ['3:2', '480x320', 'lowres']},
-    'rgb20s':    {'resolution': ( 640, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['4:3', '640x480']},
-    'rk2023':    {'resolution': ( 640, 480), 'analogsticks': 2, 'cpu': 'rk3566', 'capabilities': ['4:3', '640x480', 'power']},
-    'rk2020':    {'resolution': ( 480, 320), 'analogsticks': 1, 'cpu': 'rk3326', 'capabilities': ['3:2', '480x320', 'lowres']},
+    'x55':       {'resolution': (1280, 720), 'analogsticks': 2, 'cpu': 'rk3566', 'capabilities': ['power']},
+    'rgb10max3': {'resolution': ( 854, 480), 'analogsticks': 2, 'cpu': 's922x',  'capabilities': ['power']},
+    'rgb10max2': {'resolution': ( 854, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': []},
+    'rgb10max':  {'resolution': ( 854, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': []},
+    'rgb10s':    {'resolution': ( 480, 320), 'analogsticks': 1, 'cpu': 'rk3326', 'capabilities': []},
+    'rgb20s':    {'resolution': ( 640, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': []},
+    'rk2023':    {'resolution': ( 640, 480), 'analogsticks': 2, 'cpu': 'rk3566', 'capabilities': ['power']},
+    'rk2020':    {'resolution': ( 480, 320), 'analogsticks': 1, 'cpu': 'rk3326', 'capabilities': []},
 
     # Gameforce Chi
-    'chi':     {'resolution': (640, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': ['4:3', '640x480']},
+    'chi':     {'resolution': (640, 480), 'analogsticks': 2, 'cpu': 'rk3326', 'capabilities': []},
 
     # Computer/Testing
-    'pc':      {'resolution': (640, 480), 'analogsticks': 2, 'cpu': 'unknown', 'capabilities': ['4:3', '640x480', 'opengl', 'power']},
+    'pc':      {'resolution': (640, 480), 'analogsticks': 2, 'cpu': 'unknown', 'capabilities': ['opengl', 'power']},
 
     # Default
-    'default': {'resolution': (640, 480), 'analogsticks': 2, 'cpu': 'unknown', 'capabilities': ['4:3', '640x480']},
+    'default': {'resolution': (640, 480), 'analogsticks': 2, 'cpu': 'unknown', 'capabilities': []},
     }
 
 
@@ -128,7 +129,7 @@ def new_device_info():
         return {
             'name': platform.system(),
             'version': platform.release(),
-            'device': 'pc',
+            'device': 'default',
             }
 
     info = {}
@@ -138,13 +139,13 @@ def new_device_info():
     # Works on ArkOS
     config_device = safe_cat('~/.config/.DEVICE')
     if config_device != '':
-        info.setdefault('device', config_device.strip().lower())
+        info['device'] = config_device.strip().lower()
 
     # Works on ArkOS
     plymouth = safe_cat('/usr/share/plymouth/themes/text.plymouth')
     if plymouth != '':
         for result in re.findall(r'^title=(.*?) \(([^\)]+)\)$', plymouth, re.I | re.M):
-            info['name'] = result[0].split(' ', 1)[0].lower()
+            info['name'] = result[0].split(' ', 1)[0]
             info['version'] = result[1]
 
     # Works on uOS / JELOS / AmberELEC
@@ -168,7 +169,7 @@ def new_device_info():
     if 'device' not in info:
         info['device'] = old_device_info()
 
-    info.setdefault('name', 'unknown')
+    info.setdefault('name', 'Unknown')
     info.setdefault('version', '0.0.0')
 
     return info
@@ -215,6 +216,12 @@ def old_device_info():
 def _merge_info(info, new_info):
     for key, value in new_info.items():
         if key not in info:
+            if isinstance(value, (list, tuple)):
+                value = value[:]
+
+            elif isinstance(value, dict):
+                value = dict(value)
+
             info[key] = value
             continue
 
@@ -236,9 +243,9 @@ def find_device_by_resolution(resolution):
 
 
 __root_info = None
-def device_info(override_device=None):
+def device_info(override_device=None, override_resolution=None):
     global __root_info
-    if override_device is None and __root_info is not None:
+    if override_device is None and override_resolution is None and __root_info is not None:
         return __root_info
 
     # Best guess at what device we are running on, and what it is capable of.
@@ -249,11 +256,37 @@ def device_info(override_device=None):
 
     _merge_info(info, HW_INFO.get(info['device'], HW_INFO['default']))
 
-    if (info['name'], info['device']) in CFW_INFO:
-        _merge_info(info, CFW_INFO[(info['name'], info['device'])])
+    if (info['name'].lower(), info['device']) in CFW_INFO:
+        _merge_info(info, CFW_INFO[(info['name'].lower(), info['device'])])
 
-    elif (info['name'], HW_ANY) in CFW_INFO:
+    elif (info['name'].lower(), HW_ANY) in CFW_INFO:
         _merge_info(info, CFW_INFO[(info['name'], HW_ANY)])
+
+    if override_resolution is not None:
+        info['resolution'] = override_resolution
+
+    display_gcd = math.gcd(info['resolution'][0], info['resolution'][1])
+    display_ratio = f"{info['resolution'][0] // display_gcd}:{info['resolution'][1] // display_gcd}"
+
+    if display_ratio == "8:5":
+        ## HACK
+        info['capabilities'].append("16:9")
+        display_ratio = "16:10"
+
+    info['capabilities'].append(display_ratio)
+    info['capabilities'].append(f"{info['resolution'][0]}x{info['resolution'][1]}")
+
+    if info['resolution'][1] < 480:
+        info['capabilities'].append(f"lowres")
+
+    elif info['resolution'][1] > 480:
+        info['capabilities'].append(f"hires")
+
+    if info['resolution'][0] > 640:
+        if "hires" not in info['capabilities']:
+            info['capabilities'].append(f"hires")
+
+        info['capabilities'].append(f"wide")
 
     logger.debug(f"DEVICE INFO: {info}")
     __root_info = info

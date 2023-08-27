@@ -12,6 +12,7 @@ import gc
 import gettext
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -368,14 +369,10 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
             if not pretend_device:
                 pretend_device = 'pc'
+                ## uncomment to make it *fullscreen
+                # pretend_device = None
 
             capabilities = harbourmaster.device_info(pretend_device)
-
-            # if pretend_device in harbourmaster.HW_INFO:
-            #     capabilities.update(**harbourmaster.HW_INFO[pretend_device])
-            self.display_width, self.display_height = capabilities['resolution']
-
-            print(f"Forcing size: {self.display_width}x{self.display_height}")
 
         if capabilities['device'] == 'default':
             device = harbourmaster.find_device_by_resolution((self.display_width, self.display_height))
@@ -383,11 +380,20 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             if device != 'default':
                 capabilities = harbourmaster.device_info(device)
 
+        if capabilities['device'] == 'default':
+            capabilities = harbourmaster.device_info(override_resolution=(self.display_width, self.display_height))
+
         capabilities['capabilities'].append(CURRENT_LANG)
+
         logger.debug(capabilities)
 
         # Create the window
-        self.window = sdl2.ext.Window("PortMaster", size=(self.display_width, self.display_height))
+        if harbourmaster.HM_TESTING:
+            window_flags = None
+        else:
+            window_flags = sdl2.SDL_WINDOW_FULLSCREEN
+
+        self.window = sdl2.ext.Window("PortMaster", size=capabilities['resolution'], flags=window_flags)
         self.window.show()
 
         # Create a renderer for drawing on the window
