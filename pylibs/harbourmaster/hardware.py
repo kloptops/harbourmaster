@@ -277,16 +277,16 @@ def device_info(override_device=None, override_resolution=None):
     info['capabilities'].append(f"{info['resolution'][0]}x{info['resolution'][1]}")
 
     if info['resolution'][1] < 480:
-        info['capabilities'].append(f"lowres")
+        info['capabilities'].append("lowres")
 
     elif info['resolution'][1] > 480:
-        info['capabilities'].append(f"hires")
+        info['capabilities'].append("hires")
 
     if info['resolution'][0] > 640:
         if "hires" not in info['capabilities']:
-            info['capabilities'].append(f"hires")
+            info['capabilities'].append("hires")
 
-        info['capabilities'].append(f"wide")
+        info['capabilities'].append("wide")
 
     logger.debug(f"DEVICE INFO: {info}")
     __root_info = info

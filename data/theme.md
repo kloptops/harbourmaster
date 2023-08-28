@@ -88,7 +88,7 @@ Currently the capabilities are:
 - `960x544`: screen resolution of 960x544
 - `1280x720`: screen resolution of 1280x720
 - `1920x1152`: screen resolution of 1920x1152
-- `language`: the current language
+- `language`: the current language (en_US, de_DE, es_ES, fr_FR, it_IT, and pl_PL)
 
 
 You can combine them like so:

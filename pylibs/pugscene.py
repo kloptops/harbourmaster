@@ -296,11 +296,18 @@ class BaseScene:
         self.gui.sounds.play(self.tags['button_bar'].button_sound, volume=self.tags['button_bar'].button_sound_volume)
 
 
+class BlankScene(BaseScene):
+    def __init__(self, gui):
+        super().__init__(gui)
+
+        self.load_regions("blank", [])
+
+
 class MainMenuScene(BaseScene):
     def __init__(self, gui):
         super().__init__(gui)
 
-        self.load_regions("main_menu", ['option_list', 'button_bar'])
+        self.load_regions("main_menu", ['option_list'])
 
         self.tags['option_list'].reset_options()
         self.tags['option_list'].add_option(('install', []), _("All Ports"))
@@ -309,6 +316,7 @@ class MainMenuScene(BaseScene):
         self.tags['option_list'].add_option(None, "")
         self.tags['option_list'].add_option(('options', None), _("Options"))
         self.tags['option_list'].add_option(('exit', None), _("Exit"))
+
         self.set_buttons({'A': _('Enter'), 'B': _('Quit')})
 
     def do_update(self, events):
@@ -368,6 +376,7 @@ class OptionScene(BaseScene):
 
         self.tags['option_list'].add_option('select-language', _("Choose Language"))
         self.tags['option_list'].add_option('select-theme', _("Select Theme"))
+
         schemes = self.gui.themes.get_theme_schemes_list()
         if len(schemes) > 0:
             self.tags['option_list'].add_option('select-scheme', _("Select Color Scheme"))
@@ -647,7 +656,7 @@ class LanguageScene(BaseScene):
 
             self.button_activate()
 
-            print(f"Selected {selected_option} -> {selected_parameter}")
+            # print(f"Selected {selected_option} -> {selected_parameter}")
 
             if selected_option == 'back':
                 self.gui.pop_scene()
@@ -655,7 +664,12 @@ class LanguageScene(BaseScene):
 
             elif selected_option == 'select-language':
                 if self.gui.message_box(_("Do you want to change language?\n\nYou will have to restart for it to take affect."), want_cancel=True):
-                    self.gui.hm.cfg_data['language'] = selected_parameter
+                    if selected_parameter == DEFAULT_LANG:
+                        del self.gui.hm.cfg_data['language']
+
+                    else:
+                        self.gui.hm.cfg_data['language'] = selected_parameter
+
                     self.gui.hm.save_config()
                     self.gui.events.running = False
 
@@ -1111,7 +1125,8 @@ class MessageWindowScene(BaseScene):
         super().__init__(gui)
 
         self.load_regions("message_window", [
-            'message_text'            ])
+            'message_text'
+            ])
 
         self.cancellable = not self.gui.cancellable
         self.update_buttons()
@@ -1172,6 +1187,7 @@ class MessageBoxScene(BaseScene):
 __all__ = (
     'StringFormatter',
     'BaseScene',
+    'BlankScene',
     'FiltersScene',
     'LanguageScene',
     'MainMenuScene',

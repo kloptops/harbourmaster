@@ -598,5 +598,11 @@
         },
 
         "#element:button_bar": {}
+    },
+
+    "blank": {
+        "#element:background": {},
+
+        "#element:button_bar": {}
     }
 }

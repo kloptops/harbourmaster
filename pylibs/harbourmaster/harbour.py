@@ -1091,7 +1091,7 @@ class HarbourMaster():
                             runtime_download = source.download(runtime, temp_dir=self.libs_dir)
                             download_successfull = True
 
-                            self.platform.runtime_install(port_name, runtime, [runtime_download])
+                            self.platform.runtime_install(runtime, [runtime_download])
 
                         if self.callback.was_cancelled or not download_successfull:
                             if runtime_file.is_file():
