@@ -63,7 +63,7 @@ To get it to work on JELOS:
 For the other CFW it is as simple as:
 
 - Unzip PortMaster.zip and copy `PortMaster/` directory and all its contents into directory listed above.
-- **If you're using ArkOS**, you will need to move the `/roms(or roms2)/tools/PortMaster/PortMaster.sh` up one directory to `/roms(or roms2)/PortMaster.sh`
+- **If you're using ArkOS**, you will need to move the `/roms(or roms2)/tools/PortMaster/PortMaster.sh` up one directory to `/roms(or roms2)/tools/PortMaster.sh`
 
 # Things to know
 
