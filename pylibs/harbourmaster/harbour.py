@@ -931,6 +931,7 @@ class HarbourMaster():
         is_successs = False
 
         port_nice_name = download_info.get('attr', {}).get('title', download_info['name'])
+        port_info = {}
 
         try:
             extra_info = {}
@@ -1016,25 +1017,27 @@ class HarbourMaster():
             pass
 
         finally:
-            if not is_successs and len(undo_data) > 0:
-                logger.error("Installation failed, removing installed files.")
-                self.callback.message(_("Installation failed, removing files..."))
+            if not is_successs:
+                if len(undo_data) > 0:
+                    logger.error("Installation failed, removing installed files.")
+                    self.callback.message(_("Installation failed, removing files..."))
 
-                for undo_file in undo_data[::-1]:
-                    logger.debug(f"Removing {undo_file.relative_to(self.ports_dir)}")
-                    self.callback.message(f"- {str(undo_file.relative_to(self.ports_dir))}")
+                    for undo_file in undo_data[::-1]:
+                        logger.debug(f"Removing {undo_file.relative_to(self.ports_dir)}")
+                        self.callback.message(f"- {str(undo_file.relative_to(self.ports_dir))}")
 
-                    if undo_file.is_file():
-                        undo_file.unlink()
+                        if undo_file.is_file():
+                            undo_file.unlink()
 
-                    elif undo_file.is_dir():
-                        shutil.rmtree(undo_file)
+                        elif undo_file.is_dir():
+                            shutil.rmtree(undo_file)
 
                 self.callback.message_box(_("Port {download_name} installed failed.").format(download_name=port_nice_name))
+                return 255
 
         self._fix_permissions()
 
-        logger.debug(port_info)
+        # logger.debug(port_info)
         if port_info['attr'].get('runtime', None) is not None:
             runtime_name = runtime_nicename(port_info['attr']['runtime'])
 

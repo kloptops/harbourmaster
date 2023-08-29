@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-PORTMASTER_VERSION = '8.3.6b'
+PORTMASTER_VERSION = '8.3.7b'
 PORTMASTER_UPDATE_URL = 'https://github.com/kloptops/harbourmaster/releases/latest/download/'
 PORTMASTER_UPDATE_FREQUENCY = (60 * 60 * 1)
 
@@ -352,7 +352,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
     TEXT_DATA_FREQ = 5000
     MIN_THEME_VERSION = 1
 
-    def __init__(self, *, first_scene=None):
+    def __init__(self, *, first_scene=None, force_theme=None):
         # Initialize SDL
         sdl2.ext.init(
             controller=True)
@@ -457,7 +457,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
         self.cancellable = True
 
-        self.themes = ThemeEngine(self)
+        self.themes = ThemeEngine(self, force_theme=force_theme)
 
         self.text_data = {}
         self.changed_keys = set()
@@ -1044,18 +1044,21 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             return
 
         self.messages_begin(internal=True)
+        fifo_config['done-file'].write_text("DONE")
 
     def fifo_messages_end(self, fifo_config, args):
         if self.message_box_depth == 0:
             return
 
         self.messages_end(internal=True)
+        fifo_config['done-file'].write_text("DONE")
 
     def fifo_message(self, fifo_config, args):
         if len(args) == 0:
             return
 
         self.message(args[0])
+        fifo_config['done-file'].write_text("DONE")
 
     def fifo_progress(self, fifo_config, args):
         if len(args) == 0:
@@ -1081,6 +1084,12 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             total = 100
 
         self.progress(args[0], amount, total, fmt)
+
+        fifo_config['done-file'].write_text("DONE")
+
+    def fifo_progress_clear(self, fifo_config, args):
+        self.progress(None, None, None)
+        fifo_config['done-file'].write_text("DONE")
 
     def fifo_message_box(self, fifo_config, args):
         """
@@ -1141,13 +1150,15 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
         with self.enable_messages():
             with self.enable_cancellable(False):
-                self.hm.check_runtime(args[0])
+                result = self.hm.check_runtime(args[0])
+                fifo_config['done-file'].write_text(result and "FAIL" or "OKAY")
 
     fifo_commands = {
         'messages_begin': fifo_messages_begin,
         'messages_end': fifo_messages_end,
         'message': fifo_message,
         'progress': fifo_progress,
+        'progress_clear': fifo_progress_clear,
         'message_box': fifo_message_box,
         'check_runtime': fifo_check_runtime,
         }
@@ -1190,6 +1201,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             pipe = os.open(fifo_file, os.O_RDONLY | os.O_NONBLOCK)
 
             reader = fifo_line_reader(pipe)
+            done_file.write_text("DONE")
 
             while True:
                 args = next(reader)
@@ -1200,7 +1212,10 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
                 args = args.strip("\1").split("\1")
 
+                done_file.write_text("WAIT")
+
                 if args[0] == 'exit':
+                    done_file.write_text("DONE")
                     return 0
 
                 if args[0].lower() in self.fifo_commands:
@@ -1208,9 +1223,9 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
                 else:
                     logger.debug(f"fifo: unknown command {args[0]}")
+                    done_file.write_text("DONE")
 
-                done_file.touch(mode=0o755, exist_ok=True)
-                self.do_loop()
+                self.do_loop(no_delay=True)
 
         finally:
             if pipe is not None:
@@ -1220,6 +1235,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
                 fifo_file.unlink()
 
             logger.info("-- Endo Fifo Control --")
+
 
 def portmaster_check_update(pm, config, temp_dir):
     cfg_dir = harbourmaster.HM_TOOLS_DIR / "PortMaster"
@@ -1319,7 +1335,7 @@ def main(argv):
             utility.do_color(True)
 
         if len(argv) > 1 and argv[1] == "fifo_control":
-            pm = PortMasterGUI(first_scene=BlankScene)
+            pm = PortMasterGUI(first_scene=BlankScene, force_theme="default_theme")
             pm.hm = None
 
             if not config['no-harbour']:

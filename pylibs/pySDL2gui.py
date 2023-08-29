@@ -1414,6 +1414,14 @@ class EventManager:
             if sdl2.SDL_IsGameController(i) == sdl2.SDL_TRUE:
                 self.controller = sdl2.SDL_GameControllerOpen(i)
 
+    def fix_xbox_mode(self):
+        self.BUTTON_MAP.update({
+            sdl2.SDL_CONTROLLER_BUTTON_A: 'B',
+            sdl2.SDL_CONTROLLER_BUTTON_B: 'A',
+            sdl2.SDL_CONTROLLER_BUTTON_X: 'Y',
+            sdl2.SDL_CONTROLLER_BUTTON_Y: 'X',
+            })
+
     def _axis_map(self, axis, limit):
         if abs(axis) < limit:
             return 1

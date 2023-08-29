@@ -406,8 +406,9 @@ class ThemeDownloader(harbourmaster.source.GitHubRawReleaseV1):
 
 
 class ThemeEngine:
-    def __init__(self, gui):
+    def __init__(self, gui, force_theme=None):
         self.gui = gui
+        self.force_theme = force_theme
 
     def get_pm_config(self):
         cfg_dir = harbourmaster.HM_TOOLS_DIR / "PortMaster"
@@ -427,6 +428,8 @@ class ThemeEngine:
         """
         Returns the name of the current theme
         """
+        if self.force_theme is not None:
+            return self.force_theme
 
         cfg_data = self.get_pm_config()
 

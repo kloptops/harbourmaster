@@ -604,5 +604,32 @@
         "#element:background": {},
 
         "#element:button_bar": {}
+    },
+
+    "selection_list": {
+        "#element:background": {},
+
+        "selection_list": {
+            "area": [ 0.0, 0.0, 1.0, 1.0 ],
+            "list": []
+        },
+
+        "#element:button_bar": {}
+    },
+
+    "selection_list_images": {
+        "#element:background": {},
+
+        "selection_list": {
+            "area": [ 0.0, 0.0, 0.5, 1.0 ],
+            "list": []
+        },
+
+        "selection_image": {
+            "area": [ 0.5, 0.0, 1.0, 1.0 ],
+            "image": "NO_IMAGE"
+        },
+
+        "#element:button_bar": {}
     }
 }
