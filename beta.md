@@ -72,7 +72,7 @@ There are a few bugs, which we are looking to fix.
 - ArkOS has volume issues on some devices, so it is disabled for now.
 - Some resolutions of the themes need some work, but for the most part are good.
 - The options menus need a bit of reworking.
-- JELOS controls are flipped
+- ~~JELOS controls are flipped~~ **Fixed**
 - In controller mode xbox, the controls dont match the icons.
 
 # Things still to do
