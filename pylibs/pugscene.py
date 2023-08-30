@@ -301,6 +301,7 @@ class BlankScene(BaseScene):
         super().__init__(gui)
 
         self.load_regions("blank", [])
+        self.set_buttons({})
 
 
 class MainMenuScene(BaseScene):
@@ -1184,10 +1185,71 @@ class MessageBoxScene(BaseScene):
             self.set_buttons({'A': ok_text})
 
 
+class DialogSelectionList(BaseScene):
+    def __init__(self, gui, options, register):
+        super().__init__(gui)
+
+        self.options = options
+        self.register = register
+
+        self.gui.set_data("selection_list.title", "")
+        self.gui.set_data("selection_list.description", "")
+        self.gui.set_data("selection_list.image", "NO_IMAGE")
+
+        scene = ("selection_list"
+                + (options.get('want_description', False) and "_description" or "")
+                + (options.get('want_images', False) and "_images" or "")
+                )
+
+        self.load_regions(scene, [
+            'selection_list',
+            ])
+
+        self.tags['selection_list'].reset_options()
+
+        for reg_key, reg_values in register.items():
+            self.tags['selection_list'].add_option(reg_key, reg_values.get("title", reg_key))
+
+        self.last_selection = None
+        self.update_selection()
+
+        if self.options.get('want_cancel', False):
+            self.set_buttons({'A': _("Okay"), 'B': _("Cancel")})
+        else:
+            self.set_buttons({'A': _("Okay")})
+
+    def update_selection(self):
+        selection = self.tags['selection_list'].selected_option()
+
+        if selection == None:
+            self.gui.set_data("selection_list.title", "")
+            self.gui.set_data("selection_list.description", "")
+            self.gui.set_data("selection_list.image", "NO_IMAGE")
+
+        else:
+            self.gui.set_data("selection_list.title", self.register[selection].get("title", ""))
+            self.gui.set_data("selection_list.description", self.register[selection].get("description", ""))
+            self.gui.set_data("selection_list.image", self.register[selection].get("image", "NO_IMAGE"))
+
+        self.last_selection = selection
+
+    def selected_option(self):
+        return self.tags['selection_list'].selected_option()
+
+    def do_update(self, events):
+        super().do_update(events)
+
+        if self.last_selection != self.tags['selection_list'].selected_option():
+            self.update_selection()
+
+        return True
+
+
 __all__ = (
     'StringFormatter',
     'BaseScene',
     'BlankScene',
+    'DialogSelectionList',
     'FiltersScene',
     'LanguageScene',
     'MainMenuScene',

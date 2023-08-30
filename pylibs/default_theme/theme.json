@@ -609,9 +609,38 @@
     "selection_list": {
         "#element:background": {},
 
-        "selection_list": {
+        "#element:option_list:selection_list": {
             "area": [ 0.0, 0.0, 1.0, 1.0 ],
-            "list": []
+            "list": [],
+            "text-clip": true,
+            "align": "midleft"
+        },
+
+        "#element:button_bar": {}
+    },
+
+    "selection_list_description": {
+        "#element:background": {},
+
+        "#element:option_list:selection_list": {
+            "area": [ 0.0, 0.0, 1.0, 1.0 ],
+            "list": [],
+            "text-clip": true,
+            "align": "midleft"
+        },
+
+        "selection_description": {
+            "area": [ 0.0, 0.5, 1.0, 1.0 ],
+            "text": "{selection_list.description}",
+            "font-color": "general_font",
+            "font-size": 20,
+            "text-wrap": true,
+
+            "autoscroll": "marquee",
+
+            "scroll-speed": 40,
+            "scroll-delay-start": 1500,
+            "scroll-delay-end": 1500
         },
 
         "#element:button_bar": {}
@@ -620,14 +649,49 @@
     "selection_list_images": {
         "#element:background": {},
 
-        "selection_list": {
+        "#element:option_list:selection_list": {
             "area": [ 0.0, 0.0, 0.5, 1.0 ],
-            "list": []
+            "list": [],
+            "text-clip": true,
+            "align": "midleft"
         },
 
         "selection_image": {
             "area": [ 0.5, 0.0, 1.0, 1.0 ],
-            "image": "NO_IMAGE"
+            "image": "{selection_list.image}"
+        },
+
+        "#element:button_bar": {}
+    },
+
+    "selection_list_description_images": {
+        "#element:background": {},
+
+        "#element:option_list:selection_list": {
+            "area": [ 0.0, 0.0, 0.5, 0.5 ],
+            "list": [],
+            "text-clip": true,
+            "align": "midleft"
+        },
+
+        "selection_image": {
+            "area": [ 0.5, 0.0, 1.0, 0.5 ],
+            "image": "{selection_list.image}"
+        },
+
+        "selection_description": {
+            "area": [ 0.0, 0.5, 1.0, 1.0 ],
+            "text": "{selection_list.description}",
+
+            "font-color": "general_font",
+            "font-size": 20,
+            "text-wrap": true,
+
+            "autoscroll": "marquee",
+
+            "scroll-speed": 40,
+            "scroll-delay-start": 1500,
+            "scroll-delay-end": 1500
         },
 
         "#element:button_bar": {}

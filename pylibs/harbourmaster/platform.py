@@ -136,12 +136,31 @@ class PlatformJELOS(PlatformBase):
         """
         Copy JELOS PortMaster files here.
         """
-        shutil.copy("/storage/.config/PortMaster/control.txt", "/storage/roms/ports/PortMaster/control.txt")
-        shutil.copy("/storage/.config/PortMaster/gptokeyb", "/storage/roms/ports/PortMaster/gptokeyb")
-        shutil.copy("/storage/.config/PortMaster/gamecontrollerdb.txt", "/storage/roms/ports/PortMaster/gamecontrollerdb.txt")
-        shutil.copy("/storage/.config/PortMaster/mapper.txt", "/storage/roms/ports/PortMaster/mapper.txt")
-        for oga_control in Path("/storage/.config/PortMaster/").glob("oga_controls*"):
-            shutil.copy(oga_control, Path("/storage/roms/ports/PortMaster") / oga_control.name)
+
+        ## Copy the JELOS portmaster stuff into the right place.
+        JELOS_PM_DIR = Path("/storage/.config/PortMaster")
+
+        if not JELOS_PM_DIR.is_dir():
+            shutil.copytree("/usr/config/PortMaster", JELOS_PM_DIR)
+
+        ## This fixes it if you have the older mapper.txt
+        BROKEN_MAPPER = JELOS_PM_DIR / "mapper.txt"
+        BROKEN_MAPPER_MD5 = "edb6c56435798cd8a5bc15be71a3c124"
+        PM_DIR = HM_TOOLS_DIR / "PortMaster"
+
+        if hash_file(BROKEN_MAPPER) == BROKEN_MAPPER_MD5:
+            logger.debug("Replacing broken mapper.txt if it is still there.")
+            FIXED_MAPPER = PM_DIR / ".Backup" / "mapper.txt"
+            shutil.copy(FIXED_MAPPER, BROKEN_MAPPER)
+
+        ## Copy the files as per usual.
+        shutil.copy(JELOS_PM_DIR / "control.txt", PM_DIR / "control.txt")
+        shutil.copy(JELOS_PM_DIR / "gptokeyb", PM_DIR / "gptokeyb")
+        shutil.copy(JELOS_PM_DIR / "gamecontrollerdb.txt", PM_DIR / "gamecontrollerdb.txt")
+        shutil.copy(JELOS_PM_DIR / "mapper.txt", PM_DIR / "mapper.txt")
+
+        for oga_control in JELOS_PM_DIR.glob("oga_controls*"):
+            shutil.copy(oga_control, PM_DIR / oga_control.name)
 
 
 class PlatformArkOS(PlatformGCD_PortMaster, PlatformBase):

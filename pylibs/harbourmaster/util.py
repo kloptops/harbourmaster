@@ -223,6 +223,9 @@ def hash_file(file_name):
     elif not isinstance(file_name, pathlib.PurePath):
         raise ValueError(file_name)
 
+    if not file_name.is_file():
+        return None
+
     md5 = hashlib.md5()
     with file_name.open('rb') as fh:
         md5.update(fh.read())
