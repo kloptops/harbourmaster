@@ -5,37 +5,37 @@ msgstr ""
 "POT-Creation-Date: 2023-09-02 17:22+0800\n"
 "PO-Revision-Date: 2023-09-02 09:23\n"
 "Last-Translator: \n"
-"Language-Team: German\n"
-"Language: de_DE\n"
+"Language-Team: Portuguese, Brazilian\n"
+"Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Crowdin-Project: portmaster\n"
 "X-Crowdin-Project-ID: 610497\n"
-"X-Crowdin-Language: de\n"
+"X-Crowdin-Language: pt-BR\n"
 "X-Crowdin-File: messages.pot\n"
 "X-Crowdin-File-ID: 1\n"
 
 #: pugwash:117
 msgid "German"
-msgstr "Deutsch"
+msgstr ""
 
 #: pugwash:118
 msgid "English"
-msgstr "Englisch"
+msgstr ""
 
 #: pugwash:119
 msgid "Spanish"
-msgstr "Spanisch"
+msgstr ""
 
 #: pugwash:120
 msgid "French"
-msgstr "Französisch"
+msgstr ""
 
 #: pugwash:121
 msgid "Italian"
-msgstr "Italienisch"
+msgstr ""
 
 #: pugwash:122
 msgid "Polish"
@@ -51,15 +51,15 @@ msgstr ""
 
 #: pugwash:300
 msgid "Unknown IP"
-msgstr "Unbekannte IP"
+msgstr ""
 
 #: pugwash:579 pugwash:703
 msgid "N/A"
-msgstr "N/V"
+msgstr ""
 
 #: pugwash:673
 msgid "** NO PORT **"
-msgstr "** KEIN PORT **"
+msgstr ""
 
 #: pugwash:690
 msgid "Ready to Run"
@@ -67,19 +67,19 @@ msgstr ""
 
 #: pugwash:690
 msgid "Requires Files"
-msgstr "Benötigt Dateien"
+msgstr ""
 
 #: pugwash:697 pugwash:718
 msgid "Installed"
-msgstr "Installiert"
+msgstr ""
 
 #: pugwash:699
 msgid "Missing"
-msgstr "Fehlt"
+msgstr ""
 
 #: pugwash:702
 msgid "None"
-msgstr "Keine"
+msgstr ""
 
 #: pugwash:719
 msgid "Update Available"
@@ -97,21 +97,21 @@ msgstr ""
 #: pugwash:823 pugwash:1101 pylibs/pugscene.py:714 pylibs/pugscene.py:722
 #: pylibs/pugscene.py:1142 pylibs/pugscene.py:1174 pylibs/pugscene.py:1217
 msgid "Cancel"
-msgstr "Abbrechen"
+msgstr ""
 
 #: pugwash:1017
 #, python-brace-format
 msgid "Installing {port_name}"
-msgstr "Installation von {port_name}"
+msgstr ""
 
 #: pugwash:1026
 #, python-brace-format
 msgid "Uninstalling {port_name}"
-msgstr "Deinstallation von {port_name}"
+msgstr ""
 
 #: pugwash:1036
 msgid "Updating all port sources:"
-msgstr "Aktualisieren aller Port-Quellen:"
+msgstr ""
 
 #: pugwash:1405
 #, python-brace-format
@@ -121,27 +121,27 @@ msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:101
 msgid "Loading..."
-msgstr "Lädt..."
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:151
 msgid "Loading Info."
-msgstr "Lade Informationen."
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:169 pylibs/harbourmaster/harbour.py:185
 msgid "Fetching latest info."
-msgstr "Lade neuste Informationen"
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:197
 msgid "Fetching latest porters."
-msgstr "Lade neuste Porters"
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:209
 msgid "Loading Sources."
-msgstr "Lade Quellen"
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:365
 msgid "Loading Ports."
-msgstr "Lade Ports."
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:853
 #, python-brace-format
@@ -151,7 +151,7 @@ msgstr ""
 #: pylibs/harbourmaster/harbour.py:860 pylibs/harbourmaster/harbour.py:898
 #: pylibs/harbourmaster/harbour.py:956
 msgid "Installing"
-msgstr "Installiere"
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:870
 msgid "Theme {download_name!r} installed successfully."
@@ -160,103 +160,102 @@ msgstr ""
 #: pylibs/harbourmaster/harbour.py:889 pylibs/harbourmaster/harbour.py:947
 #, python-brace-format
 msgid "Installing {download_name}."
-msgstr "Installiere {download_name}."
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:914 pylibs/harbourmaster/harbour.py:1057
 msgid "Port {download_name!r} installed successfully."
-msgstr "Port {download_name!r} erfolgreich installiert."
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:1023
 msgid "Installation failed, removing files..."
-msgstr "Installation fehlgeschlagen, entferne Dateien..."
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:1035
 #, python-brace-format
 msgid "Port {download_name} installed failed."
-msgstr "Port {download_name} Installation fehlgeschlagen."
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:1047
 msgid "Port {download_name!r} and {runtime_name!r} installed successfully."
-msgstr "Port {download_name!r} und {runtime_name!r} erfolgreich installiert."
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:1052
 msgid "Port {download_name!r} installed sucessfully, but {runtime_name!r} failed to install!!\n\n"
 "Either reinstall to try again, or check the wiki for help."
-msgstr "Port {download_name!r} wurde erfolgreich installiert, Installation von {runtime_name!r} ist fehlgeschlagen\n"
-"Installiere den Port erneut um es nochmal zu versuchen oder besuche das Wiki für Hilfe."
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:1065
 #, python-brace-format
 msgid "Port {runtime} contains a bad runtime, game may not run correctly."
-msgstr "Port {runtime} enthält eine fehlerhafte Runtime, möglicherweise funktioniert das Spiel nicht korrekt."
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:1080
 msgid "Unable do download a runtime when in offline mode."
-msgstr "Runtimes lassen sich nicht im Offline Modus herunterladen."
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:1089
 #, python-brace-format
 msgid "Downloading runtime {runtime}."
-msgstr "Lade runtime {runtime} herunter"
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:1104 pylibs/harbourmaster/harbour.py:1114
 #, python-brace-format
 msgid "Unable to download {runtime}, game may not run correctly."
-msgstr "Runtime konnte nicht runtergeladen werden, öglicherweise funktioniert das Spiel nicht korrekt."
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:1123
 #, python-brace-format
 msgid "Successfully downloaded {runtime}."
-msgstr "Erfolgreich {runtime} heruntergeladen"
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:1129
 #, python-brace-format
 msgid "Unable to find a download for {runtime}."
-msgstr "Es konnte kein Download für {runtime} gefunden werden."
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:1139 pylibs/harbourmaster/harbour.py:1218
 msgid "Unable do download a port when in offline mode."
-msgstr "Ports lassen sich nicht im Offline Modus herunterladen."
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:1236
 #, python-brace-format
 msgid "Unable to find a source for {port_name}"
-msgstr "Es konnte keine Quelle für {port_name} gefunden werden."
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:1250
 #, python-brace-format
 msgid "Unknown port {port_name}"
-msgstr "Unbekannter Port {port_name}"
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:1283
 #, python-brace-format
 msgid "Removing {port_name}"
-msgstr "Entferne {port_name}"
+msgstr ""
 
 #: pylibs/harbourmaster/harbour.py:1315
 #, python-brace-format
 msgid "Successfully uninstalled {port_name}"
-msgstr "Erfolgreich {port_name} deinstalliert"
+msgstr ""
 
 #: pylibs/harbourmaster/source.py:52
 msgid "Cache out of date."
-msgstr "Cache veraltet"
+msgstr ""
 
 #: pylibs/harbourmaster/source.py:57
 msgid "First check."
-msgstr "Erste Überprüfung."
+msgstr ""
 
 #: pylibs/harbourmaster/source.py:60
 msgid "Auto Update."
-msgstr "Automatische Aktualisierung"
+msgstr ""
 
 #: pylibs/harbourmaster/source.py:143
 msgid "Updating"
-msgstr "Aktualisiere"
+msgstr ""
 
 #: pylibs/harbourmaster/source.py:154
 msgid "Up to date already"
-msgstr "Neuste Version bereits installiert"
+msgstr ""
 
 #: pylibs/harbourmaster/source.py:159
 msgid "Fetching latest info"
@@ -264,77 +263,77 @@ msgstr ""
 
 #: pylibs/harbourmaster/source.py:204
 msgid "Done."
-msgstr "Fertig"
+msgstr ""
 
 #: pylibs/harbourmaster/source.py:212
 #, python-brace-format
 msgid "Unable to find {port_name}."
-msgstr "{port_name} konnte nicht gefunden werden"
+msgstr ""
 
 #: pylibs/harbourmaster/source.py:223
 #, python-brace-format
 msgid "Unable to find verification info for {port_name}."
-msgstr "Für {port_name} konnten keine Überprüfungsinformationen gefunden werden."
+msgstr ""
 
 #: pylibs/harbourmaster/source.py:230
 #, python-brace-format
 msgid "Unable to download verification info for {port_name}."
-msgstr "Für {port_name} konnten keine Überprüfungsinformationen heruntergeladen werden."
+msgstr ""
 
 #: pylibs/harbourmaster/source.py:240
 msgid "Success!"
-msgstr "Erfolgreich!"
+msgstr ""
 
 #: pylibs/harbourmaster/source.py:295 pylibs/pugtheme.py:328
 msgid "Fetching info"
-msgstr "Lade Informationen"
+msgstr ""
 
 #: pylibs/harbourmaster/source.py:475
 #, python-brace-format
 msgid "{source_name}: Fetching latest ports"
-msgstr "Lade neuste Ports"
+msgstr ""
 
 #: pylibs/harbourmaster/source.py:514
 msgid "Fetching info."
-msgstr "Lade Informationen"
+msgstr ""
 
 #: pylibs/harbourmaster/source.py:586
 msgid "Unable to download verification file."
-msgstr "Überprüfungsdatei konnte nicht heruntergeladen werden"
+msgstr ""
 
 #: pylibs/harbourmaster/source.py:599
 msgid "Unable to download non zip files."
-msgstr "Nur Zip Dateien können heruntergeladen werden."
+msgstr ""
 
 #: pylibs/harbourmaster/util.py:262
 #, python-brace-format
 msgid "Unable to download file. [{status_code}]"
-msgstr "[{status_code}] konnte nicht heruntergeladen werden."
+msgstr ""
 
 #: pylibs/harbourmaster/util.py:278
 #, python-brace-format
 msgid "Downloading {file_url} - ({total_length_mb})"
-msgstr "Lade {file_url} - ({total_length_mb}) herunter."
+msgstr ""
 
 #: pylibs/harbourmaster/util.py:290 pylibs/harbourmaster/util.py:304
 msgid "Downloading file."
-msgstr "Lade Datei herunter"
+msgstr ""
 
 #: pylibs/harbourmaster/util.py:313
 msgid "Download validation failed."
-msgstr "Download Überprüfung fehlgeschlagen"
+msgstr ""
 
 #: pylibs/harbourmaster/util.py:319
 msgid "Passed file validation."
-msgstr "Dateiüberprüfung erfolgreich"
+msgstr ""
 
 #: pylibs/harbourmaster/util.py:324
 msgid "Unable to validate download."
-msgstr "Download konnte nicht überprüft werden."
+msgstr ""
 
 #: pylibs/pugscene.py:314
 msgid "All Ports"
-msgstr "Alle Ports"
+msgstr ""
 
 #: pylibs/pugscene.py:315
 msgid "Ready to Run Ports"
@@ -342,24 +341,24 @@ msgstr ""
 
 #: pylibs/pugscene.py:316
 msgid "Uninstall Ports"
-msgstr "Ports deinstallieren"
+msgstr ""
 
 #: pylibs/pugscene.py:318
 msgid "Options"
-msgstr "Optionen"
+msgstr ""
 
 #: pylibs/pugscene.py:319
 msgid "Exit"
-msgstr "Beenden"
+msgstr ""
 
 #: pylibs/pugscene.py:321 pylibs/pugscene.py:388 pylibs/pugscene.py:714
 #: pylibs/pugscene.py:722
 msgid "Enter"
-msgstr "Eingabe"
+msgstr ""
 
 #: pylibs/pugscene.py:321
 msgid "Quit"
-msgstr "Verlassen"
+msgstr ""
 
 #: pylibs/pugscene.py:356
 msgid "System"
@@ -367,7 +366,7 @@ msgstr ""
 
 #: pylibs/pugscene.py:358
 msgid "Update Ports"
-msgstr "Ports aktualisieren"
+msgstr ""
 
 #: pylibs/pugscene.py:359
 msgid "Update PortMaster"
@@ -384,21 +383,21 @@ msgstr ""
 
 #: pylibs/pugscene.py:371 pylibs/pugscene.py:422
 msgid "Music: "
-msgstr "Musik"
+msgstr ""
 
 #: pylibs/pugscene.py:371 pylibs/pugscene.py:374 pylibs/pugscene.py:422
 #: pylibs/pugscene.py:431
 msgid "Disabled"
-msgstr "Deaktiviert"
+msgstr ""
 
 #: pylibs/pugscene.py:371 pylibs/pugscene.py:374 pylibs/pugscene.py:422
 #: pylibs/pugscene.py:431
 msgid "Enabled"
-msgstr "Aktiviert"
+msgstr ""
 
 #: pylibs/pugscene.py:374 pylibs/pugscene.py:431
 msgid "Sound FX: "
-msgstr "Sound FX"
+msgstr ""
 
 #: pylibs/pugscene.py:376
 msgid "Interface"
@@ -406,32 +405,32 @@ msgstr ""
 
 #: pylibs/pugscene.py:378
 msgid "Choose Language"
-msgstr "Sprache wählen"
+msgstr ""
 
 #: pylibs/pugscene.py:379
 msgid "Select Theme"
-msgstr "Theme auswählen"
+msgstr ""
 
 #: pylibs/pugscene.py:383
 msgid "Select Color Scheme"
-msgstr "Farbschema auswählen"
+msgstr ""
 
 #: pylibs/pugscene.py:388 pylibs/pugscene.py:515 pylibs/pugscene.py:596
 #: pylibs/pugscene.py:597 pylibs/pugscene.py:649 pylibs/pugscene.py:650
 #: pylibs/pugscene.py:779 pylibs/pugscene.py:781 pylibs/pugscene.py:914
 #: pylibs/pugscene.py:916
 msgid "Back"
-msgstr "Zurück"
+msgstr ""
 
 #: pylibs/pugscene.py:499
 #, python-brace-format
 msgid "{theme_name} (Selected)"
-msgstr "{theme_name} (Ausgewählt)"
+msgstr ""
 
 #: pylibs/pugscene.py:513 pylibs/pugscene.py:597 pylibs/pugscene.py:650
 #: pylibs/pugscene.py:714 pylibs/pugscene.py:722
 msgid "Select"
-msgstr "Auswählen"
+msgstr ""
 
 #: pylibs/pugscene.py:518
 msgid "Download"
@@ -440,8 +439,7 @@ msgstr ""
 #: pylibs/pugscene.py:537
 msgid "Do you want to change theme?\n\n"
 "You will have to restart for it to take affect."
-msgstr "Theme wechseln?\n\n"
-"Neustart erforderlich, damit Änderungen wirksam werden."
+msgstr ""
 
 #: pylibs/pugscene.py:591
 #, python-brace-format
@@ -451,67 +449,65 @@ msgstr ""
 #: pylibs/pugscene.py:614
 msgid "Do you want to change the themes color scheme?\n\n"
 "You will have to restart for it to take affect."
-msgstr "Farbschema für das Theme ändern?\n\n"
-"Neustart erforderlich, damit Änderungen wirksam werden."
+msgstr ""
 
 #: pylibs/pugscene.py:644
 #, python-brace-format
 msgid "{lang_name} (Selected)"
-msgstr "{lang_name} (Ausgewählt)"
+msgstr ""
 
 #: pylibs/pugscene.py:667
 msgid "Do you want to change language?\n\n"
 "You will have to restart for it to take affect."
-msgstr "Sprache wechseln?\n\n"
-"Neustart erforderlich, damit Änderungen wirksam werden."
+msgstr ""
 
 #: pylibs/pugscene.py:714 pylibs/pugscene.py:722
 msgid "Delete"
-msgstr "Löschen"
+msgstr ""
 
 #: pylibs/pugscene.py:714
 msgid "Upper Case"
-msgstr "Großbuchstaben"
+msgstr ""
 
 #: pylibs/pugscene.py:714 pylibs/pugscene.py:722
 msgid "Space"
-msgstr "Leerzeichen"
+msgstr ""
 
 #: pylibs/pugscene.py:722
 msgid "Lower Case"
-msgstr "Kleinbuchstaben"
+msgstr ""
 
 #: pylibs/pugscene.py:779 pylibs/pugscene.py:781
 msgid "Show Info"
-msgstr "Info anzeigen"
+msgstr ""
 
 #: pylibs/pugscene.py:779
 msgid "Filters"
-msgstr "Filter"
+msgstr ""
 
 #: pylibs/pugscene.py:802
 msgid "NO PORTS"
-msgstr "KEINE PORTS"
+msgstr ""
 
 #: pylibs/pugscene.py:809
 msgid "** NO PORTS FOUND **"
-msgstr "** KEINE PORTS GEFUNDEN **"
+msgstr ""
 
 #: pylibs/pugscene.py:812
 msgid "Download ports first."
-msgstr "Zuerst Ports herunterladen."
+msgstr ""
 
 #: pylibs/pugscene.py:814
 msgid "Try removing some filters."
-msgstr "Zuerst Filter entfernen"
+msgstr ""
 
 #: pylibs/pugscene.py:914
 msgid "Install"
-msgstr "Installieren"
+msgstr ""
 
 #: pylibs/pugscene.py:916
 msgid "Uninstall"
-msgstr "Deinstallieren"
+msgstr ""
 
 #: pylibs/pugscene.py:1022
 msgid "Genres:"
@@ -519,7 +515,7 @@ msgstr ""
 
 #: pylibs/pugscene.py:1050
 msgid "Attributes:"
-msgstr "Attribute:"
+msgstr ""
 
 #: pylibs/pugscene.py:1077
 msgid "Porters:"
@@ -527,5 +523,5 @@ msgstr ""
 
 #: pylibs/pugscene.py:1161
 msgid "Are you sure you want to cancel?"
-msgstr "Wirklich abbrechen?"
+msgstr ""
 

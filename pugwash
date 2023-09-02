@@ -120,6 +120,8 @@ ALL_LANGUAGES = {
     "fr_FR": _("French"),
     "it_IT": _("Italian"),
     "pl_PL": _("Polish"),
+    "pt_PT": _("Portuguese (Portugal)"),
+    "pt_BR": _("Portuguese (Brazil)"),
     }
 
 
