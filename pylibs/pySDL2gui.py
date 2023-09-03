@@ -1962,7 +1962,7 @@ class Region:
             raise GUIThemeError('Cannot define text and a list')
 
         self.scroll_pos = 0
-        self.scroll_max = 10
+        self.scroll_max = 0
         self.scroll_last_update = sdl2.SDL_GetTicks64()
         self.progress_amount = 0
         self.page_size = 1
@@ -2182,16 +2182,6 @@ class Region:
 
                 setattr(texture.size, self.align, (x, y))
 
-                if self.autoscroll:
-                    if self.scroll_state == self.SCROLL_FORWADS:
-                        if self.scroll_pos >= self.scroll_max:
-                            self.scroll_state = self.SCROLL_FSM[self.autoscroll][self.scroll_state]
-                            self.scroll_last_update = sdl2.SDL_GetTicks64()
-                    elif self.scroll_state == self.SCROLL_BACKWARDS:
-                        if self.scroll_pos <= 0:
-                            self.scroll_state = self.SCROLL_FSM[self.autoscroll][self.scroll_state]
-                            self.scroll_last_update = sdl2.SDL_GetTicks64()
-
                 with texture.with_color_mod(self.font_color):
                     if self.textclip:
                         texture.draw_in(text_area, clip=True)
@@ -2273,17 +2263,6 @@ class Region:
 
                     setattr(texture.size, self.align, (x, y))
 
-                    if self.autoscroll:
-                        if self.scroll_state == self.SCROLL_FORWADS:
-                            if self.scroll_pos >= self.scroll_max:
-                                self.scroll_state = self.SCROLL_FSM[self.autoscroll][self.scroll_state]
-                                self.scroll_last_update = sdl2.SDL_GetTicks64()
-                        elif self.scroll_state == self.SCROLL_BACKWARDS:
-                            if self.scroll_pos <= 0:
-                                self.scroll_state = self.SCROLL_FSM[self.autoscroll][self.scroll_state]
-                                self.scroll_last_update = sdl2.SDL_GetTicks64()
-
-                    
                     with texture.with_color_mod(self.select_color):
                         if self.textclip:
                             drawn_rect = texture.draw_in(irect, clip=True)
@@ -2444,10 +2423,12 @@ class Region:
 
             if options is None:
                 self.selected = new_index
+                self.gui.update = True
                 return new_index
 
             if options[new_index] is not None:
                 self.selected = new_index
+                self.gui.update = True
                 return new_index
 
             index += direction
@@ -2508,6 +2489,7 @@ class Region:
 
         else:
             self.selectedx = self.new_index
+            self.gui.update = True
 
         return new_index
 
@@ -2521,37 +2503,61 @@ class Region:
         updated = False
         current_time = sdl2.SDL_GetTicks64()
 
-        if self.autoscroll:
+        if self.autoscroll and self.scroll_max > 0:
             scroll_change = False
+            scroll_pos = self.scroll_pos
             scroll_dt = (current_time - self.scroll_last_update)
             # print(f"{self.autoscroll} -> {self.scroll_state} -> {scroll_dt} -> {self.scroll_pos} / {self.scroll_max}")
+
+            if self.scroll_state == self.SCROLL_FORWADS:
+                if self.scroll_pos >= self.scroll_max:
+                    self.scroll_state = self.SCROLL_FSM[self.autoscroll][self.scroll_state]
+                    self.scroll_last_update = current_time
+                    scroll_dt = 0
+                    # updated = True
+
+            elif self.scroll_state == self.SCROLL_BACKWARDS:
+                if self.scroll_pos <= 0:
+                    self.scroll_state = self.SCROLL_FSM[self.autoscroll][self.scroll_state]
+                    self.scroll_last_update = current_time
+                    scroll_dt = 0
+                    # updated = True
+
             if self.scroll_state == self.SCROLL_FORWADS:
                 if scroll_dt >= self.scroll_speed:
                     self.scroll_pos += 1
                     self.scroll_last_update = current_time
+                    # updated = True
 
             elif self.scroll_state == self.SCROLL_BACKWARDS:
                 if scroll_dt >= self.scroll_speed:
                     self.scroll_pos -= 1
                     self.scroll_last_update = current_time
+                    # updated = True
 
             elif self.scroll_state == self.SCROLL_START_PAUSE:
                 if scroll_dt >= self.scroll_delay_start:
                     self.scroll_state = self.SCROLL_FSM[self.autoscroll][self.scroll_state]
                     self.scroll_last_update = current_time
                     scroll_change = True
+                    # updated = True
 
             elif self.scroll_state == self.SCROLL_END_PAUSE:
                 if scroll_dt >= self.scroll_delay_end:
                     self.scroll_state = self.SCROLL_FSM[self.autoscroll][self.scroll_state]
                     self.scroll_last_update = current_time
                     scroll_change = True
+                    # updated = True
 
             if scroll_change:
                 if self.scroll_state == self.SCROLL_FORWADS:
                     self.scroll_pos = 0
                 if self.scroll_state == self.SCROLL_BACKWARDS:
                     self.scroll_pos = self.scroll_max
+
+            if scroll_pos != self.scroll_pos:
+                # print(f"{scroll_pos} -> {self.scroll_pos}")
+                updated = True
 
         if self.text and self.scrollable:
             if self.gui.events.was_pressed('UP'):
@@ -2567,6 +2573,7 @@ class Region:
             length= len(self.list)
             selected = self.selected
             options = self.options
+            changed = False
             if options is not None and len(options) != length:
                 options = None
 
@@ -2574,38 +2581,43 @@ class Region:
                 self.list_select(self.selected - self.page_size, direction=-1, allow_wrap=False)
 
                 self.gui.sounds.play(self.click_sound)
-                updated = True
+                changed = True
 
             elif self.gui.events.was_pressed('R1'):
                 self.list_select(self.selected + self.page_size, direction=1, allow_wrap=False)
 
                 self.gui.sounds.play(self.click_sound)
-                updated = True
+                changed = True
 
             elif self.gui.events.was_pressed('UP'):
                 self.list_select(self.selected - 1, direction=-1, allow_wrap=True)
 
                 self.gui.sounds.play(self.click_sound)
-                updated = True
+                changed = True
 
             elif self.gui.events.was_pressed('DOWN'):
                 self.list_select(self.selected + 1, direction=1, allow_wrap=True)
 
                 self.gui.sounds.play(self.click_sound)
-                updated = True
+                changed = True
 
             elif self.gui.events.was_pressed('LEFT'):
                 self.bar_select(self.bar_selected() - 1, allow_wrap=False)
-                updated = True
+                changed = True
 
             elif self.gui.events.was_pressed('RIGHT'):
                 self.bar_select(self.bar_selected() + 1, allow_wrap=False)
-                updated = True
+                changed = True
 
-            if updated:
+            if changed:
                 if self.autoscroll:
                     self.scroll_state = self.SCROLL_START_PAUSE
                     self.scroll_last_update = current_time
+
+                updated = True
+
+        if updated:
+            self.gui.updated = True
 
         return updated
 
@@ -2620,6 +2632,7 @@ class Region:
             self.scroll_state = self.SCROLL_START_PAUSE
             self.scroll_pos = 0
             self.scroll_last_update = sdl2.SDL_GetTicks64()
+            self.gui.update = True
         else:
             self._text = val
         #print(f'text set to:\n{self._text}')
@@ -2630,6 +2643,7 @@ class Region:
     @bar.setter
     def bar(self, val):
         self._bar = self._verify_bar(None, val, align=self.align)
+        self.gui.update = True
 
     def _verify_bar(self, name, default=None, area=None, optional=True, align=None):
         '''

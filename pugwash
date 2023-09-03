@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-PORTMASTER_VERSION = '8.3.8b'
+PORTMASTER_VERSION = '8.3.9b'
 PORTMASTER_UPDATE_URL = 'https://github.com/kloptops/harbourmaster/releases/latest/download/'
 PORTMASTER_UPDATE_FREQUENCY = (60 * 60 * 1)
 
@@ -486,7 +486,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.message_box_scene = None
         self.was_cancelled = False
 
-        self.updated = False
+        self.updated = True
         self.in_screenshot = False
 
         device_info = harbourmaster.device_info()
@@ -509,6 +509,8 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.set_port_info(None, {})
 
         self.lang_list = lang_list()
+        self.update_counter = 0
+        self.draw_counter = 0
 
     def init_theme(self):
         ## This has to run before harbourmaster is initialised, so we gotta work it out ourself.
@@ -583,6 +585,8 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             if scene.do_update(self.events):
                 break
 
+        self.update_counter += 1
+
     def do_draw(self):
         ## Check for any keys changed in our template system.
         if len(self.changed_keys):
@@ -593,19 +597,24 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             self.changed_keys.clear()
 
         # Drawing happens in forwards order
-        # if self.updated:
-        self.renderer.clear()
+        if self.updated or self.in_screenshot:
+            self.renderer.clear()
 
-        for scene in self.scenes[-1][1]:
-            scene.do_draw()
+            for scene in self.scenes[-1][1]:
+                scene.do_draw()
 
-        if not self.in_screenshot:
-            self.renderer.present()
+            if not self.in_screenshot:
+                self.renderer.present()
+                self.updated = False
+                self.draw_counter += 1
 
-        self.clean()
-        # self.window.refresh()
+            self.clean()
 
-        # self.updated = False
+        if self.timers.elapsed('updates_per_second', 1000, run_first=True):
+            print(f"UPS: {self.draw_counter} / {self.update_counter}")
+            self.update_counter = 0
+            self.draw_counter = 0
+
 
     def create_screenshot(self):
         """
@@ -743,6 +752,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
     ## Messagebox / Callback stuff
     def callback_update(self):
+        self.updated = True
         if self.message_box_scene:
             self.message_box_scene.tags['message_text'].text = '\n'.join(self.callback_messages[-13:])
 
@@ -933,6 +943,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
         # print(f"ACTIVATE {scene}")
         scene.scene_activate()
+        self.updated = True
 
     def pop_scene(self, name=None):
         """
@@ -947,17 +958,22 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
                 logger.debug(f"SCENE LIST: {self.scene_list()}")
 
+                self.updated = True
+
             elif len(self.scenes) > 1:
                 logger.debug(f"POP SCENE LAYER {self.scenes[-1][0]}")
                 self.scenes.pop(-1)
 
                 logger.debug(f"SCENE LIST: {self.scene_list()}")
 
+                self.updated = True
+
         elif name == self.scenes[-1][0]:
             # If name is the active, scene, just remove a single scene layer from it.
             logger.debug(f"POP SCENE {name} REM {self.scenes[-1][0]}")
             if len(self.scenes[-1][1]) > 1:
                 self.scenes[-1][1].pop(-1)
+                self.updated = True
 
             logger.debug(f"SCENE LIST: {self.scene_list()}")
 
@@ -970,12 +986,14 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
                 logger.debug(f"POP SCENE {name} LAYER {self.scenes[-1][0]}")
 
                 self.scenes.pop(-1)
+                self.updated = True
 
             logger.debug(f"SCENE LIST: {self.scene_list()}")
 
         if not self.scenes[-1][1][-1].active:
             # print(f"ACTIVATE {self.scenes[-1][1][-1]}")
             self.scenes[-1][1][-1].scene_activate()
+            self.updated = True
 
     ## Cancelling code.
     def do_cancel(self):

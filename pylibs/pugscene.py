@@ -218,12 +218,14 @@ class BaseScene:
             if region_name in self.image_regions:
                 region, text = self.image_regions[region_name]
                 new_image = self.gui.format_data(text)
-                print(f"Loading image {region} -> {text} -> {new_image}")
+                # print(f"Loading image {region} -> {text} -> {new_image}")
                 region.image = self.gui.images.load(new_image)
+                self.gui.updated = True
 
             if region_name in self.text_regions:
                 region, text = self.text_regions[region_name]
                 region.text = self.gui.format_data(text)
+                self.gui.updated = True
 
             elif region_name in self.bar_regions:
                 region, bar = self.bar_regions[region_name]
@@ -236,6 +238,7 @@ class BaseScene:
                     new_bar[i] = self.gui.format_data(bar_item)
 
                 region.bar = new_bar
+                self.gui.updated = True
 
     def do_update(self, events):
         for region in self.regions:
@@ -285,7 +288,7 @@ class BaseScene:
             output.extend(key)
             output.append(action)
 
-        print(f"-> {key_map} = {output}")
+        # print(f"-> {key_map} = {output}")
 
         self.tags['button_bar'].bar = output
 
