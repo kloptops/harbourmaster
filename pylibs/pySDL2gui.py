@@ -2341,6 +2341,7 @@ class Region:
         self.list = []
         self.options = []
         self._list_selected = []
+        self.gui.updated = True
 
     def add_option(self, option, text, index=0):
         if self.list is None:
@@ -2360,6 +2361,7 @@ class Region:
         while len(self._list_selected) < len(self.list):
             self._list_selected.append(0)
 
+        self.gui.updated = True
         self.options.append(option)
         self.list.append(text)
         self._list_selected.append(index)
@@ -2486,6 +2488,7 @@ class Region:
 
         if self._bar is None:
             self._list_selected[selected] = new_index
+            self.gui.updated = True
 
         else:
             self.selectedx = self.new_index

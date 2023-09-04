@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-PORTMASTER_VERSION = '8.3.9b'
+PORTMASTER_VERSION = '8.3.10b'
 PORTMASTER_UPDATE_URL = 'https://github.com/kloptops/harbourmaster/releases/latest/download/'
 PORTMASTER_UPDATE_FREQUENCY = (60 * 60 * 1)
 
@@ -349,6 +349,100 @@ def fifo_line_reader(io):
         yield ""
 
 
+class DirectoryScanner:
+    def __init__(self):
+        self.scans = {}
+        self.results = {}
+        self.callback = None
+
+    def _check(self, scan_dir, scan_info):
+        checks = {}
+        try:
+            result = next(scan_info[1])
+            scan_info[0] = result
+            return result, False
+
+        except StopIteration:
+            del self.scans[scan_dir]
+            self.results[scan_dir] = scan_info[0]
+            return scan_info[0], True
+
+    def _get_directory_size(self, path):
+        total_size = 0
+
+        for entry in os.scandir(path):
+            if entry.name.startswith('.'):
+                continue
+
+            elif entry.is_file():
+                total_size += entry.stat().st_size
+
+            elif entry.is_dir():
+                yield from self._get_directory_size(entry.path)
+
+        yield total_size
+
+    def _calculate_total_size(self, path):
+        total_size = 0
+
+        for size in self._get_directory_size(path):
+            total_size += size
+            yield total_size
+
+        yield total_size
+
+    def iterate(self, max_scans=30):
+        scanned_items = 0
+        scanned = {}
+
+        while scanned_items < max_scans and len(self.scans) > 0:
+            for scan_dir in list(self.scans.keys()):
+                scanned[scan_dir] = self._check(scan_dir, self.scans[scan_dir])
+
+                scanned_items += 1
+                if scanned_items >= max_scans:
+                    break
+
+        if self.callback:
+            for scanned_dir in scanned:
+                self.callback(scanned_dir, *scanned[scanned_dir])
+
+    def check_directory(self, directory, nice_size=True):
+        # Check if results are available for a directory scan, otherwise start it scanning
+        if directory in self.results:
+            if nice_size:
+                return harbourmaster.nice_size(self.results[directory])
+
+            else:
+                return self.results[directory]
+
+        elif directory in self.scans:
+            if nice_size:
+                return f"~ {harbourmaster.nice_size(self.scans[directory][0])}"
+
+            else:
+                return None
+
+        else:
+            self.scans[directory] = temp = [0, self._calculate_total_size(directory)]
+            if nice_size:
+                return f"~ {harbourmaster.nice_size(self.scans[directory][0])}"
+
+            return None
+
+    def clear_directory(self, directory):
+        # Clear data about a directory, cancel any scans in progress
+        if directory in self.scans:
+            del self.scans[directory]
+
+        if directory in self.results:
+            del self.results[directory]
+
+    def clear_all(self):
+        # Clear all scans in progress
+        self.scans.clear()
+
+
 class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
     TICK_INTERVAL = 1000 // 5
     TEXT_DATA_FREQ = 5000
@@ -460,6 +554,8 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.cancellable = True
 
         self.themes = ThemeEngine(self, force_theme=force_theme)
+        self.dir_scanner = DirectoryScanner()
+        self.dir_scanner.callback = self.dir_scanner_callback
 
         self.text_data = {}
         self.changed_keys = set()
@@ -511,6 +607,10 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.lang_list = lang_list()
         self.update_counter = 0
         self.draw_counter = 0
+
+        self.port_size_active_port = None
+        self.port_size_files = {}
+        self.port_size_file_lookup = {}
 
     def init_theme(self):
         ## This has to run before harbourmaster is initialised, so we gotta work it out ourself.
@@ -585,6 +685,10 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             if scene.do_update(self.events):
                 break
 
+        if self.timers.elapsed('dir_scan_interval', 500, run_first=True):
+            self.dir_scanner.iterate(50)
+            # print(f"SCAN: {self.dir_scanner.check_directory(harbourmaster.HM_PORTS_DIR)}")
+
         self.update_counter += 1
 
     def do_draw(self):
@@ -614,7 +718,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             print(f"UPS: {self.draw_counter} / {self.update_counter}")
             self.update_counter = 0
             self.draw_counter = 0
-
+            self.updated = True
 
     def create_screenshot(self):
         """
@@ -687,6 +791,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             self.set_data("port_info.ready_to_run", "")
             self.set_data("port_info.runtime", "")
             self.set_data("port_info.download_size", "")
+            self.set_data("port_info.install_size", "")
             # self.set_data("port_info.image", "no-image")
             return
 
@@ -712,6 +817,12 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             self.set_data("port_info.runtime_status", _("N/A"))
 
         self.set_data("port_info.download_size", harbourmaster.nice_size(self.hm.port_download_size(port_name)))
+        if 'files' in port_info and port_info['files'] is not None:
+            self.get_port_size(port_name, port_info)
+        else:
+            self.set_data("port_info.install_size", "")
+
+        print(f"INFO: {port_info}")
 
     def set_theme_info(self, theme_name, theme_info):
         ## TODO: make this better :D
@@ -734,6 +845,77 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.set_data("theme_info.description", theme_info['description'])
         self.set_data("theme_info.creator", theme_info['creator'])
         self.set_data("theme_info.status", theme_info['status'])
+
+    def get_port_size(self, port_name, port_info):
+        self.port_size_active_port = port_name
+
+        if port_name not in self.port_size_files:
+            if port_info is None:
+                # HRMMMMMmmmmmm
+                return
+
+            self.port_size_files[port_name] = {}
+
+            ports_dir = harbourmaster.HM_PORTS_DIR
+            for file_name in port_info['files']:
+                if file_name == 'port.json':
+                    continue
+
+                full_file_name = ports_dir / file_name
+                if not full_file_name.is_absolute():
+                    full_file_name = full_file_name.resolve()
+
+                lookup = self.port_size_file_lookup.setdefault(full_file_name, [])
+                if port_name not in lookup:
+                    lookup.append(port_name)
+
+                if full_file_name.is_file():
+                    self.port_size_files[port_name][full_file_name] = [os.stat(full_file_name).st_size, True]
+
+                else:
+                    result = self.dir_scanner.check_directory(full_file_name, False)
+                    if result is None:
+                        self.port_size_files[port_name][full_file_name] = [0, False]
+                    else:
+                        self.port_size_files[port_name][full_file_name] = [result, True]
+
+        port_size = 0
+        all_found = True
+        for port_size_info in self.port_size_files[port_name].values():
+            port_size += port_size_info[0]
+            if not port_size_info[1]:
+                all_found = False
+
+        # print(f"PN: {port_name}")
+        if not all_found:
+            self.set_data("port_info.install_size", f"~ {harbourmaster.nice_size(port_size)}")
+
+        else:
+            self.set_data("port_info.install_size", harbourmaster.nice_size(port_size))
+
+    def delete_port_size(self, port_name):
+        # Delete info about a port
+        if port_name not in self.port_size_files:
+            for port_file, port_info in port_self.port_size_files[port_name]:
+                if port_name in self.port_size_file_lookup[port_file]:
+                    self.port_size_file_lookup[port_file].remove(port_name)
+
+            del self.port_size_files[port_name]
+
+    def clear_port_sizes(self):
+        self.port_size_file_lookup.clear()
+        self.port_size_files.clear()
+        self.port_size_active_port = None
+
+    def dir_scanner_callback(self, scan_dir, dir_size, is_final=False):
+        # print(f"SCAN: {scan_dir}: {dir_size}, {is_final}")
+        if scan_dir in self.port_size_file_lookup:
+            for port_name in self.port_size_file_lookup[scan_dir]:
+                self.port_size_files[port_name][scan_dir][0] = dir_size
+                self.port_size_files[port_name][scan_dir][1] = is_final
+
+                if port_name == self.port_size_active_port:
+                    self.get_port_size(port_name, None)
 
     def set_data(self, key, value):
         if self.text_data.get(key, None) == value:
@@ -839,6 +1021,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
             self.push_scene('message_box', MessageBoxScene(
                 self, message, want_cancel=want_cancel, ok_text=ok_text, cancel_text=cancel_text))
 
+            self.updated = True
             try:
                 while True:
                     if self.events.was_pressed('A'):
@@ -1046,6 +1229,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
 
             with self.enable_cancellable(False):
                 self.hm.uninstall_port(port_name)
+                self.delete_port_size(port_name)
                 self.hm.load_ports()
 
     def do_update_ports(self):

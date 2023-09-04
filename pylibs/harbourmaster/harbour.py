@@ -710,11 +710,30 @@ class HarbourMaster():
     def list_ports(self, filters=[]):
         ## Filters can be genre, runtime
 
-        ports = {}
+        tmp_ports = {}
+
+        if 'installed' in filters:
+            for port_name, port_info in self.installed_ports.items():
+                if port_name.casefold() in tmp_ports:
+                    continue
+
+                if not self.match_filters(filters, port_info):
+                    continue
+
+                tmp_ports[port_name.casefold()] = port_info
+
+            for port_name, port_info in self.broken_ports.items():
+                if port_name.casefold() in tmp_ports:
+                    continue
+
+                if not self.match_filters(filters, port_info):
+                    continue
+
+                tmp_ports[port_name.casefold()] = port_info
 
         for source_prefix, source in self.sources.items():
             for port_name in source.ports:
-                if port_name.casefold() in ports:
+                if port_name.casefold() in tmp_ports:
                     continue
 
                 port_info = source.port_info(port_name)
@@ -725,26 +744,12 @@ class HarbourMaster():
                 if not self.match_requirements(port_info):
                     continue
 
-                ports[port_name.casefold()] = port_info
+                tmp_ports[port_name.casefold()] = port_info
 
-        if 'installed' in filters:
-            for port_name, port_info in self.installed_ports.items():
-                if port_name.casefold() in ports:
-                    continue
-
-                if not self.match_filters(filters, port_info):
-                    continue
-
-                ports[port_name.casefold()] = port_info
-
-            for port_name, port_info in self.broken_ports.items():
-                if port_name.casefold() in ports:
-                    continue
-
-                if not self.match_filters(filters, port_info):
-                    continue
-
-                ports[port_name.casefold()] = port_info
+        ports = {
+            port_name: port_info
+            for port_name, port_info in sorted(tmp_ports.items(), key=lambda x: x[1].get('attr', {}).get('title', x[0]).casefold())
+            }
 
         return ports
 
