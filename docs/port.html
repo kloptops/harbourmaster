@@ -113,7 +113,8 @@
     <textarea id="instructions" name="instructions" required></textarea>
 
     <label for="porter">Porter:</label>
-    <input type="text" id="porter" name="porter" required>
+    <select id="porter" name="porter" multiple>
+    </select>
 
     <label for="blank">&nbsp;</label>
     <label for="ready-to-run">
@@ -149,6 +150,28 @@
 
 
   <script>
+    var porters = {};
+    async function getPorters() {
+      try {
+        var response = await fetch('https://raw.githubusercontent.com/PortsMaster/PortMaster-Info/main/porters.json'); // Replace 'YOUR_JSON_URL_HERE' with the actual URL of your JSON data.
+        if (!response.ok) {
+          throw new Error('Network response was not ok.');
+        }
+        porters = await response.json();
+      } catch (error) {
+        console.error('Error fetching JSON data:', error);
+      }
+
+      porter_list = document.getElementById("porter")
+      for (let x in porters) {
+        var option = document.createElement('option');
+        option.text = option.value = x;
+        porter_list.add(option);
+      }
+    }
+
+    getPorters();
+
     function getJsonTemplate() {
       portJson = {
         "version": 2,
@@ -157,7 +180,7 @@
         "items_opt": null,
         "attr": {
           "title": "",
-          "porter": "",
+          "porter": [],
           "desc": "",
           "inst": "",
           "genres": [],
@@ -328,7 +351,10 @@
       var version = document.getElementById('port-version');
       version.value = json.version;
       var porter = document.getElementById('porter');
-      porter.value = json.attr.porter;
+      Array.from(porter.options).forEach(function (option) {
+        option.selected = json.attr.porter.includes(option.value);
+      });
+
       var description = document.getElementById('description');
       description.value = json.attr.desc;
       var instructions = document.getElementById('instructions');
@@ -385,7 +411,8 @@
       var genres = Array.from(document.getElementById("genres").selectedOptions).map(o => o.value);
       var description = document.getElementById("description").value;
       var instructions = document.getElementById("instructions").value;
-      var porter = document.getElementById("porter").value;
+      var porter = Array.from(document.getElementById("porter").selectedOptions).map(({ value }) => value);
+      console.log(porter)
       var runtime = document.getElementById("runtime").value;
       var readyToRun = document.getElementById("ready-to-run").checked;
       var image = document.getElementById("image").value || null;
