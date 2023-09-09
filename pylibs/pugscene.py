@@ -89,6 +89,9 @@ class StringFormatter:
         output = []
         stack = [True]
 
+        # TRANSLATIONS :D
+        text = gettext.dgettext('themes', text)
+
         for before, key in self.parse_text(text):
             if stack[-1] and before != '':
                 output.append(before)
@@ -994,6 +997,36 @@ class FiltersScene(BaseScene):
         if self.gui.hm is None:
             return
 
+        filter_translation = {
+            "action":           _("Action"),
+            "adventure":        _("Adventure"),
+            "arcade":           _("Arcade"),
+            "casino/card":      _("Casino/Card"),
+            "fps":              _("First Person Shooter"),
+            "platformer":       _("Platformer"),
+            "puzzle":           _("Puzzle"),
+            "racing":           _("Racing"),
+            "rhythm":           _("Rhythm"),
+            "rpg":              _("Role Playing Game"),
+            "simulation":       _("Simulation"),
+            "sports":           _("Sports"),
+            "strategy":         _("Strategy"),
+            "visual novel":     _("Visual Novel"),
+            "other":            _("Other"),
+
+            "rtr":              _("Ready to Run"),
+            "not installed":    _("Not Installed"),
+            "update available": _("Update Available"), # To be added
+
+            "mono":             _("{runtime_name} Runtime").format(runtime_name="Mono"),
+            "godot":            _("{runtime_name} Runtime").format(runtime_name="Godot/FRT"),
+            }
+
+        # Hack to make other appear last, by default the order will be 0, you can set it to -1 for it to appear at the top.
+        sort_order = {
+            'other': 1,
+            }
+
         genres = self.locked_genres + self.selected_genres
         total_ports = len(self.gui.hm.list_ports(genres))
 
@@ -1007,16 +1040,16 @@ class FiltersScene(BaseScene):
 
         self.tags['filter_list'].reset_options()
 
-        for hm_genre in harbourmaster.HM_GENRES:
+        for hm_genre in sorted(harbourmaster.HM_GENRES, key=lambda genre: (sort_order.get(genre, 0), filter_translation.get(genre, genre))):
             if hm_genre in self.locked_genres:
                 continue
 
             if hm_genre in genres:
                 ports = total_ports
-                text = ["    ", "_CHECKED", f"  {hm_genre}", None, "    ", f"  {ports}"]
+                text = ["    ", "_CHECKED", f"  {filter_translation.get(hm_genre, hm_genre)}", None, "    ", f"  {ports} "]
             else:
                 ports = len(self.gui.hm.list_ports(genres + [hm_genre]))
-                text = ["    ", "_UNCHECKED", f"  {hm_genre}", None, "    ", f"  {ports}"]
+                text = ["    ", "_UNCHECKED", f"  {filter_translation.get(hm_genre, hm_genre)}", None, "    ", f"  {ports} "]
 
             if ports == 0:
                 continue
@@ -1033,16 +1066,16 @@ class FiltersScene(BaseScene):
 
         first_add = True
 
-        for hm_genre in ['rtr', 'mono']:   # 'godot'
+        for hm_genre in ['rtr', 'mono', 'not installed']:   # 'godot', 'updates available'
             if hm_genre in self.locked_genres:
                 continue
 
             if hm_genre in genres:
                 ports = total_ports
-                text = ["    ", "_CHECKED", f"  {hm_genre}", None, "    ", f"  {ports}"]
+                text = ["    ", "_CHECKED", f"  {filter_translation.get(hm_genre, hm_genre)}", None, "    ", f"  {ports}"]
             else:
                 ports = len(self.gui.hm.list_ports(genres + [hm_genre]))
-                text = ["    ", "_UNCHECKED", f"  {hm_genre}", None, "    ", f"  {ports}"]
+                text = ["    ", "_UNCHECKED", f"  {filter_translation.get(hm_genre, hm_genre)}", None, "    ", f"  {ports}"]
 
             if ports == 0:
                 continue
@@ -1066,10 +1099,10 @@ class FiltersScene(BaseScene):
 
             if hm_genre in genres:
                 ports = total_ports
-                text = ["    ", "_CHECKED", f"  {hm_genre}", None, "    ", f"  {ports}"]
+                text = ["    ", "_CHECKED", f"  {filter_translation.get(hm_genre, hm_genre)}", None, "    ", f"  {ports}"]
             else:
                 ports = len(self.gui.hm.list_ports(genres + [hm_genre]))
-                text = ["    ", "_UNCHECKED", f"  {hm_genre}", None, "    ", f"  {ports}"]
+                text = ["    ", "_UNCHECKED", f"  {filter_translation.get(hm_genre, hm_genre)}", None, "    ", f"  {ports}"]
 
             if ports == 0:
                 continue

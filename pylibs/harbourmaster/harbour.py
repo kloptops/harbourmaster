@@ -711,6 +711,10 @@ class HarbourMaster():
         ## Filters can be genre, runtime
 
         tmp_ports = {}
+        not_installed = 'not installed' in filters
+        if not_installed:
+            filters = list(filters)
+            filters.remove('not installed')
 
         if 'installed' in filters:
             for port_name, port_info in self.installed_ports.items():
@@ -733,6 +737,11 @@ class HarbourMaster():
 
         for source_prefix, source in self.sources.items():
             for port_name in source.ports:
+                if not_installed and (
+                        port_name.casefold() in self.installed_ports.keys() or
+                        port_name.casefold() in self.broken_ports.keys()):
+                    continue
+
                 if port_name.casefold() in tmp_ports:
                     continue
 

@@ -11,7 +11,7 @@ We are delighted to present the first public beta the new PortMaster GUI.
 - Port previews, we can really showcase the ports.
 - Cancellable downloads, accidentally started a 300mb download? Get out of here.
 - Filter ports by genre/porter/runtime
-- Localizations (We currently have English, Italian, French, German, and Polish), [translators welcome!](https://crowdin.com/project/portmaster)
+- Localizations (We currently have English, Italian, French, German, and Polish), translators welcome! [![Crowdin](https://badges.crowdin.net/portmaster/localized.svg)](https://crowdin.com/project/portmaster)
 - **Themes:**
   - Since it was possible with the custom GUI, we went for it.
   - We have a few themes at launch, but contributions are more than welcome.

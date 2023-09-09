@@ -120,6 +120,40 @@ def oc_join(strings):
 
 
 @functools.lru_cache(maxsize=512)
+def version_parse(version):
+    result = []
+
+    i = 0
+    while i < len(version):
+        number = ""
+        suffix = ""
+        while i < len(version):
+            if not version[i].isnumeric():
+                break
+
+            number += version[i]
+            i += 1
+
+        if number != "":
+            result.append(int(number))
+
+        while i < len(version):
+            if version[i].isnumeric():
+                break
+
+            c = version[i]
+            i += 1
+
+            if c not in '()[],_.-':
+                suffix += c
+
+        if suffix != "":
+            result.append(suffix)
+
+    return tuple(result)
+
+
+@functools.lru_cache(maxsize=512)
 def name_cleaner(text):
     temp = re.sub(r'[^a-zA-Z0-9 _\-\.]+', '', text.strip().lower())
     return re.sub(r'[ \.]+', '.', temp)
@@ -565,4 +599,5 @@ __all__ = (
     'remove_pm_signature',
     'runtime_nicename',
     'timeit',
+    'version_parse',
     )

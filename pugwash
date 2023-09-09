@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-PORTMASTER_VERSION = '8.3.10b'
+PORTMASTER_VERSION = '8.3.11b'
 PORTMASTER_UPDATE_URL = 'https://github.com/kloptops/harbourmaster/releases/latest/download/'
 PORTMASTER_UPDATE_FREQUENCY = (60 * 60 * 1)
 
@@ -113,29 +113,21 @@ __builtins__.CURRENT_LANG = None
 
 
 ALL_LANGUAGES = {
-    ## Keep it in order of importance
+    ## Keep it in order of importance, for example pt_PT before pt_BR.
     "de_DE": _("German"),
+    "da_DK": _("Danish"),
     "en_US": _("English"),
     "es_ES": _("Spanish"),
+    "fi_FI": _("Finnish"),
     "fr_FR": _("French"),
     "it_IT": _("Italian"),
+    "ja_JP": _("Japanese"),
+    "nl_NL": _("Dutch"),
     "pl_PL": _("Polish"),
     "pt_PT": _("Portuguese (Portugal)"),
     "pt_BR": _("Portuguese (Brazil)"),
+    "zh_CN": _("Chinese Simplified"),
     }
-
-
-def lang_opts(lang):
-    yield lang
-
-    if '.' in lang:
-        yield lang.rsplit('.', 1)[0]
-
-    if '_' in lang and '.' in lang:
-        yield (lang.rsplit('_', 1)[0] + lang.rsplit('.')[1])
-
-    if '_' in lang:
-        yield lang.rsplit('_', 1)[0]
 
 
 def check_lang(lang):
@@ -157,7 +149,8 @@ def check_lang(lang):
         lang = lang.split('_', 1)[0]
 
     for lang_opt in ALL_LANGUAGES:
-        if lang_opt.startswith(lang):
+        temp = LANG_DIR / lang_opt / "LC_MESSAGES"
+        if temp.is_dir() and lang_opt.startswith(lang):
             return lang_opt
 
     return None
@@ -219,6 +212,7 @@ def lang_list():
 
 load_lang()
 gettext.bindtextdomain('messages', str(LANG_DIR))
+gettext.bindtextdomain('themes', str(LANG_DIR))
 gettext.textdomain('messages')
 
 ################################################################################
@@ -562,6 +556,7 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.formatter = StringFormatter(self.text_data)
 
         self.theme_data = self.themes.gui_init()
+        self.resources.add_path(PYLIB_PATH / 'resources')
         self.theme_downloader = None
 
         self.spinner = 0
@@ -612,11 +607,12 @@ class PortMasterGUI(pySDL2gui.GUI, harbourmaster.Callback):
         self.port_size_files = {}
         self.port_size_file_lookup = {}
 
-    def init_theme(self):
-        ## This has to run before harbourmaster is initialised, so we gotta work it out ourself.
-        theme_name = self.get_current_theme()
+    # def init_theme(self):
+    #     ## This has to run before harbourmaster is initialised, so we gotta work it out ourself.
+    #     theme_name = self.get_current_theme()
 
-        self.resources.add_path(self.get_theme_dir(theme_name))
+    #     self.resources.add_path(PYLIB_PATH / 'resources')
+    #     self.resources.add_path(self.get_theme_dir(theme_name))
 
     def get_config(self):
         cfg_dir = harbourmaster.HM_TOOLS_DIR / "PortMaster"
@@ -1602,7 +1598,7 @@ def portmaster_check_update(pm, config, temp_dir):
         with open(cfg_file, 'w') as fh:
             json.dump(cfg_data, fh, indent=4)
 
-        if PORTMASTER_VERSION != latest_version:
+        if harbourmaster.version_parse(PORTMASTER_VERSION) < harbourmaster.version_parse(latest_version):
             if pm.message_box(
                     _("There is a new version of PortMaster {portmaster_version}\n\nDo you want to upgrade?").format(
                         portmaster_version=latest_version),

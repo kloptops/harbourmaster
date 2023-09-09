@@ -1,5 +1,5 @@
-# harbourmaster
-New Portmaster Backend Engine
+# HarbourMaster
+PortMaster Package Manager
 
 # Goals
 

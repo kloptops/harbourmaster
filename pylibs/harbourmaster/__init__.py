@@ -39,6 +39,7 @@ from .util import (
     remove_pm_signature,
     runtime_nicename,
     timeit,
+    version_parse,
     )
 
 from .info import (

@@ -136,6 +136,7 @@
     },
     "#base": {
         "font": "DejaVuSans.ttf",
+        "font[zh_CN|zh_TW|zh_HK|ko_KR|ja_JP]": "NotoSansTC-Regular.ttf",
         "font-scale[30:17]": 1.0,
         "font-scale[1920x1152]": 2.0,
         "font-scale[16:9]": 2.0,
